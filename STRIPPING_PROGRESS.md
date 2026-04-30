@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-37).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-38).
 
 ---
 
@@ -54,12 +54,12 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Dropped `/update-tab-config` skill button + its full event chain across 7 files (footer action/event, local code editor event, code view event, pane group event, workspace handler) (cleanup-35: -108 net lines)
 - Removed dead AI Autofill subsystem from workflow editor: render block, `WorkflowAction::AiAssist`, `issue_request`/`display_upgrade_error`/`populate_missing_field_with_suggestion`/`is_ai_assist_button_disabled` methods, `AiAssistState` enum, fields, mouse-state handles, constants (cleanup-36: -286 net lines)
 - Deleted AgentAssisted environment modal subsystem: 774-line modal file + 364-line companion tests file, modal field/handle/open helper in `environments_page.rs`, `OpenAgentAssistedCreateModal` action variant, empty-state "Launch agent" button row, `SettingsPageEvent::AgentAssistedEnvironmentModalToggled` variant + 3 dispatch arms, `pane_with_open_agent_assisted_environment_modal` field + init + cleanup blocks + tab-level render block, the matching arm in environment_management_pane (cleanup-37: -1298 net lines)
+- Removed orphan terminal-zero-state + input-message-bar settings: `show_terminal_zero_state_block` field + `should_show_zero_state_block()` getter, `show_terminal_input_message_bar` field + `is_terminal_input_message_bar_enabled()` accessor, `SHOW_TERMINAL_INPUT_MESSAGE_LINE_FLAG` constant + workspace flag insertion, two `FeaturesPageAction` variants + their telemetry/handler arms, two AgentView-gated widget pushes, the `ToggleShowTerminalInputMessageLine` binding pair, and both widget structs/impls (cleanup-38: -188 net lines)
 
-**Total stripped: ~4700+ lines of dead code, 9 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~4900+ lines of dead code, 9 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
-- The `show_terminal_zero_state_block` and `show_terminal_input_message_bar` settings (and their features-page widgets) are now orphan write targets — no readers. Clean removal would touch the settings widget machinery.
 
 ---
 
@@ -68,7 +68,7 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Master is clean: `cargo check --workspace` → zero errors, zero warnings
 - App builds & runs: `cargo run --bin warp-oss`
 - Bundle ID `dev.warp.WarpOss`, data dir `~/Library/Application Support/dev.warp.WarpOss/` — fully isolated from the official Warp install
-- 23+ commits beyond upstream
+- 24+ commits beyond upstream
 
 ---
 
