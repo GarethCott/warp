@@ -122,17 +122,6 @@ define_settings_group!(TerminalSettings, settings: [
         max_table_depth: 0,
         description: "Controls padding around full-screen terminal applications.",
     },
-    // This field should not be referenced directly to check zero state block visibility -- use
-    // the `should_show_zero_state_block()` getter, which also considers global AI enablement.
-    show_terminal_zero_state_block: ShowTerminalZeroStateBlock {
-        type: bool,
-        default: true,
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        private: false,
-        toml_path: "terminal.show_terminal_zero_state_block",
-        description: "Whether to show the AI zero-state block in new terminal sessions.",
-    },
 ]);
 
 impl TerminalSettings {
@@ -142,12 +131,6 @@ impl TerminalSettings {
             SpacingMode::Normal => TerminalSpacing::normal(line_height_ratio, ctx),
             SpacingMode::Compact => TerminalSpacing::compact(line_height_ratio, ctx),
         }
-    }
-
-    /// Whether the terminal zero state block should be shown.
-    /// AI is disabled in this fork, so the block is never shown.
-    pub fn should_show_zero_state_block(&self, _ctx: &AppContext) -> bool {
-        false
     }
 
     /// Spacing for the input box.

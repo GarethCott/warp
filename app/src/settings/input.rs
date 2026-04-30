@@ -162,17 +162,6 @@ define_settings_group!(InputSettings,
             toml_path: "agents.warp_agent.input.show_agent_tips",
             description: "Whether agent tips are displayed in the input.",
         },
-        // Whether to show the terminal input message bar (contextual hints at the bottom of terminal input).
-        // Only applicable when FeatureFlag::AgentView is enabled.
-        show_terminal_input_message_bar: ShowTerminalInputMessageBar {
-            type: bool,
-            default: true,
-            supported_platforms: SupportedPlatforms::ALL,
-            sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-            private: false,
-            toml_path: "terminal.input.show_terminal_input_message_bar",
-            description: "Whether the terminal input message bar is shown.",
-        },
         // Per-menu custom content heights set by drag-to-resize. Not user-visible.
         inline_menu_custom_content_heights: InlineMenuCustomContentHeights {
             type: HashMap<InlineMenuType, f32>,
@@ -225,9 +214,5 @@ impl InputSettings {
 
     pub fn is_classic_input_enabled(&self, app: &AppContext) -> bool {
         self.input_type(app) == InputBoxType::Classic
-    }
-
-    pub fn is_terminal_input_message_bar_enabled(&self) -> bool {
-        *self.show_terminal_input_message_bar
     }
 }
