@@ -10,7 +10,7 @@ use crate::editor::soft_wrap::FrameLayouts;
 use crate::terminal::grid_size_util::grid_compute_baseline_position_fn;
 
 use parking_lot::Mutex;
-use pathfinder_geometry::vector::{vec2f, Vector2F};
+use pathfinder_geometry::vector::Vector2F;
 
 use anyhow::Result;
 use core::f32;
@@ -50,14 +50,6 @@ pub const CURSOR_AVATAR_FONT_RATIO: f32 = 0.8;
 /// Found experimentally to look the best with current font size.
 pub const CURSOR_AVATAR_IMAGE_OFFSET: f32 = 4.;
 
-/// Fudge factor to make the voice input icon slightly wider than it is tall.
-const VOICE_INPUT_ICON_IMAGE_OFFSET_X: f32 = 5.;
-
-/// Minimum size of voice input icon.
-const MIN_VOICE_INPUT_ICON_SIZE: f32 = 16.;
-
-/// Gap between voice input icon's botton and cursor's top.
-pub const VOICE_INPUT_ICON_CURSOR_GAP: f32 = 2.;
 
 /// The amount of time the editor height must have remained shrunken
 /// before we actually shrink the height. This is to prevent jittering
@@ -653,9 +645,4 @@ impl ViewSnapshot {
         self.font_size + CURSOR_AVATAR_IMAGE_OFFSET
     }
 
-    /// Returns the size to render the voice input icon at, scaled by the font size.
-    pub fn voice_input_icon_size(&self) -> Vector2F {
-        let scaled_size = (self.font_size + 1.).max(MIN_VOICE_INPUT_ICON_SIZE);
-        vec2f(scaled_size + VOICE_INPUT_ICON_IMAGE_OFFSET_X, scaled_size)
-    }
 }
