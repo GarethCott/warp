@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-34).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-36).
 
 ---
 
@@ -51,8 +51,10 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Deleted `TerminalInputMessageBar` subsystem (467-line file, function, field, mod, all imports) (cleanup-32: -518 net lines)
 - Deleted dead Ask-AI block toolbelt button (constructor, field, layout/paint/dispatch sites, mouse state) (cleanup-33: -94 net lines)
 - Deleted dead "Add as context" selection tooltip in code editor + `Editor::is_selecting` (cleanup-34: -115 net lines)
+- Dropped `/update-tab-config` skill button + its full event chain across 7 files (footer action/event, local code editor event, code view event, pane group event, workspace handler) (cleanup-35: -108 net lines)
+- Removed dead AI Autofill subsystem from workflow editor: render block, `WorkflowAction::AiAssist`, `issue_request`/`display_upgrade_error`/`populate_missing_field_with_suggestion`/`is_ai_assist_button_disabled` methods, `AiAssistState` enum, fields, mouse-state handles, constants (cleanup-36: -286 net lines)
 
-**Total stripped: ~3000+ lines of dead code, 7 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~3400+ lines of dead code, 7 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
