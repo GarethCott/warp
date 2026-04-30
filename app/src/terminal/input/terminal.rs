@@ -1,8 +1,7 @@
 use super::{
     common::{
         add_command_xray_overlay, add_input_suggestions_overlays, add_voltron_overlay,
-        add_workflow_info_overlay, should_show_terminal_input_message_bar,
-        wrap_input_with_terminal_padding_and_focus_handler,
+        add_workflow_info_overlay, wrap_input_with_terminal_padding_and_focus_handler,
     },
     Input, InputAction, InputDropTargetData,
 };
@@ -20,7 +19,7 @@ use crate::{
 use warp_core::settings::Setting;
 use warpui::{
     elements::{
-        Border, Clipped, Container, DropTarget, Element, Flex, Hoverable, ParentElement,
+        Border, Container, DropTarget, Element, Flex, Hoverable, ParentElement,
         SavePosition, Stack,
     },
     presenter::ChildView,
@@ -74,11 +73,7 @@ impl Input {
                 .finish(),
         );
 
-        if should_show_terminal_input_message_bar(&model, app) {
-            column.add_child(
-                Clipped::new(ChildView::new(&self.terminal_input_message_bar).finish()).finish(),
-            );
-        } else if !(matches!(input_mode, InputMode::PinnedToTop)
+        if !(matches!(input_mode, InputMode::PinnedToTop)
             && self
                 .suggestions_mode_model
                 .as_ref(app)

@@ -21,7 +21,6 @@ pub mod slash_commands;
 mod suggestions_mode_menu;
 pub mod suggestions_mode_model;
 mod terminal;
-mod terminal_message_bar;
 mod universal;
 pub mod user_query;
 
@@ -81,7 +80,6 @@ use crate::terminal::input::slash_commands::{
 use crate::terminal::input::suggestions_mode_model::{
     InputSuggestionsModeEvent, InputSuggestionsModeModel,
 };
-use crate::terminal::input::terminal_message_bar::TerminalInputMessageBar;
 use crate::terminal::input::user_query::{UserQueryMenuEvent, UserQueryMenuView};
 use crate::terminal::model::session::active_session::ActiveSession;
 use crate::terminal::package_installers::command_at_cursor_has_common_package_installer_prefix;
@@ -1606,8 +1604,6 @@ pub struct Input {
 
     universal_developer_input_button_bar: ViewHandle<UniversalDeveloperInputButtonBar>,
 
-    terminal_input_message_bar: ViewHandle<TerminalInputMessageBar>,
-
     agent_input_footer: ViewHandle<AgentInputFooter>,
     prompt_suggestions_view: ViewHandle<PromptSuggestionsView>,
 
@@ -2628,7 +2624,6 @@ impl Input {
                 me.handle_inline_history_menu_event(event, ctx);
             });
         }
-        let inline_history_model = inline_history_menu_view.as_ref(ctx).model().clone();
 
         let cloud_mode_v2_history_menu_view = if FeatureFlag::CloudModeInputV2.is_enabled() {
             let view = ctx.add_view({
@@ -2656,18 +2651,6 @@ impl Input {
         } else {
             None
         };
-
-        let terminal_input_message_bar = ctx.add_view(|ctx| {
-            TerminalInputMessageBar::new(
-                model.clone(),
-                ai_input_model.clone(),
-                buffer_model.clone(),
-                ai_context_model.clone(),
-                suggestions_mode_model.clone(),
-                inline_history_model,
-                ctx,
-            )
-        });
 
         let agent_shortcut_view_model = ctx.add_model(|ctx| {
             AgentShortcutViewModel::new(buffer_model.clone(), agent_view_controller.clone(), ctx)
@@ -3286,7 +3269,6 @@ impl Input {
             completions_abort_handle: None,
             menu_positioning_provider,
             universal_developer_input_button_bar,
-            terminal_input_message_bar,
             prompt_render_helper,
             prompt_type: current_prompt,
             ai_controller,

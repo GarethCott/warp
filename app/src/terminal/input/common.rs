@@ -6,11 +6,9 @@ use crate::{
         AIRequestUsageModel, BuyCreditsBannerDisplayState,
     },
     appearance::Appearance,
-    settings::{AISettings, InputSettings},
     terminal::{
         buy_credits_banner::BuyCreditsBanner,
         input::{Input, InputAction, InputSuggestionsMode, MenuPositioning},
-        model::TerminalModel,
         view::{TerminalAction, PADDING_LEFT},
     },
     ui_components::icons::Icon,
@@ -19,7 +17,6 @@ use crate::{
 use pathfinder_geometry::vector::vec2f;
 use vim::vim::{VimMode, VimState};
 use warp_completer::completer::Description;
-use warp_core::features::FeatureFlag;
 use warpui::{
     elements::{
         AnchorPair, Border, ChildAnchor, ConstrainedBox, Container, CornerRadius,
@@ -32,21 +29,6 @@ use warpui::{
     ui_components::components::{UiComponent, UiComponentStyles},
     AppContext, EntityId, SingletonEntity, ViewHandle,
 };
-
-/// Whether the terminal input message bar should be shown.
-///
-/// The message bar is hidden when AI is disabled, the user has turned it off in settings,
-/// or the session is a shared ambient agent session.
-pub(super) fn should_show_terminal_input_message_bar(
-    model: &TerminalModel,
-    app: &AppContext,
-) -> bool {
-    FeatureFlag::AgentView.is_enabled()
-        && !FeatureFlag::AgentViewPromptChip.is_enabled()
-        && InputSettings::as_ref(app).is_terminal_input_message_bar_enabled()
-        && AISettings::as_ref(app).is_any_ai_enabled(app)
-        && !model.is_shared_ambient_agent_session()
-}
 
 /// Renders vim status bar
 /// Used by: agent.rs, terminal.rs, universal.rs, legacy.rs
