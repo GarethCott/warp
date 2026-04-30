@@ -36,12 +36,11 @@ use crate::ai::persisted_workspace::PersistedWorkspaceEvent;
 use crate::ai::persisted_workspace::{
     LSPEnablementResultForFile, LspRepoStatus, PersistedWorkspace,
 };
-use crate::settings::AISettings;
 use crate::ui_components::blended_colors;
 #[cfg(feature = "local_fs")]
 use crate::user_config::is_tab_config_toml;
 use crate::view_components::action_button::{
-    ActionButton, ButtonSize, NakedTheme, PaneHeaderTheme,
+    ActionButton, ButtonSize, NakedTheme,
 };
 #[cfg(feature = "local_fs")]
 use repo_metadata::repositories::DetectedRepositories;
@@ -138,7 +137,6 @@ pub enum CodeFooterViewAction {
     #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
     ToggleMenu,
     EnableLSP,
-    RunTabConfigSkill,
     #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
     OpenLogs,
     #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
@@ -208,7 +206,6 @@ pub struct CodeFooterView {
     subscribed_server_ids: Vec<LanguageServerId>,
     lsp_status_button: ViewHandle<ActionButton>,
     enable_lsp_button: Option<ViewHandle<ActionButton>>,
-    tab_config_skill_button: Option<ViewHandle<ActionButton>>,
     is_lsp_menu_open: bool,
     /// Whether to render the top border. Disabled for code review footer.
     show_border: bool,
@@ -273,18 +270,6 @@ impl CodeFooterView {
     fn is_tab_config_path(_path: &Path) -> bool {
         false
     }
-    fn create_tab_config_skill_button(ctx: &mut ViewContext<Self>) -> ViewHandle<ActionButton> {
-        ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("/update-tab-config", NakedTheme)
-                .with_icon(Icon::Oz)
-                .with_size(ButtonSize::Small)
-                .with_disabled_theme(PaneHeaderTheme)
-                .on_click(|ctx| {
-                    ctx.dispatch_typed_action(CodeFooterViewAction::RunTabConfigSkill);
-                })
-        })
-    }
-
     fn render_tab_config_info_icon(theme: &WarpTheme) -> Box<dyn Element> {
         Container::new(
             ConstrainedBox::new(
@@ -304,24 +289,6 @@ impl CodeFooterView {
         matches!(self.mode, FooterMode::TabConfig { .. })
     }
 
-    fn sync_tab_config_skill_button(&mut self, ctx: &mut ViewContext<Self>) {
-        let Some(button) = &self.tab_config_skill_button else {
-            return;
-        };
-
-        let is_ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
-        button.update(ctx, |button, ctx| {
-            button.set_disabled(!is_ai_enabled, ctx);
-            button.set_tooltip(
-                Some(if is_ai_enabled {
-                    "Open agent input with the /update-tab-config skill"
-                } else {
-                    "Enable AI to use the /update-tab-config skill"
-                }),
-                ctx,
-            );
-        });
-    }
     fn create_lsp_status_button(
         disabled: bool,
         ctx: &mut ViewContext<Self>,
@@ -345,22 +312,15 @@ impl CodeFooterView {
     pub fn new(path: PathBuf, ctx: &mut ViewContext<Self>) -> Self {
         let lsp_status_button = Self::create_lsp_status_button(true, ctx);
         if Self::is_tab_config_path(&path) {
-            let tab_config_skill_button = Self::create_tab_config_skill_button(ctx);
-            let mut footer = Self {
+            return Self {
                 mode: FooterMode::TabConfig { path },
                 lsp_servers: Vec::new(),
                 subscribed_server_ids: Vec::new(),
                 lsp_status_button,
                 enable_lsp_button: None,
-                tab_config_skill_button: Some(tab_config_skill_button),
                 is_lsp_menu_open: false,
                 show_border: true,
             };
-            footer.sync_tab_config_skill_button(ctx);
-            ctx.subscribe_to_model(&AISettings::handle(ctx), |me, _, _, ctx| {
-                me.sync_tab_config_skill_button(ctx);
-            });
-            return footer;
         }
 
         let server_type = LanguageId::from_path(&path).map(|id| id.server_type());
@@ -449,7 +409,6 @@ impl CodeFooterView {
             is_lsp_menu_open: false,
             lsp_status_button,
             enable_lsp_button,
-            tab_config_skill_button: None,
             show_border: true,
         }
     }
@@ -583,7 +542,6 @@ impl CodeFooterView {
             is_lsp_menu_open: false,
             lsp_status_button,
             enable_lsp_button: None,
-            tab_config_skill_button: None,
             show_border: false,
         };
 
@@ -1669,9 +1627,6 @@ impl CodeFooterView {
 #[derive(Clone)]
 #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
 pub enum CodeFooterViewEvent {
-    RunTabConfigSkill {
-        path: PathBuf,
-    },
     EnableLSP {
         path: PathBuf,
         server_type: Option<LSPServerType>,
@@ -1730,18 +1685,11 @@ impl View for CodeFooterView {
                     Self::render_status_text(
                         theme,
                         appearance,
-                        "Use Oz to update this config".to_string(),
+                        "Tab config files use TOML syntax.".to_string(),
                     ),
                 )
                 .finish(),
             );
-            if let Some(tab_config_skill_button) = &self.tab_config_skill_button {
-                footer_content.add_child(
-                    Container::new(ChildView::new(tab_config_skill_button).finish())
-                        .with_margin_left(ICON_MARGIN)
-                        .finish(),
-                );
-            }
         } else {
             footer_content.add_child(self.render_lsp_icon(appearance, app));
 
@@ -1803,12 +1751,6 @@ impl TypedActionView for CodeFooterView {
             CodeFooterViewAction::CloseMenu => {
                 self.is_lsp_menu_open = false;
                 ctx.notify();
-            }
-            CodeFooterViewAction::RunTabConfigSkill => {
-                let FooterMode::TabConfig { path } = &self.mode else {
-                    return;
-                };
-                ctx.emit(CodeFooterViewEvent::RunTabConfigSkill { path: path.clone() });
             }
             CodeFooterViewAction::EnableLSP => {
                 let path = self.mode.path().to_path_buf();
