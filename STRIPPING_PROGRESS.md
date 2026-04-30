@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. As of 2026-04-30.
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-26).
 
 ---
 
@@ -31,7 +31,7 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - **Lesson:** the agent code is interleaved with core terminal logic in `app/src/lib.rs`, `app/src/terminal/view.rs`, `app/src/workspace/view.rs`, etc. Bulk delete is not viable.
 - Branch `strip-tier-4` was deleted from both local and remote.
 
-### Phase D — Iterative cleanup (PRs #4 through #24, all merged)
+### Phase D — Iterative cleanup (PRs #4 through #29, all merged)
 - Removed all dead `voice_input` cfg blocks from non-test, non-agent-tree code
 - Deleted entire voice transcriber subsystem (3 files)
 - Deleted `VoiceWidget` from settings UI
@@ -39,8 +39,12 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Replaced ~70 `is_any_ai_enabled()` callsites with the constant `false` across ~12 files
 - Deleted dead `make_new_ai_menu` / `make_new_drive_menu` builders in `app_menus.rs`
 - Trimmed agent/cloud features from `[default]` features list
+- Dropped `ai_enabled: bool` plumbing from `right_panel.rs` review-terminal helpers (cleanup-23)
+- Removed dead `else if false` agent-tutorial branch in `root_view.rs` (cleanup-24)
+- Removed dead `let _ = WarpDriveSettings/AISettings` neuter suppressions + their imports in command palette (cleanup-25)
+- Collapsed `EditorView::render_controls` after AI/voice paths went dead, deleted `render_at_context_menu_button`, dropped `at_context_menu_button_mouse_handle` field (cleanup-26: -86 net lines)
 
-**Total stripped this session: ~1500+ lines of dead code, 5+ files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~1700+ lines of dead code, 5+ files entirely deleted, 18 dead feature flags removed.**
 
 ---
 
