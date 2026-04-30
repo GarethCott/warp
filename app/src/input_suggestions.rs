@@ -1129,6 +1129,10 @@ impl PartialOrd for HistoryOrder {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum HistoryInputSuggestion<'a> {
     Command { entry: &'a HistoryEntry },
+    // strip(neuter): never constructed in this fork (AI history is gone),
+    // but kept so the surrounding match arms compile until a follow-up
+    // cleanup deletes the variant and its match-arms together.
+    #[allow(dead_code)]
     AIQuery { entry: AIQueryHistory },
 }
 
