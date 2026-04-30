@@ -6041,24 +6041,12 @@ impl Workspace {
     ) -> Vec<MenuItem<WorkspaceAction>> {
         let mut menu_items = vec![];
 
-        let is_any_ai_enabled = false;
         let ai_settings = AISettings::as_ref(ctx);
         let effective_default = ai_settings.default_session_mode(ctx);
         let default_tab_config_path = ai_settings.default_tab_config_path().to_string();
         let shortcut_label = keybinding_name_to_display_string(NEW_TAB_BINDING_NAME, ctx);
         let reopen_closed_session_shortcut_label =
             keybinding_name_to_display_string("app:reopen_closed_session", ctx);
-
-        // 1. Agent (if AI enabled)
-        if is_any_ai_enabled {
-            let mut agent_item = MenuItemFields::new("Agent")
-                .with_on_select_action(WorkspaceAction::AddAgentTab)
-                .with_icon(icons::Icon::LayoutAlt01);
-            if effective_default == DefaultSessionMode::Agent {
-                agent_item = agent_item.with_key_shortcut_label(shortcut_label.clone());
-            }
-            menu_items.push(agent_item.into_item());
-        }
 
         // 2. Terminal (+ individual shells on Windows)
         {
@@ -6114,20 +6102,6 @@ impl Workspace {
                 }
                 menu_items.push(terminal_item.into_item());
             }
-        }
-
-        // 3. Cloud Oz (if flags enabled)
-        if is_any_ai_enabled
-            && FeatureFlag::AgentView.is_enabled()
-            && FeatureFlag::CloudMode.is_enabled()
-        {
-            let mut cloud_item = MenuItemFields::new("Cloud Oz")
-                .with_on_select_action(WorkspaceAction::AddAmbientAgentTab)
-                .with_icon(icons::Icon::LayoutAlt01);
-            if effective_default == DefaultSessionMode::CloudAgent {
-                cloud_item = cloud_item.with_key_shortcut_label(shortcut_label.clone());
-            }
-            menu_items.push(cloud_item.into_item());
         }
 
         // 3b. Local Docker Sandbox
