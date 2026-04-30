@@ -10360,7 +10360,6 @@ impl Input {
         let config = UpArrowHistoryConfig::for_input_config(&input_config);
 
         History::as_ref(ctx).up_arrow_suggestions_for_terminal_view(
-            self.terminal_view_id,
             self.active_block_session_id(),
             config,
             ctx,

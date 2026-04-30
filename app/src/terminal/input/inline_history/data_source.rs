@@ -94,20 +94,10 @@ impl InlineHistoryMenuDataSource {
         let trimmed_query = query.text.trim();
         let include_commands =
             query.filters.is_empty() || query.filters.contains(&QueryFilter::Commands);
-        let include_prompts =
-            query.filters.is_empty() || query.filters.contains(&QueryFilter::PromptHistory);
 
         let history = History::handle(app).as_ref(app);
-        let config = UpArrowHistoryConfig {
-            include_commands,
-            include_prompts,
-        };
-        let suggestions = history.up_arrow_suggestions_for_terminal_view(
-            self.terminal_view_id,
-            session_id,
-            config,
-            app,
-        );
+        let config = UpArrowHistoryConfig { include_commands };
+        let suggestions = history.up_arrow_suggestions_for_terminal_view(session_id, config, app);
 
         let mut results: Vec<QueryResult<AcceptHistoryItem>> = Vec::new();
         for suggestion in suggestions {
@@ -278,11 +268,9 @@ impl SyncDataSource for InlineHistoryMenuDataSource {
         let command_entries = if include_commands {
             history
                 .up_arrow_suggestions_for_terminal_view(
-                    self.terminal_view_id,
                     session_id,
                     UpArrowHistoryConfig {
                         include_commands: true,
-                        include_prompts: false,
                     },
                     app,
                 )
