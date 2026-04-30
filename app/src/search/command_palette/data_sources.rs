@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-use crate::drive::settings::WarpDriveSettings;
 use crate::search::action::CommandBindingDataSource;
 use crate::search::binding_source::BindingSource;
 use crate::search::command_palette::files;
@@ -15,7 +14,6 @@ use crate::search::files::model::FileSearchModel;
 use crate::search::mixer::AddAsyncSourceOptions;
 use crate::search::QueryFilter;
 use crate::session_management::SessionSource;
-use crate::settings::AISettings;
 use warp_core::context_flag::ContextFlag;
 use warp_core::features::FeatureFlag;
 use warpui::keymap::BindingId;
@@ -88,9 +86,6 @@ impl DataSourceStore {
                 HashSet::from([QueryFilter::Sessions]),
             );
 
-            // neuter: no Warp Drive entries in the command palette.
-            let _ = WarpDriveSettings::is_warp_drive_enabled;
-
             mixer.add_sync_source(
                 self.actions_data_source.clone(),
                 HashSet::from([QueryFilter::Actions]),
@@ -124,9 +119,6 @@ impl DataSourceStore {
                     ctx,
                 );
             }
-
-            // neuter: no AI conversation entries in the command palette.
-            let _ = AISettings::as_ref;
 
             mixer.add_sync_source(
                 self.repo_data_source.clone(),
