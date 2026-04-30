@@ -188,9 +188,6 @@ pub enum CodeViewEvent {
         file_path: PathBuf,
         tab_index: usize,
     },
-    RunTabConfigSkill {
-        path: PathBuf,
-    },
     OpenLspLogs {
         log_path: PathBuf,
     },
@@ -580,9 +577,6 @@ impl CodeView {
             | LocalCodeEditorEvent::RequestOpenComment(_)
             | LocalCodeEditorEvent::DeleteComment { .. } => {
                 // Comment events are handled by CodeReviewView, not CodeView
-            }
-            LocalCodeEditorEvent::RunTabConfigSkill { path } => {
-                ctx.emit(CodeViewEvent::RunTabConfigSkill { path: path.clone() });
             }
             LocalCodeEditorEvent::OpenLspLogs { log_path } => {
                 ctx.emit(CodeViewEvent::OpenLspLogs {

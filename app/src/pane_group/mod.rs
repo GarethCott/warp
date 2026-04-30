@@ -717,9 +717,6 @@ pub enum Event {
         comments: Vec<AttachedReviewComment>,
         diff_mode: DiffMode,
     },
-    RunTabConfigSkill {
-        path: PathBuf,
-    },
     /// Request to open LSP logs in a terminal pane
     OpenLspLogs {
         log_path: PathBuf,
