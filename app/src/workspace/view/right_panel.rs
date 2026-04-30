@@ -1208,7 +1208,7 @@ impl RightPanelView {
             return;
         };
 
-        let ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+        let ai_enabled = false; // strip(neuter): AI is disabled in this fork
         let chosen = self.find_review_terminal(pane_group, repo_path, ai_enabled, ctx);
 
         let Some(terminal_view) = chosen else {
@@ -1346,7 +1346,7 @@ impl RightPanelView {
 
     pub fn log_review_comment_send_status_for_active_tab(&self, ctx: &AppContext) {
         let selected_repo_path = self.selected_repo_path().cloned();
-        let ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+        let ai_enabled = false; // strip(neuter): AI is disabled in this fork
         let code_review_debug_state =
             self.get_active_code_review_view(ctx)
                 .map(|code_review_view| {
@@ -1550,7 +1550,7 @@ impl RightPanelView {
             return;
         };
 
-        let ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+        let ai_enabled = false; // strip(neuter): AI is disabled in this fork
         let destination = self
             .find_review_terminal(pane_group, &repo_path, ai_enabled, ctx)
             .map(|tv| {
