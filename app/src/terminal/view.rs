@@ -43,7 +43,6 @@ mod tab_metadata;
 mod testing;
 mod tooltips;
 pub mod use_agent_footer;
-mod zero_state_block;
 
 use warpui::clipboard_utils::get_image_filepaths_from_paths;
 
@@ -70,7 +69,6 @@ pub use crate::terminal::view::rich_content::{
     AIBlockMetadata, AgentViewEntryMetadata, RichContent, RichContentInsertionPosition,
     RichContentMetadata,
 };
-use crate::terminal::view::zero_state_block::TerminalViewZeroStateBlock;
 use crate::view_components::action_button::{ActionButton, ButtonSize, KeystrokeSource};
 
 use use_agent_footer::UseAgentToolbar;
@@ -11980,8 +11978,6 @@ impl TerminalView {
             })
         }
 
-        let is_subshell_or_ssh = session.is_subshell_or_ssh();
-
         // Make sure we decorate any text that is already in the input.  We
         // need to make sure external commands have finished loading before
         // doing the decoration to ensure we don't erroneously apply error
@@ -12023,48 +12019,6 @@ impl TerminalView {
         self.update_pane_configuration(ctx);
 
         self.ignore_next_set_title_event = true;
-
-        let auth_state = AuthStateProvider::as_ref(ctx).get();
-        let is_onboarded = auth_state.is_onboarded().unwrap_or(true);
-        let is_anonymous_or_logged_out = auth_state.is_anonymous_or_logged_out();
-        let should_show_onboarding = FeatureFlag::AgentOnboarding.is_enabled()
-            && !is_onboarded
-            && !is_anonymous_or_logged_out;
-        let is_launch_modal_open = OneTimeModalModel::as_ref(ctx).is_oz_launch_modal_open();
-
-        let has_plugin_instructions_block = self.rich_content_views.iter().any(|rc| {
-            matches!(
-                rc.metadata(),
-                Some(RichContentMetadata::PluginInstructionsBlock)
-            )
-        });
-
-        if FeatureFlag::AgentView.is_enabled()
-            && TerminalSettings::as_ref(ctx).should_show_zero_state_block(ctx)
-            && !self.model.lock().block_list().is_restored_session()
-            && !should_show_onboarding
-            && self.onboarding_callout_view.is_none()
-            && !is_launch_modal_open
-            && !is_subshell_or_ssh
-            && !has_plugin_instructions_block
-        {
-            let agent_view_zero_state = ctx.add_typed_action_view(|ctx| {
-                TerminalViewZeroStateBlock::new(
-                    &self.agent_view_controller,
-                    &self.model_events_handle,
-                    ctx,
-                )
-            });
-            self.insert_rich_content(
-                Some(RichContentType::TerminalViewZeroState),
-                agent_view_zero_state,
-                Some(RichContentMetadata::TerminalViewZeroState),
-                RichContentInsertionPosition::Append {
-                    insert_below_long_running_block: false,
-                },
-                ctx,
-            );
-        }
 
         // Now that the session is bootstrapped, update any restored AI blocks that were
         // created before bootstrapping with the shell launch data. This enables file link
@@ -13127,28 +13081,6 @@ impl TerminalView {
         // session mode is Agent (e.g. from cloud-synced settings), the tab
         // may already be in agent view — exit it first.
         self.exit_agent_view(ctx);
-
-        // Remove the terminal zero-state welcome block so it doesn't appear
-        // underneath the onboarding callout.
-        let zero_state_ids: Vec<_> = self
-            .rich_content_views
-            .iter()
-            .filter(|view| {
-                matches!(
-                    view.metadata(),
-                    Some(RichContentMetadata::TerminalViewZeroState)
-                )
-            })
-            .map(|view| view.view_id())
-            .collect();
-        for view_id in zero_state_ids {
-            self.model
-                .lock()
-                .block_list_mut()
-                .remove_rich_content(view_id);
-            self.rich_content_views
-                .retain(|view| view.view_id() != view_id);
-        }
 
         log::info!("Starting onboarding tutorial with version: {:?}", version);
 

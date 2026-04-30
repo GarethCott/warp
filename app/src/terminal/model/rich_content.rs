@@ -7,7 +7,6 @@ pub enum RichContentType {
     WarpifySuccessBlock,
     InlineAgentViewHeader,
     AgentViewZeroState,
-    TerminalViewZeroState,
     PluginInstructionsBlock,
 }
 

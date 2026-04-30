@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::settings::{AISettings, InputSettings, TerminalSpacing};
+use crate::settings::{InputSettings, TerminalSpacing};
 use settings::{
     macros::define_settings_group, RespectUserSyncSetting, SupportedPlatforms, SyncToCloud,
 };
@@ -145,9 +145,9 @@ impl TerminalSettings {
     }
 
     /// Whether the terminal zero state block should be shown.
-    /// Checks both the user setting and the global AI enablement.
-    pub fn should_show_zero_state_block(&self, ctx: &AppContext) -> bool {
-        *self.show_terminal_zero_state_block && AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+    /// AI is disabled in this fork, so the block is never shown.
+    pub fn should_show_zero_state_block(&self, _ctx: &AppContext) -> bool {
+        false
     }
 
     /// Spacing for the input box.
