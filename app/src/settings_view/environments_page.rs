@@ -1,7 +1,4 @@
 use super::{
-    agent_assisted_environment_modal::{
-        AgentAssistedEnvironmentModal, AgentAssistedEnvironmentModalEvent,
-    },
     delete_environment_confirmation_dialog::{
         DeleteEnvironmentConfirmationDialog, DeleteEnvironmentConfirmationDialogEvent,
     },
@@ -25,7 +22,6 @@ use crate::{
     },
     drive::CloudObjectTypeAndId,
     editor::{EditorView, PropagateAndNoOpNavigationKeys, SingleLineEditorOptions, TextOptions},
-    root_view::CreateEnvironmentArg,
     server::{
         cloud_objects::update_manager::{
             ObjectOperation, OperationSuccessType, UpdateManager, UpdateManagerEvent,
@@ -222,7 +218,6 @@ pub struct EnvironmentsPageView {
     search_query: String,
     search_editor: ViewHandle<EditorView>,
     empty_state_github_repos_button_mouse_state: MouseStateHandle,
-    empty_state_local_repos_button_mouse_state: MouseStateHandle,
     // Track pending save to show success toast when complete
     pending_save_env_id: Option<SyncId>,
     // Track pending create to show success toast when complete
@@ -233,8 +228,6 @@ pub struct EnvironmentsPageView {
     pending_share_server_id: Option<ServerId>,
     // Delete confirmation dialog
     delete_confirmation_dialog: ViewHandle<DeleteEnvironmentConfirmationDialog>,
-    // Agent-assisted environment creation modal
-    agent_assisted_environment_modal: ViewHandle<AgentAssistedEnvironmentModal>,
     // New environment button (search -> tab focus target)
     new_env_button: ViewHandle<NewEnvironmentButtonView>,
     // Mode selector modal for new environment setup
@@ -400,56 +393,6 @@ impl EnvironmentsPageView {
             me.handle_delete_confirmation_event(event, ctx);
         });
 
-        let agent_assisted_environment_modal =
-            ctx.add_typed_action_view(AgentAssistedEnvironmentModal::new);
-        ctx.subscribe_to_view(
-            &agent_assisted_environment_modal,
-            |me, _, event, ctx| match event {
-                AgentAssistedEnvironmentModalEvent::Cancelled => {
-                    me.agent_assisted_environment_modal
-                        .update(ctx, |modal, ctx| {
-                            modal.hide(ctx);
-                        });
-                    ctx.emit(SettingsPageEvent::AgentAssistedEnvironmentModalToggled {
-                        is_open: false,
-                    });
-                    ctx.notify();
-                }
-                AgentAssistedEnvironmentModalEvent::Confirmed { repo_paths } => {
-                    me.agent_assisted_environment_modal
-                        .update(ctx, |modal, ctx| {
-                            modal.hide(ctx);
-                        });
-                    ctx.emit(SettingsPageEvent::AgentAssistedEnvironmentModalToggled {
-                        is_open: false,
-                    });
-
-                    let arg = CreateEnvironmentArg {
-                        repos: repo_paths.clone(),
-                    };
-
-                    let window_id = ctx.window_id();
-                    let primary_window_and_view = ctx
-                        .root_view_id(window_id)
-                        .map(|view_id| (window_id, view_id));
-
-                    if let Some((primary_window_id, root_view_id)) = primary_window_and_view {
-                        ctx.dispatch_action(
-                            primary_window_id,
-                            &[root_view_id],
-                            "root_view:create_environment_in_existing_window_and_run",
-                            &arg,
-                            log::Level::Info,
-                        );
-                    } else {
-                        ctx.dispatch_global_action("root_view:create_environment_and_run", arg);
-                    }
-
-                    ctx.notify();
-                }
-            },
-        );
-
         let environment_setup_mode_selector =
             ctx.add_typed_action_view(EnvironmentSetupModeSelector::new);
         ctx.subscribe_to_view(&environment_setup_mode_selector, |me, _, event, ctx| {
@@ -527,13 +470,11 @@ impl EnvironmentsPageView {
             search_query: String::new(),
             search_editor,
             empty_state_github_repos_button_mouse_state: MouseStateHandle::default(),
-            empty_state_local_repos_button_mouse_state: MouseStateHandle::default(),
             pending_save_env_id: None,
             pending_create_client_id: None,
             pending_delete_env_id: None,
             pending_share_server_id: None,
             delete_confirmation_dialog,
-            agent_assisted_environment_modal,
             new_env_button,
             environment_setup_mode_selector,
             is_environment_setup_mode_selector_open: false,
@@ -559,17 +500,6 @@ impl EnvironmentsPageView {
     ) -> Option<&ViewHandle<EnvironmentSetupModeSelector>> {
         self.is_environment_setup_mode_selector_open
             .then_some(&self.environment_setup_mode_selector)
-    }
-
-    /// Returns the agent-assisted environment modal view handle for tab-level rendering.
-    pub fn agent_assisted_environment_modal_handle(
-        &self,
-        app: &AppContext,
-    ) -> Option<&ViewHandle<AgentAssistedEnvironmentModal>> {
-        self.agent_assisted_environment_modal
-            .as_ref(app)
-            .is_visible()
-            .then_some(&self.agent_assisted_environment_modal)
     }
 
     /// Returns the pane configuration for BackingView support.
@@ -834,15 +764,6 @@ impl EnvironmentsPageView {
         }
     }
 
-    fn open_agent_assisted_environment_modal(&mut self, ctx: &mut ViewContext<Self>) {
-        self.agent_assisted_environment_modal
-            .update(ctx, |modal, ctx| {
-                modal.show(ctx);
-            });
-        ctx.emit(SettingsPageEvent::AgentAssistedEnvironmentModalToggled { is_open: true });
-        ctx.notify();
-    }
-
     fn open_environment_setup_mode_selector(&mut self, ctx: &mut ViewContext<Self>) {
         if self.is_environment_setup_mode_selector_open {
             return;
@@ -877,9 +798,7 @@ impl EnvironmentsPageView {
                     EnvironmentSetupMode::RemoteGitHub => {
                         self.update_page(EnvironmentsPage::Create, ctx);
                     }
-                    EnvironmentSetupMode::LocalRepositories => {
-                        self.open_agent_assisted_environment_modal(ctx);
-                    }
+                    EnvironmentSetupMode::LocalRepositories => {}
                 }
             }
             EnvironmentSetupModeSelectorEvent::Dismissed => {
@@ -898,7 +817,6 @@ pub enum EnvironmentsPageAction {
     StartGithubAuth,
     CopyEnvId(SyncId, String),
     OpenCreatePage,
-    OpenAgentAssistedCreateModal,
     OpenEnvironmentSetupModeSelector,
     ShareToTeam(SyncId),
 }
@@ -951,9 +869,6 @@ impl TypedActionView for EnvironmentsPageView {
             }
             EnvironmentsPageAction::OpenCreatePage => {
                 self.update_page(EnvironmentsPage::Create, ctx);
-            }
-            EnvironmentsPageAction::OpenAgentAssistedCreateModal => {
-                self.open_agent_assisted_environment_modal(ctx);
             }
             EnvironmentsPageAction::OpenEnvironmentSetupModeSelector => {
                 self.open_environment_setup_mode_selector(ctx);
@@ -1427,23 +1342,6 @@ impl EnvironmentsPageWidget {
             github_button_action,
         );
 
-        let local_repos_button = Self::render_empty_state_button(
-            appearance,
-            "Launch agent",
-            ButtonVariant::Secondary,
-            view.empty_state_local_repos_button_mouse_state.clone(),
-            true,
-            Some(EnvironmentsPageAction::OpenAgentAssistedCreateModal),
-        );
-        let local_repos_button_compact = Self::render_empty_state_button(
-            appearance,
-            "Launch agent",
-            ButtonVariant::Secondary,
-            view.empty_state_local_repos_button_mouse_state.clone(),
-            true,
-            Some(EnvironmentsPageAction::OpenAgentAssistedCreateModal),
-        );
-
         let github_row = Self::render_empty_state_row(
             appearance,
             EmptyStateRowConfig {
@@ -1458,26 +1356,11 @@ impl EnvironmentsPageWidget {
             },
         );
 
-        let local_repos_row = Self::render_empty_state_row(
-            appearance,
-            EmptyStateRowConfig {
-                icon: Icon::Terminal,
-                title: "Use the agent",
-                badge: None,
-                subtitle:
-                    "Choose a locally set up project and we’ll help you set up an environment based on it",
-                action_button: local_repos_button,
-                compact_action_button: local_repos_button_compact,
-                icon_size,
-            },
-        );
-
         let rows = ConstrainedBox::new(
             Flex::column()
                 .with_cross_axis_alignment(CrossAxisAlignment::Stretch)
                 .with_spacing(8.)
                 .with_child(github_row)
-                .with_child(local_repos_row)
                 .finish(),
         )
         .with_max_width(DROPDOWN_MAX_WIDTH * EMPTY_STATE_MAX_WIDTH_RATIO)

@@ -99,11 +99,6 @@ impl PaneContent for EnvironmentManagementPane {
                         is_open.then_some(pane_id);
                     ctx.notify();
                 }
-                SettingsPageEvent::AgentAssistedEnvironmentModalToggled { is_open } => {
-                    pane_group.pane_with_open_agent_assisted_environment_modal =
-                        is_open.then_some(pane_id);
-                    ctx.notify();
-                }
                 SettingsPageEvent::FocusModal => {
                     // Not applicable when hosted in a pane.
                 }
