@@ -3260,11 +3260,6 @@ impl RootView {
                     view.open_vertical_tabs_panel_if_enabled(ctx);
                 });
             }
-        } else if false {
-            // strip(neuter): AI agent onboarding tutorial path disabled.
-            workspace.update(ctx, |view, ctx| {
-                view.start_agent_onboarding_tutorial(tutorial, ctx);
-            });
         }
     }
 
