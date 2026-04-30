@@ -5,8 +5,6 @@ use super::{
     ToBufferOffset, ToDisplayPoint,
 };
 use super::{ToCharOffset, ToPoint};
-#[cfg(feature = "voice_input")]
-use crate::editor::view::voice::VoiceInputState;
 
 use crate::editor::soft_wrap::FrameLayouts;
 use crate::terminal::grid_size_util::grid_compute_baseline_position_fn;
@@ -98,9 +96,6 @@ pub struct ViewSnapshot {
     pub cached_buffer_points: HashMap<Cow<'static, str>, Point>,
 
     pub baseline_position_computation_method: BaselinePositionComputationMethod,
-
-    #[cfg(feature = "voice_input")]
-    pub voice_input_state: VoiceInputState,
 
     pub editor_height_shrink_delay: Arc<Mutex<EditorHeightShrinkDelay>>,
 }
