@@ -1403,10 +1403,6 @@ impl CodeEditorView {
         ctx.notify();
     }
 
-    pub fn is_selecting(&self) -> bool {
-        self.is_selecting
-    }
-
     /// Extend the selection to the given offset.  This is used for shift-clicking to extend the
     /// selection, and not for dragging the selection.
     fn selection_extend(&mut self, offset: CharOffset, ctx: &mut ViewContext<Self>) {
