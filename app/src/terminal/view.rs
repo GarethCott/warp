@@ -12250,11 +12250,6 @@ impl TerminalView {
                 }
             });
         }
-
-        #[cfg(feature = "voice_input")]
-        voice_input::VoiceInput::handle(ctx).update(ctx, |voice_input, _| {
-            voice_input.should_suppress_new_feature_popup = true;
-        });
     }
 
     #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
@@ -12294,11 +12289,6 @@ impl TerminalView {
             },
             ctx,
         );
-
-        #[cfg(feature = "voice_input")]
-        voice_input::VoiceInput::handle(ctx).update(ctx, |voice_input, _| {
-            voice_input.should_suppress_new_feature_popup = true;
-        });
     }
 
     #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
@@ -12318,14 +12308,7 @@ impl TerminalView {
             ctx,
         );
 
-        if self.block_onboarding_active {
-            #[cfg(feature = "voice_input")]
-            {
-                voice_input::VoiceInput::handle(ctx).update(ctx, |voice_input, _| {
-                    voice_input.should_suppress_new_feature_popup = true;
-                });
-            }
-        }
+        let _ = self.block_onboarding_active;
     }
 
     fn handle_onboarding_agentic_suggestions_block_event(
@@ -13029,11 +13012,6 @@ impl TerminalView {
         self.onboarding_prompt_block = None;
         self.settings_import_onboarding_block = None;
         self.onboarding_agentic_suggestions_block = None;
-
-        #[cfg(feature = "voice_input")]
-        voice_input::VoiceInput::handle(ctx).update(ctx, |voice_input, _| {
-            voice_input.should_suppress_new_feature_popup = false;
-        });
         let _ = ctx;
     }
 
@@ -22020,17 +21998,6 @@ impl TerminalView {
         alt_screen_element =
             alt_screen_element.with_shared_session_presence(self.shared_session_presence_manager());
 
-        // Pass voice input toggle key if the CLI agent footer should be rendered
-        #[cfg(feature = "voice_input")]
-        if self.should_render_use_agent_footer(model, app)
-            && self.use_agent_footer.as_ref(app).has_cli_agent(app)
-        {
-            let voice_key = AISettings::as_ref(app)
-                .voice_input_toggle_key
-                .value()
-                .to_key_code();
-            alt_screen_element = alt_screen_element.with_voice_input_toggle_key(voice_key);
-        }
 
         let required_terminal_height = self.size_info.cell_height_px.as_f32() * (rows as f32)
             + 2. * self.size_info.padding_y_px().as_f32();
@@ -22288,17 +22255,6 @@ impl TerminalView {
             element = element.with_hide_cursor_cell();
         }
 
-        // Pass voice input toggle key if the CLI agent footer should be rendered
-        #[cfg(feature = "voice_input")]
-        if self.should_render_use_agent_footer(model, app)
-            && self.use_agent_footer.as_ref(app).has_cli_agent(app)
-        {
-            let voice_key = AISettings::as_ref(app)
-                .voice_input_toggle_key
-                .value()
-                .to_key_code();
-            element = element.with_voice_input_toggle_key(voice_key);
-        }
 
         element = element.with_filtered_blocks(filtered_blocks);
 
@@ -24398,8 +24354,6 @@ impl TypedActionView for TerminalView {
                 "Use file picker to select a git repository".to_owned(),
                 WarpA11yRole::PopoverRole,
             )),
-            #[cfg(feature = "voice_input")]
-            ToggleCLIAgentVoiceInput(_) => Empty,
             // Below are actions that are most likely irrelevant to users or are very noisy and the
             // debug version shouldn't be announced.
             Scroll { .. }
@@ -25046,23 +25000,6 @@ impl TypedActionView for TerminalView {
                     });
                 }
                 ctx.notify();
-            }
-            #[cfg(feature = "voice_input")]
-            ToggleCLIAgentVoiceInput(source) => {
-                // For CLI agents, route through the footer's self-contained
-                // voice flow (records + writes transcription to PTY). For
-                // the regular editor, fall back to the editor-based flow.
-                let has_cli_agent = self.use_agent_footer.as_ref(ctx).has_cli_agent(ctx);
-                if has_cli_agent {
-                    let footer = self.input.as_ref(ctx).agent_input_footer().clone();
-                    footer.update(ctx, |footer, ctx| {
-                        footer.toggle_cli_voice_input(source, ctx);
-                    });
-                } else {
-                    self.input.update(ctx, |input, ctx| {
-                        input.toggle_voice_input(source, ctx);
-                    });
-                }
             }
             HyperlinkClick(hyperlink) => {
                 ctx.notify();
