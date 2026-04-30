@@ -20,7 +20,7 @@ use crate::{drive::OpenWarpDriveObjectArgs, view_components::DismissibleToast};
 use crate::{features::FeatureFlag, workspace::active_terminal_in_window};
 
 use crate::ai::ambient_agents::github_auth_notifier::GitHubAuthNotifier;
-use crate::settings_view::{OpenTeamsSettingsModalArgs, SettingsSection};
+use crate::settings_view::SettingsSection;
 use crate::user_config::load_launch_configs;
 use crate::{
     quake_mode_window_id, quake_mode_window_is_open, safe_info, send_telemetry_from_app_ctx,
@@ -333,17 +333,6 @@ impl UriHost {
 
                 if let Some(settings_sub_page) = settings_sub_page {
                     match settings_sub_page.as_str() {
-                        "teams" => {
-                            let invite_email = query_string.get("invite").map(|s| s.to_string());
-                            let args = OpenTeamsSettingsModalArgs { invite_email };
-                            dispatch_action_in_new_or_existing_window(
-                                primary_window_id,
-                                "root_view:open_team_settings_with_email_invite_in_existing_window",
-                                "root_view:open_team_settings_with_email_invite_in_new_window",
-                                &args,
-                                ctx,
-                            );
-                        }
                         "billing_and_usage" => {
                             dispatch_action_in_new_or_existing_window(
                                 primary_window_id,
