@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-43).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-45).
 
 ---
 
@@ -60,8 +60,10 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Removed unreachable `CloudConversationStorageWidget` in privacy_page (struct + impl + push + action variant + handler + helper method) (cleanup-41: -133 net lines)
 - Deleted dead `ExecutionProfileView`: 829-line file + the `profile_views` field, `create_profile_views`/`refresh_profile_views` methods, and 3 callsites in `ai_page.rs` (cleanup-42: -875 net lines)
 - Deleted the entire AI Settings page: 6918-line `ai_page.rs` + 93-line `ai_page_tests.rs`, the `mod ai_page` declaration, every cross-file reference to `AISettingsPageView`/`AISettingsPageAction`/`AISettingsPageEvent`/`AISubpage` (mod.rs + settings_page.rs), the `SettingsPageViewHandle::AI` variant + 2 dispatch arms, the `SettingsAction::AI` variant + dispatch, the entire `handle_ai_page_event` dispatcher, the `cli_agent_settings_widget_id` re-export, the `OpenCodingAgentSettings` action body in agent_input_footer, plus 4 settings_page.rs helper functions only used by ai_page.rs (`render_full_pane_width_ai_button`, `render_custom_size_header`, `render_body_item_label_with_icon`, `render_settings_info_banner`). 4 ai/* subtree items annotated `#[allow(dead_code)]` (cleanup-43: -7286 net lines)
+- Deleted unreachable Warp Drive settings page (`warp_drive_page.rs`, 254 lines) + plumbing in mod.rs/settings_page.rs (cleanup-44: -290 net lines)
+- Deleted unreachable Platform / OzCloudAPIKeys settings page: `platform_page.rs` (726 lines) + the entire `platform/` subdir (`create_api_key_modal.rs` 731 lines, `expire_api_key_button.rs` 128 lines, mod.rs), plus mod.rs/settings_page.rs plumbing. AuthClient's API-key trait methods annotated `#[allow(dead_code)]` (cleanup-45: -1625 net lines)
 
-**Total stripped: ~14000+ lines of dead code, 11 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~15800+ lines of dead code, 15 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
@@ -73,7 +75,7 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Master is clean: `cargo check --workspace` → zero errors, zero warnings
 - App builds & runs: `cargo run --bin warp-oss`
 - Bundle ID `dev.warp.WarpOss`, data dir `~/Library/Application Support/dev.warp.WarpOss/` — fully isolated from the official Warp install
-- 30+ commits beyond upstream
+- 32+ commits beyond upstream
 
 ---
 
@@ -188,7 +190,7 @@ grep -rn "is_any_ai_enabled" app/src --include="*.rs" | grep -vE "/ai/|_test\.rs
 5. Pick a target from "What's left to strip" above.
 6. Follow the workflow loop.
 
-If you want a single concrete next step: try one of the other unreachable settings pages. Likely candidates by size: `teams_page.rs` (4097 lines), `billing_and_usage_page.rs` (3697 lines), `referrals_page.rs` (1132 lines), `warp_drive_page.rs` (254 lines, smallest). Each follows the same pattern as cleanup-43 but with fewer cascading references.
+If you want a single concrete next step: try one of the remaining unreachable settings pages. By size: `teams_page.rs` (4097 lines), `billing_and_usage_page.rs` (3697 lines), `referrals_page.rs` (1132 lines). Each follows the cleanup-43/44/45 pattern: delete file, drop `mod` + `use`, drop SettingsAction variant, drop SettingsPageViewHandle variant + 2 dispatch arms (`update_page!` + `should_render`), drop page handle construction + subscribe + the SettingsPage::new entry, drop the event handler + the SettingsAction handler arm in the bottom dispatch. Watch for re-exports (e.g. `billing_and_usage_page::create_discount_badge` is used by terminal modals — would need a stub or to delete those callers too). The `referrals_page` deletion cascades into more files (workspace/action.rs ShowReferralSettingsPage variant, workspace/mod.rs binding, settings/main_page.rs button, resource_center/main_page.rs button), so plan that one carefully.
 
 If those feel too risky: there's plenty of small dead-code cleanup left around the codebase. Run `cargo check --workspace 2>&1 | grep "warning"` and fix what comes up. Or grep for `// strip(neuter):` and `let _ = ` and tidy the suppressions.
 
