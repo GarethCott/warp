@@ -257,13 +257,6 @@ impl SlashCommandDataSource {
                 .filter(|(_, command)| {
                     command.name != commands::ORCHESTRATE_NAME || is_orchestration_enabled
                 })
-                // The static `/feedback` command is an AI-off fallback for the richer bundled
-                // `feedback` skill. Hide it whenever the bundled skill will actually take over,
-                // matching the precedence used by `Workspace::send_feedback`.
-                .filter(|(_, command)| {
-                    command.name != commands::FEEDBACK.name
-                        || !crate::workspace::is_feedback_skill_available(ctx)
-                })
                 // /continue-locally only applies to cloud Oz conversations. Local conversations
                 // and non-Oz cloud runs (Claude, Gemini) are filtered out so the slash menu
                 // doesn't surface a no-op command.
