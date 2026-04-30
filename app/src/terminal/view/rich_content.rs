@@ -269,7 +269,6 @@ pub enum RichContentMetadata {
     },
     InlineAgentViewHeader,
     AgentViewZeroState,
-    TerminalViewZeroState,
     PluginInstructionsBlock,
     PendingUserQuery,
 }
@@ -300,7 +299,6 @@ impl TerminalView {
             Some(
                 RichContentMetadata::AgentViewEntry(_)
                     | RichContentMetadata::InlineAgentViewHeader
-                    | RichContentMetadata::TerminalViewZeroState
             )
         );
         let is_use_agent_footer = handle.id() == self.use_agent_footer.id();
