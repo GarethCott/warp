@@ -2183,7 +2183,7 @@ impl Workspace {
 
     pub(crate) fn show_session_config_modal(&mut self, ctx: &mut ViewContext<Self>) {
         // Configure the modal to hide Oz when AI is disabled.
-        let show_oz = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+        let show_oz = false;
         self.session_config_modal.view.update(ctx, |modal, ctx| {
             modal.body().update(ctx, |body, ctx| {
                 body.configure(show_oz);
@@ -2836,7 +2836,7 @@ impl Workspace {
         // Show the Warp AI warm welcome iff the user hasn't dismissed it nor interacted with Warp AI before.
         // Also, avoid showing it in integration tests to prevent interaction with other tests.
         let mut should_show_ai_assistant_warm_welcome: bool = !FeatureFlag::AgentMode.is_enabled()
-            && AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+            && false
             && !matches!(ChannelState::channel(), Channel::Integration)
             && ctx
                 .private_user_preferences()
@@ -6041,7 +6041,7 @@ impl Workspace {
     ) -> Vec<MenuItem<WorkspaceAction>> {
         let mut menu_items = vec![];
 
-        let is_any_ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+        let is_any_ai_enabled = false;
         let ai_settings = AISettings::as_ref(ctx);
         let effective_default = ai_settings.default_session_mode(ctx);
         let default_tab_config_path = ai_settings.default_tab_config_path().to_string();
@@ -7818,7 +7818,7 @@ impl Workspace {
     /// will respect the user's visibility preference (restored from workspace state).
     fn maybe_auto_open_conversation_list(&mut self, ctx: &mut ViewContext<Self>) {
         if !FeatureFlag::AgentViewConversationListView.is_enabled()
-            || !AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+            || !false
         {
             return;
         }
@@ -9315,7 +9315,7 @@ impl Workspace {
             .unwrap_or_else(|| repo_path.clone());
         let config_name = format!("Worktree: {repo_display_name}");
         // Use the user's default session mode to decide pane type.
-        let pane_type = if AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+        let pane_type = if false
             && AISettings::as_ref(ctx).default_session_mode(ctx) == DefaultSessionMode::Agent
         {
             "agent"
@@ -14734,7 +14734,7 @@ impl Workspace {
     }
 
     fn run_tab_config_skill(&mut self, path: &Path, ctx: &mut ViewContext<Self>) {
-        if !AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+        if !false {
             return;
         }
 
@@ -14992,7 +14992,7 @@ impl Workspace {
                         );
                     }
                     OpenWarpAI => {
-                        if !AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+                        if !false {
                             return;
                         }
 
@@ -18330,15 +18330,14 @@ impl Workspace {
         banner_fields
     }
 
-    fn render_settings_error_banner(&self, app: &AppContext) -> Option<WorkspaceBannerFields> {
+    fn render_settings_error_banner(&self, _app: &AppContext) -> Option<WorkspaceBannerFields> {
         if self.settings_error_banner_dismissed {
             return None;
         }
         let error = self.settings_file_error.as_ref()?;
         let (heading, description) = error.heading_and_description();
         let secondary_button =
-            AISettings::as_ref(app)
-                .is_any_ai_enabled(app)
+            false
                 .then(|| WorkspaceBannerButtonDetails {
                     text: "Fix with Oz".to_owned(),
                     action: WorkspaceAction::FixSettingsWithOz {
@@ -19627,7 +19626,7 @@ impl Workspace {
     fn compute_left_panel_views(ctx: &AppContext) -> Vec<ToolPanelView> {
         let mut views = vec![];
         if FeatureFlag::AgentViewConversationListView.is_enabled()
-            && AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+            && false
             && *AISettings::as_ref(ctx).show_conversation_history
         {
             views.push(ToolPanelView::ConversationListView);
@@ -20523,7 +20522,7 @@ impl TypedActionView for Workspace {
                 ctx.notify();
             }
             ToggleAgentManagementView => {
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+                if false
                     && FeatureFlag::AgentManagementView.is_enabled()
                 {
                     let is_open = !self.current_workspace_state.is_agent_management_view_open;
@@ -20544,7 +20543,7 @@ impl TypedActionView for Workspace {
                 }
             }
             ViewAgentRunsForEnvironment { environment_id } => {
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+                if false
                     && FeatureFlag::AgentManagementView.is_enabled()
                 {
                     self.set_is_agent_management_view_open(true, ctx);
@@ -20599,7 +20598,7 @@ impl TypedActionView for Workspace {
                 self.add_terminal_pane_in_ai_mode(*zero_state_prompt_suggestion_type, ctx);
             }
             OpenCloudAgentSetupGuide => {
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+                if false
                     && FeatureFlag::AgentManagementView.is_enabled()
                 {
                     self.set_is_agent_management_view_open(true, ctx);
@@ -21734,7 +21733,7 @@ impl View for Workspace {
             context.set.insert("IsOnline");
         }
 
-        if AISettings::as_ref(app).is_any_ai_enabled(app) {
+        if false {
             context.set.insert(flags::IS_ANY_AI_ENABLED);
         }
 
@@ -21805,7 +21804,7 @@ impl View for Workspace {
             context.set.insert(flags::ENABLE_WARP_DRIVE);
         }
 
-        if AISettings::as_ref(app).is_any_ai_enabled(app)
+        if false
             && *AISettings::as_ref(app).show_conversation_history
         {
             context.set.insert(flags::SHOW_CONVERSATION_HISTORY);
@@ -22813,7 +22812,7 @@ impl View for Workspace {
         }
 
         if !FeatureFlag::AgentMode.is_enabled()
-            && AISettings::as_ref(app).is_any_ai_enabled(app)
+            && false
             && self.should_show_ai_assistant_warm_welcome
             && !self.current_workspace_state.is_changelog_modal_open
             && !self.current_workspace_state.is_resource_center_open
