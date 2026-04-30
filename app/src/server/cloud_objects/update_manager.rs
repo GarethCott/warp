@@ -279,6 +279,7 @@ impl UpdateManager {
     }
 
     /// Remove team-owned objects in response to leaving a team.
+    #[allow(dead_code)]
     pub fn remove_team_objects(&mut self, left_team_uid: ServerId, ctx: &mut ModelContext<Self>) {
         let cloud_model = CloudModel::handle(ctx);
         let objects_to_remove = cloud_model
