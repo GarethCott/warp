@@ -194,9 +194,12 @@ pub trait AuthClient: 'static + Send + Sync {
         details: &oauth2::StandardDeviceAuthorizationResponse,
         timeout: Duration,
     ) -> StdResult<FirebaseToken, UserAuthenticationError>;
-    // API Keys
+    // API Keys (callers removed with platform_page in cleanup-45; kept on the
+    // trait so the trait + its mock impls keep the same shape)
+    #[allow(dead_code)]
     async fn list_api_keys(&self) -> Result<Vec<ApiKeyProperties>>;
 
+    #[allow(dead_code)]
     async fn create_api_key(
         &self,
         name: String,
@@ -204,6 +207,7 @@ pub trait AuthClient: 'static + Send + Sync {
         expires_at: Option<warp_graphql::scalars::Time>,
     ) -> Result<GenerateApiKeyResult>;
 
+    #[allow(dead_code)]
     async fn expire_api_key(&self, key_uid: &ApiKeyUid) -> Result<ExpireApiKeyResult>;
 
     /// Returns a cached ambient workload token, or issues a new one if not present or expired.
