@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-38).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-43).
 
 ---
 
@@ -55,8 +55,13 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Removed dead AI Autofill subsystem from workflow editor: render block, `WorkflowAction::AiAssist`, `issue_request`/`display_upgrade_error`/`populate_missing_field_with_suggestion`/`is_ai_assist_button_disabled` methods, `AiAssistState` enum, fields, mouse-state handles, constants (cleanup-36: -286 net lines)
 - Deleted AgentAssisted environment modal subsystem: 774-line modal file + 364-line companion tests file, modal field/handle/open helper in `environments_page.rs`, `OpenAgentAssistedCreateModal` action variant, empty-state "Launch agent" button row, `SettingsPageEvent::AgentAssistedEnvironmentModalToggled` variant + 3 dispatch arms, `pane_with_open_agent_assisted_environment_modal` field + init + cleanup blocks + tab-level render block, the matching arm in environment_management_pane (cleanup-37: -1298 net lines)
 - Removed orphan terminal-zero-state + input-message-bar settings: `show_terminal_zero_state_block` field + `should_show_zero_state_block()` getter, `show_terminal_input_message_bar` field + `is_terminal_input_message_bar_enabled()` accessor, `SHOW_TERMINAL_INPUT_MESSAGE_LINE_FLAG` constant + workspace flag insertion, two `FeaturesPageAction` variants + their telemetry/handler arms, two AgentView-gated widget pushes, the `ToggleShowTerminalInputMessageLine` binding pair, and both widget structs/impls (cleanup-38: -188 net lines)
+- Dropped 3 dead AI/voice context flag writers in `Workspace::keymap_context` (`IS_ANY_AI_ENABLED`, `IS_ACTIVE_AI_ENABLED`, `IS_VOICE_INPUT_ENABLED`) — all of their gates ultimately reach `is_any_ai_enabled()` which is `false` (cleanup-39: -13 net lines)
+- Dropped 7 more dead AI context flag writers in the same fn (`AI_INPUT_AUTODETECTION_FLAG`, `NLD_IN_TERMINAL_FLAG`, `INTELLIGENT_AUTOSUGGESTIONS_FLAG`, `PROMPT_SUGGESTIONS_FLAG`, `CODE_SUGGESTIONS_FLAG`, `NATURAL_LANGUAGE_AUTOSUGGESTIONS_FLAG`, `SHARED_BLOCK_TITLE_GENERATION_FLAG`) (cleanup-40: -27 net lines)
+- Removed unreachable `CloudConversationStorageWidget` in privacy_page (struct + impl + push + action variant + handler + helper method) (cleanup-41: -133 net lines)
+- Deleted dead `ExecutionProfileView`: 829-line file + the `profile_views` field, `create_profile_views`/`refresh_profile_views` methods, and 3 callsites in `ai_page.rs` (cleanup-42: -875 net lines)
+- Deleted the entire AI Settings page: 6918-line `ai_page.rs` + 93-line `ai_page_tests.rs`, the `mod ai_page` declaration, every cross-file reference to `AISettingsPageView`/`AISettingsPageAction`/`AISettingsPageEvent`/`AISubpage` (mod.rs + settings_page.rs), the `SettingsPageViewHandle::AI` variant + 2 dispatch arms, the `SettingsAction::AI` variant + dispatch, the entire `handle_ai_page_event` dispatcher, the `cli_agent_settings_widget_id` re-export, the `OpenCodingAgentSettings` action body in agent_input_footer, plus 4 settings_page.rs helper functions only used by ai_page.rs (`render_full_pane_width_ai_button`, `render_custom_size_header`, `render_body_item_label_with_icon`, `render_settings_info_banner`). 4 ai/* subtree items annotated `#[allow(dead_code)]` (cleanup-43: -7286 net lines)
 
-**Total stripped: ~4900+ lines of dead code, 9 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~14000+ lines of dead code, 11 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
@@ -68,7 +73,7 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Master is clean: `cargo check --workspace` → zero errors, zero warnings
 - App builds & runs: `cargo run --bin warp-oss`
 - Bundle ID `dev.warp.WarpOss`, data dir `~/Library/Application Support/dev.warp.WarpOss/` — fully isolated from the official Warp install
-- 24+ commits beyond upstream
+- 30+ commits beyond upstream
 
 ---
 
@@ -76,15 +81,8 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 
 ### Easy / next tier (hours, not days)
 
-**1. AI Settings UI surgery**
-The biggest remaining cluster of dead code. Three files:
-- `app/src/settings_view/ai_page.rs` (~5500 lines, 110 `is_any_ai_enabled` calls)
-- `app/src/settings_view/execution_profile_view.rs` (~1500 lines, 27 calls)
-- `app/src/settings/ai.rs` (~3000 lines, 22 calls)
-
-These are the AI Settings page and its execution profile editor. The page is **unreachable from the trimmed sidebar** but still compiled. To strip:
-- **Option A (clean delete):** Delete all three files + clean up `settings_view/mod.rs` (remove `mod ai_page;`, `mod execution_profile_view;`, the `ai_page_handle`, the `AISettingsPageView` references, the `AI(...)` action variant, etc.). Will cascade into many other files via `AISettings`/`AISettingsChangedEvent` imports. Probably 4-8 hours of careful surgery.
-- **Option B (leave it):** It's unreachable, so leaving it has no functional cost. Just bigger binary.
+**1. AI Settings UI surgery — DONE in cleanups 42 + 43**
+The page (`ai_page.rs`, 6918 lines) and its companion editor (`execution_profile_view.rs`, 829 lines) have been deleted entirely. What remains in the AI cluster is the model layer in `app/src/settings/ai.rs` (~3000 lines, 22 `is_any_ai_enabled` calls). That model is still consumed by code outside ai_page (`workspace/view.rs`, `welcome_palette/view.rs`, `mcp_servers/list_page.rs`, the dead-on-arrival ai/ subtree, etc.), so removing it would cascade widely. Treat it as a Tier-4-style operation, not an iso target.
 
 **2. Remaining `is_any_ai_enabled` callsites**
 Inside agent subtree (`app/src/ai/`) and test files. Already gated by `is_any_ai_enabled = false` plus the agent code is dead-on-arrival. Touch only as part of bigger surgery.
@@ -190,7 +188,7 @@ grep -rn "is_any_ai_enabled" app/src --include="*.rs" | grep -vE "/ai/|_test\.rs
 5. Pick a target from "What's left to strip" above.
 6. Follow the workflow loop.
 
-If you want a single concrete next step: **try AI Settings UI surgery** (item #1 in "What's left"). The agent-assisted modal companion (`agent_assisted_environment_modal*.rs`) is already gone as of cleanup-37. The next iso-ish target is `execution_profile_view.rs`, which is referenced by `ai_page.rs` but smaller, and after that `ai_page.rs` itself.
+If you want a single concrete next step: try one of the other unreachable settings pages. Likely candidates by size: `teams_page.rs` (4097 lines), `billing_and_usage_page.rs` (3697 lines), `referrals_page.rs` (1132 lines), `warp_drive_page.rs` (254 lines, smallest). Each follows the same pattern as cleanup-43 but with fewer cascading references.
 
 If those feel too risky: there's plenty of small dead-code cleanup left around the codebase. Run `cargo check --workspace 2>&1 | grep "warning"` and fix what comes up. Or grep for `// strip(neuter):` and `let _ = ` and tidy the suppressions.
 
