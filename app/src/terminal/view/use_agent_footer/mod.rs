@@ -288,7 +288,7 @@ impl TerminalView {
     /// Reads the CLI agent from the sessions model (single source of truth).
     pub(super) fn should_render_use_agent_footer(
         &self,
-        model: &TerminalModel,
+        _model: &TerminalModel,
         app: &AppContext,
     ) -> bool {
         let ai_settings = AISettings::as_ref(app);
@@ -303,7 +303,6 @@ impl TerminalView {
             return true;
         }
 
-        let active_block = model.block_list().active_block();
         let cli_agent = CLIAgentSessionsModel::as_ref(app)
             .session(self.view_id)
             .map(|s| s.agent);
@@ -321,29 +320,9 @@ impl TerminalView {
             return true;
         }
 
-        // All other footer variants require the global AI setting to be on.
-        if !ai_settings.is_any_ai_enabled(app) {
-            return false;
-        }
-
-        if !active_block.is_eligible_for_agent_handoff() {
-            // For regular commands (not agent handoff), check the "Use Agent" footer setting.
-            // Agent handoff blocks always show the footer regardless of this setting.
-            let is_user_command = active_block.requested_command_action_id().is_none();
-            if is_user_command
-                && (self.use_agent_footer.as_ref(app).did_user_dismiss()
-                    || !*ai_settings.should_render_use_agent_footer_for_user_commands)
-            {
-                return false;
-            }
-        }
-
-        // Don't show the use agent footer during LRCs in setup phase of ambient agent sessions.
-        let is_shared_ambient_session = model.is_shared_ambient_agent_session();
-
-        !self.is_input_box_visible(model, app)
-            && ((active_block.is_eligible_to_tag_in_agent() && !is_shared_ambient_session)
-                || active_block.is_eligible_for_agent_handoff())
+        // All other footer variants require the global AI setting to be on,
+        // which is always disabled in this fork.
+        false
     }
 
     /// Returns the detected CLI agent for the active block's command, if any.
