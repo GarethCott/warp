@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-36).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-37).
 
 ---
 
@@ -53,8 +53,9 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Deleted dead "Add as context" selection tooltip in code editor + `Editor::is_selecting` (cleanup-34: -115 net lines)
 - Dropped `/update-tab-config` skill button + its full event chain across 7 files (footer action/event, local code editor event, code view event, pane group event, workspace handler) (cleanup-35: -108 net lines)
 - Removed dead AI Autofill subsystem from workflow editor: render block, `WorkflowAction::AiAssist`, `issue_request`/`display_upgrade_error`/`populate_missing_field_with_suggestion`/`is_ai_assist_button_disabled` methods, `AiAssistState` enum, fields, mouse-state handles, constants (cleanup-36: -286 net lines)
+- Deleted AgentAssisted environment modal subsystem: 774-line modal file + 364-line companion tests file, modal field/handle/open helper in `environments_page.rs`, `OpenAgentAssistedCreateModal` action variant, empty-state "Launch agent" button row, `SettingsPageEvent::AgentAssistedEnvironmentModalToggled` variant + 3 dispatch arms, `pane_with_open_agent_assisted_environment_modal` field + init + cleanup blocks + tab-level render block, the matching arm in environment_management_pane (cleanup-37: -1298 net lines)
 
-**Total stripped: ~3400+ lines of dead code, 7 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~4700+ lines of dead code, 9 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
@@ -67,7 +68,7 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Master is clean: `cargo check --workspace` → zero errors, zero warnings
 - App builds & runs: `cargo run --bin warp-oss`
 - Bundle ID `dev.warp.WarpOss`, data dir `~/Library/Application Support/dev.warp.WarpOss/` — fully isolated from the official Warp install
-- 22+ commits beyond upstream
+- 23+ commits beyond upstream
 
 ---
 
@@ -82,7 +83,7 @@ The biggest remaining cluster of dead code. Three files:
 - `app/src/settings/ai.rs` (~3000 lines, 22 calls)
 
 These are the AI Settings page and its execution profile editor. The page is **unreachable from the trimmed sidebar** but still compiled. To strip:
-- **Option A (clean delete):** Delete all three files + `agent_assisted_environment_modal*.rs` + clean up `settings_view/mod.rs` (remove `mod ai_page;`, `mod execution_profile_view;`, the `ai_page_handle`, the `AISettingsPageView` references, the `AI(...)` action variant, etc.). Will cascade into many other files via `AISettings`/`AISettingsChangedEvent` imports. Probably 4-8 hours of careful surgery.
+- **Option A (clean delete):** Delete all three files + clean up `settings_view/mod.rs` (remove `mod ai_page;`, `mod execution_profile_view;`, the `ai_page_handle`, the `AISettingsPageView` references, the `AI(...)` action variant, etc.). Will cascade into many other files via `AISettings`/`AISettingsChangedEvent` imports. Probably 4-8 hours of careful surgery.
 - **Option B (leave it):** It's unreachable, so leaving it has no functional cost. Just bigger binary.
 
 **2. Remaining `is_any_ai_enabled` callsites**
@@ -189,7 +190,7 @@ grep -rn "is_any_ai_enabled" app/src --include="*.rs" | grep -vE "/ai/|_test\.rs
 5. Pick a target from "What's left to strip" above.
 6. Follow the workflow loop.
 
-If you want a single concrete next step: **try AI Settings UI surgery** (item #1 in "What's left"). Start with deleting `app/src/settings_view/agent_assisted_environment_modal*.rs` (small, isolated). Then tackle the bigger files one at a time.
+If you want a single concrete next step: **try AI Settings UI surgery** (item #1 in "What's left"). The agent-assisted modal companion (`agent_assisted_environment_modal*.rs`) is already gone as of cleanup-37. The next iso-ish target is `execution_profile_view.rs`, which is referenced by `ai_page.rs` but smaller, and after that `ai_page.rs` itself.
 
 If those feel too risky: there's plenty of small dead-code cleanup left around the codebase. Run `cargo check --workspace 2>&1 | grep "warning"` and fix what comes up. Or grep for `// strip(neuter):` and `let _ = ` and tidy the suppressions.
 
