@@ -12,6 +12,5 @@ pub mod server_api;
 pub mod sync_queue;
 pub mod telemetry;
 pub(crate) mod telemetry_ext;
-pub mod voice_transcriber;
 
 pub use warp_core::operating_system_info::OperatingSystemInfo;
