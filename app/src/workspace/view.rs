@@ -19258,33 +19258,6 @@ impl Workspace {
         }
 
         let ai_settings = AISettings::as_ref(app);
-        if ai_settings.is_ai_autodetection_enabled(app) {
-            context.set.insert(flags::AI_INPUT_AUTODETECTION_FLAG);
-        }
-        if ai_settings.is_nld_in_terminal_enabled(app) {
-            context.set.insert(flags::NLD_IN_TERMINAL_FLAG);
-        }
-        if ai_settings.is_intelligent_autosuggestions_enabled(app) {
-            context.set.insert(flags::INTELLIGENT_AUTOSUGGESTIONS_FLAG);
-        }
-        if ai_settings.is_prompt_suggestions_enabled(app) {
-            context.set.insert(flags::PROMPT_SUGGESTIONS_FLAG);
-        }
-        if ai_settings.is_code_suggestions_enabled(app) {
-            context.set.insert(flags::CODE_SUGGESTIONS_FLAG);
-        }
-        if ai_settings.is_natural_language_autosuggestions_enabled(app) {
-            context
-                .set
-                .insert(flags::NATURAL_LANGUAGE_AUTOSUGGESTIONS_FLAG);
-        }
-
-        if ai_settings.is_shared_block_title_generation_enabled(app) {
-            context
-                .set
-                .insert(flags::SHARED_BLOCK_TITLE_GENERATION_FLAG);
-        }
-
         if *ai_settings.should_show_oz_updates_in_zero_state.value() {
             context
                 .set
