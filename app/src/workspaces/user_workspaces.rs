@@ -454,20 +454,9 @@ impl UserWorkspaces {
             })
     }
 
-    /// Whether voice input should be toggleable for the current user, based on the active policies.
-    /// Note that the value may be incorrect if called before the team's billing metadata has been fetched.
-    /// If voice input support is not compiled into this build, always returns `false`.
+    /// strip(neuter): voice input is disabled in this fork.
     pub fn is_voice_enabled(&self) -> bool {
-        cfg!(feature = "voice_input")
-            && self
-                .current_team()
-                // If the user has no team, they can toggle Voice (no restrictions).
-                .is_none_or(|team| {
-                    team.billing_metadata
-                        .tier
-                        .warp_ai_policy
-                        .is_some_and(|policy| policy.is_voice_enabled)
-                })
+        false
     }
 
     /// Whether BYO API key is enabled for the current user, based on the active policies.
