@@ -83,7 +83,6 @@ mod code_page;
 mod delete_environment_confirmation_dialog;
 mod directory_color_add_picker;
 pub(crate) mod environments_page;
-mod execution_profile_view;
 mod features;
 mod features_page;
 pub mod keybindings;

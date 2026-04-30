@@ -72,7 +72,6 @@ use warpui::{
     ViewHandle,
 };
 
-use super::execution_profile_view::{ExecutionProfileView, ExecutionProfileViewEvent};
 use super::settings_page::{render_custom_size_header, render_settings_info_banner};
 use super::{
     flags,
@@ -449,8 +448,6 @@ pub struct AISettingsPageView {
     #[cfg(feature = "local_fs")]
     conversation_layout_dropdown: ViewHandle<Dropdown<AISettingsPageAction>>,
 
-    // Profile views
-    profile_views: Vec<ViewHandle<ExecutionProfileView>>,
     add_profile_button: ViewHandle<ActionButton>,
 }
 
@@ -773,9 +770,7 @@ impl AISettingsPageView {
             |me, _, event, ctx| {
                 match event {
                     AIExecutionProfilesModelEvent::ProfileCreated
-                    | AIExecutionProfilesModelEvent::ProfileDeleted => {
-                        me.refresh_profile_views(ctx);
-                    }
+                    | AIExecutionProfilesModelEvent::ProfileDeleted => {}
                     AIExecutionProfilesModelEvent::ProfileUpdated(_) => {
                         me.refresh_all_execution_profile_ui(ctx);
                         me.reset_execution_profile_mouse_state_handles(ctx);
@@ -1330,8 +1325,6 @@ impl AISettingsPageView {
             Self::refresh_coding_model_menu(&me.coding_model_dropdown, ctx);
         });
 
-        let profile_views = Self::create_profile_views(ctx);
-
         let add_profile_button = ctx.add_typed_action_view(|_| {
             ActionButton::new("Add Profile", SecondaryTheme)
                 .with_icon(Icon::Plus)
@@ -1426,7 +1419,6 @@ impl AISettingsPageView {
             thinking_display_mode_dropdown,
             #[cfg(feature = "local_fs")]
             conversation_layout_dropdown,
-            profile_views,
             add_profile_button,
         }
     }
@@ -2047,32 +2039,6 @@ impl AISettingsPageView {
         ctx: &mut ViewContext<Self>,
     ) {
         Self::refresh_menu_dropdown(menu, AISettingsPageAction::AddToMCPAllowlist, ctx);
-    }
-
-    fn create_profile_views(ctx: &mut ViewContext<Self>) -> Vec<ViewHandle<ExecutionProfileView>> {
-        let profiles_model = AIExecutionProfilesModel::as_ref(ctx);
-        let profile_ids = profiles_model.get_all_profile_ids();
-
-        profile_ids
-            .iter()
-            .map(|&profile_id| {
-                let profile_view =
-                    ctx.add_typed_action_view(|ctx| ExecutionProfileView::new(profile_id, ctx));
-
-                ctx.subscribe_to_view(&profile_view, move |_me, _, event, ctx| match event {
-                    ExecutionProfileViewEvent::EditProfile => {
-                        ctx.emit(AISettingsPageEvent::OpenExecutionProfileEditor(profile_id));
-                    }
-                });
-
-                profile_view
-            })
-            .collect()
-    }
-
-    fn refresh_profile_views(&mut self, ctx: &mut ViewContext<Self>) {
-        let new_profile_views = Self::create_profile_views(ctx);
-        self.profile_views = new_profile_views;
     }
 
     fn refresh_mcp_denylist_dropdown(
@@ -2909,7 +2875,6 @@ impl TypedActionView for AISettingsPageView {
                     .update(ctx, |model, ctx| model.create_profile(ctx));
 
                 if let Some(profile_id) = new_profile_id {
-                    self.profile_views = Self::create_profile_views(ctx);
                     ctx.emit(AISettingsPageEvent::OpenExecutionProfileEditor(profile_id));
                 }
                 ctx.notify();
@@ -4077,15 +4042,7 @@ impl AgentsWidget {
             .with_margin_bottom(12.0)
             .finish();
 
-        let mut profile_elements = vec![profiles_header];
-
-        for profile_view in &view.profile_views {
-            profile_elements.push(
-                Container::new(ChildView::new(profile_view).finish())
-                    .with_margin_bottom(8.)
-                    .finish(),
-            );
-        }
+        let profile_elements = vec![profiles_header];
 
         Flex::column().with_children(profile_elements).finish()
     }
