@@ -2401,11 +2401,7 @@ impl TypedActionView for AgentInputFooter {
                 ctx.emit(AgentInputFooterEvent::StopRemoteControl);
             }
             AgentInputFooterAction::OpenCodingAgentSettings => {
-                #[cfg(not(target_family = "wasm"))]
-                ctx.dispatch_typed_action_deferred(WorkspaceAction::ScrollToSettingsWidget {
-                    page: SettingsSection::ThirdPartyCLIAgents,
-                    widget_id: crate::settings_view::cli_agent_settings_widget_id(),
-                });
+                // strip(neuter): AI settings page deleted in this fork.
             }
             AgentInputFooterAction::ShowContextMenu { position } => {
                 ctx.emit(AgentInputFooterEvent::ShowContextMenu {

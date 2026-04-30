@@ -142,6 +142,7 @@ pub struct BlocklistAIPermissions {
     temporary_file_permissions: HashMap<AIConversationId, HashSet<PathBuf>>,
 }
 
+#[allow(dead_code)]
 impl BlocklistAIPermissions {
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
         // Migrate the old `AgentModeAutoReadFiles` setting to the new [`AgentModeCodingPermissionsType`].
