@@ -12,7 +12,6 @@ use warpui::r#async::{SpawnedFutureHandle, Timer};
 use regex::Regex;
 use settings::Setting as _;
 use warp_core::context_flag::ContextFlag;
-use warp_core::features::FeatureFlag;
 use warp_core::ui::theme::WarpTheme;
 use warpui::elements::{
     Align, ChildAnchor, ChildView, ConstrainedBox, Container, CornerRadius, CrossAxisAlignment,
@@ -47,13 +46,13 @@ use crate::{
     channel::ChannelState,
     report_if_error, send_telemetry_from_ctx,
     server::telemetry::TelemetryEvent,
-    settings::{AISettings, PrivacySettings},
+    settings::PrivacySettings,
     terminal::safe_mode_settings::{SafeModeEnabled, SafeModeSettings},
     ui_components::icons::Icon,
     util::links::PRIVACY_POLICY_URL,
     workspaces::{
         user_workspaces::UserWorkspaces,
-        workspace::{AdminEnablementSetting, CustomerType, UgcCollectionEnablementSetting},
+        workspace::{CustomerType, UgcCollectionEnablementSetting},
     },
 };
 
@@ -241,7 +240,6 @@ impl PrivacyPageView {
             Box::new(SecretRedactionWidget::default()),
             Box::new(AppAnalyticsWidget::default()),
             Box::new(CrashReportsWidget::default()),
-            Box::new(CloudConversationStorageWidget::default()),
         ];
         if ContextFlag::NetworkLogConsole.is_enabled() {
             widgets.push(Box::new(NetworkLogWidget::default()));
@@ -323,17 +321,6 @@ impl PrivacyPageView {
             .is_crash_reporting_enabled;
         ctx.update_model(&privacy_settings_handle, |privacy_settings, ctx| {
             privacy_settings.set_is_crash_reporting_enabled(!old_value, ctx);
-        });
-        ctx.notify();
-    }
-
-    fn toggle_cloud_conversation_storage(&mut self, ctx: &mut ViewContext<Self>) {
-        let privacy_settings_handle = PrivacySettings::handle(ctx);
-        let old_value = privacy_settings_handle
-            .as_ref(ctx)
-            .is_cloud_conversation_storage_enabled;
-        ctx.update_model(&privacy_settings_handle, |privacy_settings, ctx| {
-            privacy_settings.set_is_cloud_conversation_storage_enabled(!old_value, ctx);
         });
         ctx.notify();
     }
@@ -503,7 +490,6 @@ pub enum PrivacyPageAction {
     SetSecretDisplayMode(SecretDisplayMode),
     ToggleTelemetry,
     ToggleCrashReporting,
-    ToggleCloudConversationStorage,
     LaunchNetworkLogging,
     RemoveCustomRegex(usize),
     OpenDataManagementWebpage,
@@ -584,9 +570,6 @@ impl TypedActionView for PrivacyPageView {
             }
             PrivacyPageAction::ToggleTelemetry => self.toggle_telemetry(ctx),
             PrivacyPageAction::ToggleCrashReporting => self.toggle_crash_reporting(ctx),
-            PrivacyPageAction::ToggleCloudConversationStorage => {
-                self.toggle_cloud_conversation_storage(ctx)
-            }
             PrivacyPageAction::LaunchNetworkLogging => self.launch_network_logging(ctx),
             PrivacyPageAction::RemoveCustomRegex(idx) => {
                 self.queue_regex_removal(*idx, ctx);
@@ -1651,120 +1634,6 @@ impl SettingsWidget for CrashReportsWidget {
                     .paragraph(
                         "Crash reports assist with debugging and stability improvements."
                             .to_owned(),
-                    )
-                    .with_style(UiComponentStyles {
-                        font_color: Some(
-                            appearance
-                                .theme()
-                                .sub_text_color(appearance.theme().surface_2())
-                                .into_solid(),
-                        ),
-                        margin: Some(
-                            Coords::default()
-                                .top(styles::DESCRIPTION_NEGATIVE_MARGIN_OFFSET)
-                                .bottom(styles::DESCRIPTION_MARGIN_BOTTOM),
-                        ),
-                        ..Default::default()
-                    })
-                    .build()
-                    .finish(),
-            )
-            .finish()
-    }
-}
-
-#[derive(Default)]
-struct CloudConversationStorageWidget {
-    switch_state: SwitchStateHandle,
-}
-
-impl SettingsWidget for CloudConversationStorageWidget {
-    type View = PrivacyPageView;
-
-    fn search_terms(&self) -> &str {
-        "sync cloud conversation store storage ai agent"
-    }
-
-    fn should_render(&self, app: &AppContext) -> bool {
-        if !FeatureFlag::CloudConversations.is_enabled() {
-            return false;
-        }
-
-        // Hide the toggle entirely when AI is disabled: the setting has no
-        // effect without AI (no agent conversations are produced), so showing
-        // it is confusing.
-        if !AISettings::as_ref(app).is_any_ai_enabled(app) {
-            return false;
-        }
-
-        let privacy_settings = PrivacySettings::as_ref(app);
-        !privacy_settings.is_telemetry_force_enabled()
-    }
-
-    fn render(
-        &self,
-        _view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let ui_builder = appearance.ui_builder();
-        let privacy_settings = PrivacySettings::as_ref(app);
-        let org_setting =
-            UserWorkspaces::as_ref(app).get_cloud_conversation_storage_enablement_setting();
-
-        let (toggle_state, is_checked) = match org_setting {
-            AdminEnablementSetting::Enable => (ToggleState::Disabled, true),
-            AdminEnablementSetting::Disable => (ToggleState::Disabled, false),
-            AdminEnablementSetting::RespectUserSetting => (
-                ToggleState::Enabled,
-                privacy_settings.is_cloud_conversation_storage_enabled,
-            ),
-        };
-
-        let switch = ui_builder
-            .switch(self.switch_state.clone())
-            .check(is_checked);
-        let switch = if matches!(toggle_state, ToggleState::Enabled) {
-            switch
-                .build()
-                .on_click(move |ctx, _, _| {
-                    ctx.dispatch_typed_action(PrivacyPageAction::ToggleCloudConversationStorage)
-                })
-                .finish()
-        } else {
-            switch
-                .with_tooltip(TooltipConfig {
-                    text: "This setting is managed by your organization.".to_string(),
-                    styles: ui_builder.default_tool_tip_styles(),
-                })
-                .disable()
-                .build()
-                .finish()
-        };
-
-        Flex::column()
-            .with_child(render_body_item::<PrivacyPageAction>(
-                "Store AI conversations in the cloud".into(),
-                None,
-                LocalOnlyIconState::Hidden,
-                toggle_state,
-                appearance,
-                switch,
-                None,
-            ))
-            .with_child(
-                ui_builder
-                    .paragraph(
-                        if is_checked {
-                            "Agent conversations can be shared with others and are retained \
-                            when you log in on different devices. This data is only stored \
-                            for product functionality, and Warp will not use it for analytics."
-                        } else {
-                            "Agent conversations are only stored locally on your machine, are \
-                            lost upon logout, and cannot be shared. Note: conversation data \
-                            for ambient agents are still stored in the cloud."
-                        }
-                        .to_owned(),
                     )
                     .with_style(UiComponentStyles {
                         font_color: Some(
