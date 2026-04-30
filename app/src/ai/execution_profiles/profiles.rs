@@ -281,6 +281,7 @@ impl AIExecutionProfilesModel {
         }
     }
 
+    #[allow(dead_code)]
     pub fn create_profile(&mut self, ctx: &mut ModelContext<Self>) -> Option<ClientProfileId> {
         let profile_id = ClientProfileId::new();
 

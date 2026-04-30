@@ -44,6 +44,7 @@ pub struct AgentToolbarEditorModal {
     is_dirty: bool,
 }
 
+#[allow(dead_code)]
 pub struct AgentToolbarInlineEditor {
     mouse_handles: ChipEditorMouseHandles,
     chip_configurator: ChipConfigurator,
@@ -60,6 +61,7 @@ pub enum AgentToolbarEditorAction {
     Activate,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
 pub enum AgentToolbarInlineEditorAction {
     Chip(ChipConfiguratorAction),
@@ -129,6 +131,7 @@ fn toolbar_items_match_defaults(
     default_left.as_slice() == left && default_right.as_slice() == right
 }
 
+#[allow(dead_code)]
 impl AgentToolbarInlineEditor {
     pub fn new(mode: AgentToolbarEditorMode, ctx: &mut ViewContext<Self>) -> Self {
         let mut editor = Self {
