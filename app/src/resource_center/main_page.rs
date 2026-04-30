@@ -1,5 +1,4 @@
 use crate::{
-    auth::AuthStateProvider,
     changelog_model::ChangelogModel,
     channel::ChannelState,
     features::FeatureFlag,
@@ -7,21 +6,15 @@ use crate::{
     send_telemetry_from_ctx,
     server::telemetry::TelemetryEvent,
     settings::Settings,
-    themes::theme::{Blend, Fill as FillTheme},
 };
-use pathfinder_geometry::vector::vec2f;
 use warpui::{
     elements::{
-        Align, ClippedScrollStateHandle, ClippedScrollable, Container, CornerRadius, Element,
-        Empty, Fill, Flex, Hoverable, Icon, MainAxisAlignment, MainAxisSize, MouseStateHandle,
-        ParentElement, Radius, Shrinkable,
+        Align, ClippedScrollStateHandle, ClippedScrollable, Container, Element, Empty, Fill, Flex,
+        Hoverable, MainAxisSize, MouseStateHandle, ParentElement, Shrinkable,
     },
     platform::Cursor,
     presenter::ChildView,
-    ui_components::{
-        button::{ButtonVariant, TextAndIcon, TextAndIconAlignment},
-        components::{Coords, UiComponent, UiComponentStyles},
-    },
+    ui_components::components::{UiComponent, UiComponentStyles},
     AppContext, Entity, EntityId, ModelHandle, SingletonEntity, TypedActionView, View, ViewContext,
     ViewHandle, WindowId,
 };
@@ -32,19 +25,15 @@ use super::{
     section_views::{
         feature_section::FeatureSectionEvent, SectionViewHandle, BUTTON_PADDING, DETAIL_FONT_SIZE,
         FOOTER_ICON_SIZE, SCROLLBAR_OFFSET, SCROLLBAR_WIDTH, SECTION_SPACING,
-        SECTION_SPACING_BOTTOM,
     },
     sections::sections,
     ChangelogSectionView, ContentSectionData, ContentSectionView, FeatureSection,
     FeatureSectionData, FeatureSectionView, Section, TipsCompleted,
 };
 
-const SEND_SVG_PATH: &str = "bundled/svg/send.svg";
-
 #[derive(Default)]
 struct MouseStateHandles {
     copy_version: MouseStateHandle,
-    invite_people: MouseStateHandle,
     skip_tips: MouseStateHandle,
 }
 
@@ -344,77 +333,6 @@ impl ResourceCenterMainView {
         .finish()
     }
 
-    fn render_invite_button(&self, appearance: &Appearance) -> Box<dyn Element> {
-        let default_styles = UiComponentStyles {
-            font_size: Some(DETAIL_FONT_SIZE),
-            font_family_id: Some(appearance.ui_font_family()),
-            font_color: Some(appearance.theme().accent().into()),
-            border_radius: Some(CornerRadius::with_all(Radius::Percentage(20.))),
-            border_width: Some(1.),
-            border_color: Some(appearance.theme().accent().into()),
-            padding: Some(Coords {
-                top: BUTTON_PADDING,
-                bottom: BUTTON_PADDING,
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-
-        let hovered_styles = UiComponentStyles {
-            background: Some(appearance.theme().accent().into()),
-            font_color: Some(
-                appearance
-                    .theme()
-                    .main_text_color(appearance.theme().accent())
-                    .into_solid(),
-            ),
-            ..default_styles
-        };
-
-        let clicked_color = appearance.theme().accent().blend(
-            &FillTheme::black().with_opacity(*appearance.theme().details().button_click_opacity()),
-        );
-        let clicked_styles = UiComponentStyles {
-            background: Some(clicked_color.into()),
-            border_color: Some(clicked_color.into()),
-            ..hovered_styles
-        };
-
-        Container::new(
-            appearance
-                .ui_builder()
-                .button_with_custom_styles(
-                    ButtonVariant::Outlined,
-                    self.button_mouse_states.invite_people.clone(),
-                    default_styles,
-                    Some(hovered_styles),
-                    Some(clicked_styles),
-                    None,
-                )
-                .with_text_and_icon_label(
-                    TextAndIcon::new(
-                        TextAndIconAlignment::IconFirst,
-                        "Invite a friend to Warp",
-                        Icon::new(SEND_SVG_PATH, appearance.theme().accent()),
-                        MainAxisSize::Max,
-                        MainAxisAlignment::Center,
-                        vec2f(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE),
-                    )
-                    .with_inner_padding(BUTTON_PADDING),
-                )
-                .build()
-                .on_click(|ctx, _, _| {
-                    ctx.dispatch_typed_action(WorkspaceAction::ShowReferralSettingsPage)
-                })
-                .finish(),
-        )
-        .with_margin_top(SECTION_SPACING)
-        .with_margin_bottom(SECTION_SPACING_BOTTOM)
-        .with_margin_left(SECTION_SPACING + SCROLLBAR_OFFSET)
-        .with_margin_right(SECTION_SPACING + SCROLLBAR_OFFSET)
-        .finish()
-    }
-
     fn render_skip_tips_button(&self, appearance: &Appearance) -> Box<dyn Element> {
         Container::new(
             Align::new(
@@ -507,18 +425,9 @@ impl View for ResourceCenterMainView {
     fn render(&self, app: &AppContext) -> Box<dyn Element> {
         let appearance = Appearance::as_ref(app);
         let body = self.render_body(appearance);
-        let invite_button = self.render_invite_button(appearance);
         let skip_tips = self.render_skip_tips_button(appearance);
 
         let mut main_page = Flex::column();
-
-        if !AuthStateProvider::as_ref(app)
-            .get()
-            .is_anonymous_or_logged_out()
-            && !FeatureFlag::AvatarInTabBar.is_enabled()
-        {
-            main_page = main_page.with_child(invite_button);
-        }
 
         if !self.tips_completed.as_ref(app).skipped_or_completed
             && !FeatureFlag::AvatarInTabBar.is_enabled()
