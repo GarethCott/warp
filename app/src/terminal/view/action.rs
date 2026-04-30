@@ -337,9 +337,6 @@ pub enum TerminalAction {
     SetInputModeAgent,
     /// Sets the input mode to Terminal Mode
     SetInputModeTerminal,
-    /// Toggle voice input for CLI agent footer (dispatched from alt screen/blocklist when footer is visible)
-    #[cfg(feature = "voice_input")]
-    ToggleCLIAgentVoiceInput(voice_input::VoiceInputToggledFrom),
 
     HyperlinkClick(HyperlinkUrl),
     AttemptLoginGatedFeature,
@@ -631,8 +628,6 @@ impl fmt::Debug for TerminalAction {
             NotifySshErrorBlock(action) => write!(f, "NotifySshErrorBlock({action:?})"),
             SetInputModeAgent => write!(f, "SetInputModeAgent"),
             SetInputModeTerminal => write!(f, "SetInputModeTerminal"),
-            #[cfg(feature = "voice_input")]
-            ToggleCLIAgentVoiceInput(source) => write!(f, "ToggleCLIAgentVoiceInput({source:?})"),
             HyperlinkClick(hyperlink_url) => write!(f, "HyperlinkClick({hyperlink_url:?})"),
             AttemptLoginGatedFeature => write!(f, "AttemptLoginGatedFeature"),
             StartFileDropTarget => write!(f, "StartFileDropTarget"),
