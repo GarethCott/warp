@@ -2426,7 +2426,7 @@ impl RootView {
                 let target = target.clone();
                 let onboarding_view = onboarding_view.clone();
 
-                let ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+                let ai_enabled = false;
                 let appearance = Appearance::as_ref(ctx);
                 let theme_name = appearance
                     .theme()
