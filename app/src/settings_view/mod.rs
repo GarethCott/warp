@@ -75,7 +75,6 @@ use warpui::{
 
 mod about_page;
 mod admin_actions;
-mod agent_assisted_environment_modal;
 mod ai_page;
 mod appearance_page;
 mod billing_and_usage;
@@ -1612,8 +1611,7 @@ impl SettingsView {
         match event {
             SettingsPageEvent::FocusModal => ctx.focus(&self.search_editor),
             SettingsPageEvent::Pane(_)
-            | SettingsPageEvent::EnvironmentSetupModeSelectorToggled { .. }
-            | SettingsPageEvent::AgentAssistedEnvironmentModalToggled { .. } => {
+            | SettingsPageEvent::EnvironmentSetupModeSelectorToggled { .. } => {
                 // These events are not handled in standalone settings - only used
                 // when the view is hosted inside a pane.
             }
@@ -1627,8 +1625,7 @@ impl SettingsView {
     ) {
         match event {
             SettingsPageEvent::FocusModal => ctx.focus(&self.search_editor),
-            SettingsPageEvent::EnvironmentSetupModeSelectorToggled { .. }
-            | SettingsPageEvent::AgentAssistedEnvironmentModalToggled { .. } => {
+            SettingsPageEvent::EnvironmentSetupModeSelectorToggled { .. } => {
                 // Re-render so the modal overlay is shown/hidden.
                 ctx.notify();
             }
@@ -1659,8 +1656,7 @@ impl SettingsView {
         match event {
             SettingsPageEvent::FocusModal => ctx.focus(&self.search_editor),
             SettingsPageEvent::Pane(_)
-            | SettingsPageEvent::EnvironmentSetupModeSelectorToggled { .. }
-            | SettingsPageEvent::AgentAssistedEnvironmentModalToggled { .. } => {
+            | SettingsPageEvent::EnvironmentSetupModeSelectorToggled { .. } => {
                 // These events are not handled in standalone settings - only used
                 // when the view is hosted inside a pane.
             }
@@ -2473,15 +2469,6 @@ impl View for SettingsView {
             .environment_setup_mode_selector_handle()
         {
             stack.add_child(ChildView::new(selector_handle).finish());
-        }
-
-        // Render agent-assisted environment modal overlay when open.
-        if let Some(modal_handle) = self
-            .environments_page_handle
-            .as_ref(app)
-            .agent_assisted_environment_modal_handle(app)
-        {
-            stack.add_child(ChildView::new(modal_handle).finish());
         }
 
         SavePosition::new(stack.finish(), POSITION_ID).finish()

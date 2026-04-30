@@ -198,7 +198,6 @@ pub enum SettingsPageEvent {
     FocusModal,
     Pane(PaneEventWrapper),
     EnvironmentSetupModeSelectorToggled { is_open: bool },
-    AgentAssistedEnvironmentModalToggled { is_open: bool },
 }
 
 /// Wrapper for pane events to avoid circular dependency with pane module.
