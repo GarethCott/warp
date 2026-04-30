@@ -11732,7 +11732,7 @@ impl TerminalView {
     fn maybe_auto_open_cli_agent_rich_input(&mut self, ctx: &mut ViewContext<Self>) {
         let ai_settings = AISettings::as_ref(ctx);
         if !*ai_settings.auto_open_rich_input_on_cli_agent_start
-            || !ai_settings.is_any_ai_enabled(ctx)
+            || !false
             || !*ai_settings.should_render_cli_agent_footer
             || !is_rich_input_chip_in_cli_toolbar(ctx)
         {
@@ -11831,7 +11831,7 @@ impl TerminalView {
         // Only applies when the session has a plugin listener (rich status info).
         let ai_settings = AISettings::as_ref(ctx);
         if *ai_settings.auto_toggle_rich_input
-            && ai_settings.is_any_ai_enabled(ctx)
+            && false
             && *ai_settings.should_render_cli_agent_footer
             && is_rich_input_chip_in_cli_toolbar(ctx)
         {
@@ -12954,7 +12954,7 @@ impl TerminalView {
             .get_root_for_path(directory)
             .is_some();
         let is_any_ai_enabled =
-            FeatureFlag::AgentMode.is_enabled() && AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+            FeatureFlag::AgentMode.is_enabled() && false;
         // Check if the current session is remote - don't show setup in remote sessions.
         let is_remote_session = !self.active_session_is_local(ctx).unwrap_or(false);
 
@@ -15074,7 +15074,7 @@ impl TerminalView {
                         ))
                         .into_item(),
                 ];
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+                if false {
                     fields.extend([
                         MenuItem::Separator,
                         MenuItemFields::new(if FeatureFlag::AgentMode.is_enabled() {
@@ -15229,7 +15229,7 @@ impl TerminalView {
                     );
                 }
 
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+                if false {
                     if FeatureFlag::AgentMode.is_enabled() {
                         // We can only attach selected blocks if the input box is visible.
                         if self.is_input_box_visible(&model, ctx) {
@@ -15856,7 +15856,7 @@ impl TerminalView {
                 .into_item(),
         ]);
 
-        if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+        if false {
             items.push(
                 MenuItemFields::new("AI command search")
                     .with_on_select_action(TerminalAction::InputContextMenuItem(
@@ -16056,7 +16056,7 @@ impl TerminalView {
                     .with_key_shortcut_label(Some("⌘-C"))
                     .into_item(),
             );
-            if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+            if false {
                 menu_items.extend([
                     MenuItem::Separator,
                     MenuItemFields::new(if FeatureFlag::AgentMode.is_enabled() {
@@ -26146,7 +26146,7 @@ impl View for TerminalView {
             context.set.insert(flags::HAS_PENDING_PROMPT_SUGGESTION);
         }
 
-        if AISettings::as_ref(app).is_any_ai_enabled(app) {
+        if false {
             context.set.insert(flags::IS_ANY_AI_ENABLED);
         }
 

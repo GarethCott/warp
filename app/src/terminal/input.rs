@@ -5706,7 +5706,7 @@ impl Input {
         });
 
         // Now handle the default (empty prefix) placeholder
-        if toggled_on && AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+        if toggled_on && false {
             if FeatureFlag::AgentMode.is_enabled() {
                 // agent_mode_hint_text now handles caching internally
                 let hint_text = self.agent_mode_hint_text(ctx).to_string();
@@ -5786,7 +5786,7 @@ impl Input {
                 if let AISettingsChangedEvent::IsAnyAIEnabled { .. } = event {
                     let is_input_buffer_empty = self.editor.as_ref(ctx).buffer_text(ctx).is_empty();
                     // If there is no AI enabled, ensure input is locked in command mode.
-                    if !ai_settings.as_ref(ctx).is_any_ai_enabled(ctx) {
+                    if !false {
                         self.ai_input_model.update(ctx, |input_model, ctx| {
                             input_model.set_input_config(
                                 InputConfig {
@@ -8720,7 +8720,7 @@ impl Input {
                 });
 
                 // Force AI mode if buffer contains any attachment patterns (blocks, drive objects, diffs)
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) && edit_origin.is_user() {
+                if false && edit_origin.is_user() {
                     let buffer_text = self.buffer_text(ctx);
                     if Self::buffer_contains_attachment_patterns(&buffer_text) {
                         self.ensure_agent_mode_for_ai_features(false, ctx);
@@ -8856,7 +8856,7 @@ impl Input {
                     }
                 }
 
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+                if false
                     && self.editor_starts_with_command_search_trigger(ctx)
                     && *edit_origin == EditOrigin::UserTyped
                     && !self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
@@ -8876,7 +8876,7 @@ impl Input {
                 // If the last buffer didn't start with the AI input prefix and the current buffer does, then enable AI input.
                 if FeatureFlag::AgentMode.is_enabled()
                     && !FeatureFlag::AgentView.is_enabled()
-                    && AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+                    && false
                     && (!is_ai_input_enabled || !is_input_mode_locked)
                 {
                     if buffer_text.starts_with(AI_INPUT_PREFIX)
@@ -9226,7 +9226,7 @@ impl Input {
             EditorEvent::BufferReplaced => {
                 let ai_input_model = self.ai_input_model.as_ref(ctx);
                 if FeatureFlag::AgentMode.is_enabled()
-                    && AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+                    && false
                     && !ai_input_model.is_ai_input_enabled()
                     && ai_input_model.is_input_type_locked()
                 {
@@ -9794,7 +9794,7 @@ impl Input {
         let content = ctx.clipboard().read();
 
         // If AI is disabled, attachment isn't possible
-        if !AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+        if !false {
             self.insert_clipboard_text_content(ctx, content);
             return;
         }
@@ -11856,7 +11856,7 @@ impl Input {
         } else if self.should_block_cloud_mode_setup_submission(ctx) {
             return;
         } else if FeatureFlag::AgentMode.is_enabled()
-            && AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+            && false
             && (self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
                 || self.is_cloud_mode_input_v2_composing(ctx))
         {
@@ -14269,7 +14269,7 @@ impl View for Input {
             ctx.set.insert(flags::EMPTY_INPUT_BUFFER);
         }
 
-        if ai_settings.is_any_ai_enabled(app) {
+        if false {
             ctx.set.insert(flags::IS_ANY_AI_ENABLED);
         }
 
