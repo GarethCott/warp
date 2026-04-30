@@ -52,9 +52,8 @@ use crate::settings::{
     LinuxSelectionClipboard, MiddleClickPasteEnabled, MouseScrollMultiplier,
     OutlineCodebaseSymbolsForAtContextMenu, PreferLowPowerGPU, PreferredGraphicsBackend,
     QuakeModeSettings, ScrollSettings, SelectionSettings, ShowAutosuggestionIgnoreButton,
-    ShowTerminalInputMessageBar, SshSettings, SyntaxHighlighting, TabBehavior, VimModeEnabled,
-    VimStatusBar, VimUnnamedSystemClipboard, DEFAULT_QUAKE_MODE_SIZE_PERCENTAGES,
-    QUAKE_WINDOW_AUTOHIDE_SUPPORTED,
+    SshSettings, SyntaxHighlighting, TabBehavior, VimModeEnabled, VimStatusBar,
+    VimUnnamedSystemClipboard, DEFAULT_QUAKE_MODE_SIZE_PERCENTAGES, QUAKE_WINDOW_AUTOHIDE_SUPPORTED,
 };
 use crate::terminal::alt_screen_reporting::{
     AltScreenReporting, FocusReportingEnabled, MouseReportingEnabled, ScrollReportingEnabled,
@@ -72,9 +71,7 @@ use crate::terminal::session_settings::{
     Notifications, NotificationsMode, NotificationsSettings, SessionSettings,
     SessionSettingsChangedEvent, ShouldConfirmCloseSession,
 };
-use crate::terminal::settings::{
-    MaximumGridSize, ShowTerminalZeroStateBlock, TerminalSettings, UseAudibleBell,
-};
+use crate::terminal::settings::{MaximumGridSize, TerminalSettings, UseAudibleBell};
 use crate::terminal::{BlockListSettings, SnackbarEnabled};
 use crate::undo_close::UndoCloseSettings;
 use crate::user_config::{WarpConfig, WarpConfigUpdateEvent};
@@ -471,18 +468,6 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         flags::SMART_SELECT_FLAG,
     ));
 
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "terminal input message line",
-            builder(SettingsAction::FeaturesPageToggle(
-                FeaturesPageAction::ToggleShowTerminalInputMessageLine,
-            )),
-            context,
-            flags::SHOW_TERMINAL_INPUT_MESSAGE_LINE_FLAG,
-        )
-        .with_enabled(|| FeatureFlag::AgentView.is_enabled()),
-    );
-
     if FeatureFlag::AgentView.is_enabled() && false {
         toggle_binding_pairs.push(
             ToggleSettingActionPair::new(
@@ -579,7 +564,6 @@ pub enum FeaturesPageAction {
     ToggleCodeAsDefaultEditor,
     ToggleShowInputHintText,
     ToggleUseAudibleBell,
-    ToggleShowTerminalZeroStateBlock,
     TogglePreferLowPowerGPU,
     ToggleVimMode,
     ToggleVimUnnamedSystemClipboard,
@@ -639,7 +623,6 @@ pub enum FeaturesPageAction {
     ToggleSlashCommandsInTerminalMode,
     ToggleOutlineCodebaseSymbolsForAtContextMenu,
     ToggleAutoOpenCodeReviewPane,
-    ToggleShowTerminalInputMessageLine,
     ToggleAgentInAppNotifications,
     MakeWarpDefaultTerminal,
 }
@@ -806,13 +789,6 @@ impl FeaturesPageAction {
                 TelemetryEvent::FeaturesPageAction {
                     action: "ToggleShowInputHintText".to_string(),
                     value: to_string(*settings.show_hint_text),
-                }
-            }
-            Self::ToggleShowTerminalInputMessageLine => {
-                let settings = InputSettings::as_ref(ctx);
-                TelemetryEvent::FeaturesPageAction {
-                    action: "ToggleShowTerminalInputMessageLine".to_string(),
-                    value: to_string(settings.is_terminal_input_message_bar_enabled()),
                 }
             }
             Self::ActivationKeybindEditorClicked => TelemetryEvent::FeaturesPageAction {
@@ -1077,10 +1053,6 @@ impl FeaturesPageAction {
             Self::ToggleConfirmCloseSession => TelemetryEvent::FeaturesPageAction {
                 action: "ToggleConfirmCloseSession".to_string(),
                 value: to_string(*SessionSettings::as_ref(ctx).should_confirm_close_session),
-            },
-            Self::ToggleShowTerminalZeroStateBlock => TelemetryEvent::FeaturesPageAction {
-                action: "ToggleShowTerminalZeroStateBlock".to_string(),
-                value: to_string(*TerminalSettings::as_ref(ctx).show_terminal_zero_state_block),
             },
             Self::ToggleShowChangelogAfterUpdate => {
                 let changelog_settings = ChangelogSettings::as_ref(ctx);
@@ -1661,13 +1633,6 @@ impl TypedActionView for FeaturesPageView {
                     report_if_error!(input_settings.show_hint_text.toggle_and_save_value(ctx));
                 });
             }
-            ToggleShowTerminalInputMessageLine => {
-                InputSettings::handle(ctx).update(ctx, |input_settings, ctx| {
-                    report_if_error!(input_settings
-                        .show_terminal_input_message_bar
-                        .toggle_and_save_value(ctx));
-                });
-            }
             ToggleLinkTooltip => {
                 GeneralSettings::handle(ctx).update(ctx, |settings, ctx| {
                     report_if_error!(settings.link_tooltip.toggle_and_save_value(ctx));
@@ -1812,13 +1777,6 @@ impl TypedActionView for FeaturesPageView {
                         .expect("failed to serialize ShouldConfirmCloseSession");
                     ctx.notify();
                 })
-            }
-            ToggleShowTerminalZeroStateBlock => {
-                TerminalSettings::handle(ctx).update(ctx, |terminal_settings, ctx| {
-                    report_if_error!(terminal_settings
-                        .show_terminal_zero_state_block
-                        .toggle_and_save_value(ctx));
-                });
             }
             ToggleShowChangelogAfterUpdate => {
                 ChangelogSettings::handle(ctx).update(ctx, |changelog_settings, ctx| {
@@ -2671,10 +2629,6 @@ impl FeaturesPageView {
             ));
         }
 
-        if FeatureFlag::AgentView.is_enabled() {
-            editor_widgets.push(Box::new(ShowTerminalInputMessageLineWidget::default()));
-        }
-
         editor_widgets.push(Box::new(TabKeyBehaviorWidget::default()));
 
         let mut terminal_widgets: Vec<Box<dyn SettingsWidget<View = Self>>> = vec![];
@@ -2705,10 +2659,6 @@ impl FeaturesPageView {
             .is_supported_on_current_platform()
         {
             terminal_widgets.push(Box::new(AudibleBellWidget::default()));
-        }
-
-        if FeatureFlag::AgentView.is_enabled() {
-            terminal_widgets.push(Box::new(ShowTerminalZeroStateBlockWidget::default()));
         }
 
         terminal_widgets.push(Box::new(SmartSelectWidget::default()));
@@ -6078,54 +6028,6 @@ impl SettingsWidget for OutlineCodebaseSymbolsForAtContextMenuWidget {
 }
 
 #[derive(Default)]
-struct ShowTerminalInputMessageLineWidget {
-    switch_state: SwitchStateHandle,
-}
-
-impl SettingsWidget for ShowTerminalInputMessageLineWidget {
-    type View = FeaturesPageView;
-
-    fn search_terms(&self) -> &str {
-        "terminal input message line bar agent"
-    }
-
-    fn render(
-        &self,
-        view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let ui_builder = appearance.ui_builder();
-        render_body_item::<FeaturesPageAction>(
-            "Show terminal input message line".into(),
-            None,
-            LocalOnlyIconState::for_setting(
-                ShowTerminalInputMessageBar::storage_key(),
-                ShowTerminalInputMessageBar::sync_to_cloud(),
-                &mut view
-                    .button_mouse_states
-                    .local_only_icon_tooltip_states
-                    .borrow_mut(),
-                app,
-            ),
-            ToggleState::Enabled,
-            appearance,
-            ui_builder
-                .switch(self.switch_state.clone())
-                .check(InputSettings::as_ref(app).is_terminal_input_message_bar_enabled())
-                .build()
-                .on_click(move |ctx, _, _| {
-                    ctx.dispatch_typed_action(
-                        FeaturesPageAction::ToggleShowTerminalInputMessageLine,
-                    );
-                })
-                .finish(),
-            None,
-        )
-    }
-}
-
-#[derive(Default)]
 struct AutosuggestionKeybindingHintWidget {
     enabled_switch_state: SwitchStateHandle,
 }
@@ -6750,57 +6652,6 @@ impl SettingsWidget for SmartSelectWidget {
 #[derive(Default)]
 struct CopyOnSelectWidget {
     switch_state: SwitchStateHandle,
-}
-
-#[derive(Default)]
-struct ShowTerminalZeroStateBlockWidget {
-    switch_state: SwitchStateHandle,
-}
-
-impl SettingsWidget for ShowTerminalZeroStateBlockWidget {
-    type View = FeaturesPageView;
-
-    fn search_terms(&self) -> &str {
-        "zero state new conversation terminal block welcome output first"
-    }
-
-    fn should_render(&self, _app: &AppContext) -> bool {
-        false
-    }
-
-    fn render(
-        &self,
-        view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let ui_builder = appearance.ui_builder();
-        let terminal_settings = TerminalSettings::as_ref(app);
-        render_body_item::<FeaturesPageAction>(
-            "Show help block in new sessions".into(),
-            None,
-            LocalOnlyIconState::for_setting(
-                ShowTerminalZeroStateBlock::storage_key(),
-                ShowTerminalZeroStateBlock::sync_to_cloud(),
-                &mut view
-                    .button_mouse_states
-                    .local_only_icon_tooltip_states
-                    .borrow_mut(),
-                app,
-            ),
-            ToggleState::Enabled,
-            appearance,
-            ui_builder
-                .switch(self.switch_state.clone())
-                .check(*terminal_settings.show_terminal_zero_state_block)
-                .build()
-                .on_click(move |ctx, _, _| {
-                    ctx.dispatch_typed_action(FeaturesPageAction::ToggleShowTerminalZeroStateBlock)
-                })
-                .finish(),
-            None,
-        )
-    }
 }
 
 impl SettingsWidget for CopyOnSelectWidget {
