@@ -1106,7 +1106,7 @@ impl MCPServersListPageView {
     ) -> Box<dyn Element> {
         let ai_settings = AISettings::as_ref(app);
         let is_enabled = *ai_settings.file_based_mcp_enabled;
-        let is_any_ai_enabled = ai_settings.is_any_ai_enabled(app);
+        let is_any_ai_enabled = false;
 
         let label = render_body_item_label::<MCPServersListPageViewAction>(
             "Auto-spawn servers from third-party agents".to_string(),

@@ -233,7 +233,7 @@ impl SlashCommandDataSource {
             session_context |= Availability::CODEBASE_CONTEXT;
         }
 
-        if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+        if false {
             session_context |= Availability::AI_ENABLED;
         }
 
@@ -439,7 +439,7 @@ impl SyncDataSource for SlashCommandDataSource {
 
         // Also search skills — when CLI agent input is open, filter to natively supported providers.
         // Skills are invoked by the agent, so they're hidden entirely when AI is globally off.
-        if FeatureFlag::ListSkills.is_enabled() && AISettings::as_ref(app).is_any_ai_enabled(app) {
+        if FeatureFlag::ListSkills.is_enabled() && false {
             let cli_agent_providers = self.active_cli_agent_providers(app);
             let cwd = self.active_session.as_ref(app).current_working_directory();
             let cwd_path = cwd.as_ref().map(std::path::Path::new);

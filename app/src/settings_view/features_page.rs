@@ -483,7 +483,7 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         .with_enabled(|| FeatureFlag::AgentView.is_enabled()),
     );
 
-    if FeatureFlag::AgentView.is_enabled() && AISettings::as_ref(app).is_any_ai_enabled(app) {
+    if FeatureFlag::AgentView.is_enabled() && false {
         toggle_binding_pairs.push(
             ToggleSettingActionPair::new(
                 "slash commands in terminal mode",
@@ -3310,7 +3310,7 @@ impl FeaturesPageView {
         dropdown.update(
             ctx,
             |dropdown: &mut FilterableDropdown<FeaturesPageAction>, ctx| {
-                let is_ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+                let is_ai_enabled = false;
 
                 if is_ai_enabled {
                     dropdown.set_enabled(ctx);
@@ -5981,8 +5981,8 @@ impl SettingsWidget for SlashCommandsInTerminalModeWidget {
         "slash commands terminal mode input menu"
     }
 
-    fn should_render(&self, app: &AppContext) -> bool {
-        AISettings::as_ref(app).is_any_ai_enabled(app)
+    fn should_render(&self, _app: &AppContext) -> bool {
+        false
     }
 
     fn render(
@@ -6764,8 +6764,8 @@ impl SettingsWidget for ShowTerminalZeroStateBlockWidget {
         "zero state new conversation terminal block welcome output first"
     }
 
-    fn should_render(&self, app: &AppContext) -> bool {
-        AISettings::as_ref(app).is_any_ai_enabled(app)
+    fn should_render(&self, _app: &AppContext) -> bool {
+        false
     }
 
     fn render(

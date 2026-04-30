@@ -8,7 +8,6 @@ use crate::search::data_source::{Query, QueryResult};
 use crate::search::mixer::DataSourceRunErrorWrapper;
 use crate::search::slash_command_menu::static_commands::commands;
 use crate::search::SyncDataSource;
-use crate::settings::AISettings;
 use crate::terminal::input::slash_commands::{
     AcceptSlashCommandOrSavedPrompt, InlineItem, SlashCommandDataSource,
 };
@@ -101,7 +100,7 @@ impl SyncDataSource for ZeroStateDataSource {
 
         if self.is_cloud_mode_v2
             && FeatureFlag::ListSkills.is_enabled()
-            && AISettings::as_ref(app).is_any_ai_enabled(app)
+            && false
         {
             let slash_command_data_source = self.slash_command_data_source.as_ref(app);
             let cli_agent_providers = slash_command_data_source.active_cli_agent_providers(app);
@@ -132,7 +131,7 @@ impl SyncDataSource for ZeroStateDataSource {
             }
         }
 
-        if self.is_cloud_mode_v2 && AISettings::as_ref(app).is_any_ai_enabled(app) {
+        if self.is_cloud_mode_v2 && false {
             let saved_prompts: Vec<_> = CloudModel::as_ref(app)
                 .get_all_active_workflows()
                 .filter(|cw| cw.model().data.is_agent_mode_workflow())
