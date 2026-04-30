@@ -40,7 +40,6 @@ use snapshot::{EditorHeightShrinkDelay, ViewSnapshot};
 use vec1::{vec1, Vec1};
 use warp_core::{safe_error, send_telemetry_from_ctx};
 use warp_util::{path::ShellFamily, user_input::UserInput};
-use warpui::platform::keyboard::KeyCode;
 use warpui::ui_components::button::ButtonTooltipPosition;
 use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
 use warpui::{elements, ViewHandle};
@@ -4931,15 +4930,6 @@ impl EditorView {
         );
     }
 
-    fn voice_input_toggle_key_code(&self, ctx: &AppContext) -> Option<KeyCode> {
-        let ai_settings_handle = &AISettings::handle(ctx);
-        ai_settings_handle
-            .as_ref(ctx)
-            .voice_input_toggle_key
-            .value()
-            .to_key_code()
-    }
-
     pub fn attach_files(&mut self, ctx: &mut ViewContext<Self>) {
         let window_id = ctx.window_id();
         let view_id = self.view_id;
@@ -8637,7 +8627,6 @@ impl View for EditorView {
             local_selection_data,
             remote_selections_data,
             self.cursor_display_override,
-            self.voice_input_toggle_key_code(ctx),
         )
         .with_input_editor_icons(
             &self.accept_autosuggestion_keybinding_view,
