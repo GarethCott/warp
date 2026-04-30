@@ -436,7 +436,6 @@ clear_autosuggestion_on_escape = []
 cloud_object_initial_load = ["enforce_revisions_to_cloud_objects"]
 codebase_index_speedbump = []
 cocoa_sentry = ["crash_reporting"]
-command_predictor = []
 context_line_review_comments = []
 completions_v2 = [
     "plugin_host",
@@ -536,20 +535,17 @@ default_waterfall_mode = []
 enforce_revisions_to_cloud_objects = []
 suggested_agent_mode_workflows = []
 ssh_tmux_wrapper = []
-ssh_enable_host_denylist_in_settings = []
 extern_plist = []
 fast_dev = ["skip_login"]
 full_screen_zen_mode = []
 global_ai_analytics_banner = []
 global_ai_analytics_collection = []
-grab_the_baton_editing = []
 grep_tool = []
 # This feature is enabled in graphical builds of Warp, and groups together other features
 # that are not needed in headless builds. Because Cargo features are additive, the default
 # feature set is for a minimal build of Warp, and we add on GUI-specific features here.
 # For the most part, including GUI code in headless builds is fine; the main use case is
 # for things that pull in external dependencies.
-gui = []
 msys2_shells = []
 file_retrieval_tools = []
 welcome_tab = []
@@ -583,7 +579,6 @@ jemalloc_with_profiling = ["jemalloc", "tikv-jemallocator/profiling"]
 jemalloc_auto_heap_profiling = ["jemalloc_with_profiling"]
 jemalloc_pprof = ["jemalloc_with_profiling", "dep:jemalloc_pprof"]
 run_generators_with_cmd_exe = []
-inline_ssh_banner = []
 kitty_images = []
 kitty_keyboard_protocol = []
 ligatures = []
@@ -612,9 +607,7 @@ markdown_mermaid = []
 mcp_server = []
 mcp_oauth = []
 mcp_debugging_ids = []
-notebook_parameter = []
 oz_changelog_updates = []
-personal_cloud_objects = []
 # Remote-backed tty that connects to a PTY-like interface via a server.
 remote_tty = []
 # Fix for cursor reflow bug during window resize, from Alacritty resizing logic.
@@ -631,23 +624,19 @@ plugin_host = ["dep:rquickjs", "dep:warp_js", "warp_cli/plugin_host"]
 # NOTE: This may slow down program execution.
 pprof_cpu_profiling = ["dep:pprof"]
 predict_am_queries = []
-quake_mode = []
 record_app_active_events = []
 recording_mode = []
 # This feature should only be enabled when building a release bundle with
 # the bundle script, and can be used to conditionally enable functionality
 # accordingly.
 release_bundle = ["rust-embed/debug-embed", "warp_core/release_bundle"]
-render_agent_mode_output_markdown = []
 render_continuous_block_selections_with_single_border = []
-rich_history = []
 richtext_multiselect = []
 runtime_feature_flags = []
 selectable_prompt = []
 settings_file = []
 settings_import = []
 sequential_storage = []
-session_sharing = []
 session_sharing_acls = []
 skip_login = []
 # This feature should only be enabled when building a self-contained binary with the bundle script.
@@ -659,11 +648,12 @@ prompt_suggestions_via_maa = []
 # us having to touch every block. The feature is never enabled, so the gated code
 # never compiles. A future tier-4 cleanup can rip the blocks out.
 voice_input = []
-system_theme = []
+# Required: warpui_core's record_trace_event!/end_trace_after_next! macros
+# expand to #[cfg(feature = "traces")] in the consuming crate.
+traces = []
 tab_close_button_on_left = []
 team_features_override = []
 team_workflows = ["team_features_override"]
-toggle_bootstrap_block = []
 # Feature enabled only when app is compiled for integration tests.
 integration_tests = [
     "warp_cli/integration_tests",
@@ -671,7 +661,6 @@ integration_tests = [
     "warpui/test-util",
     "warp_core/integration_tests",
 ]
-traces = []
 viewing_shared_sessions = []
 workflow_aliases = []
 rect_selection = []
@@ -687,11 +676,8 @@ blocklist_markdown_table_rendering = []
 blocklist_markdown_images = []
 minimalist_ui = []
 remove_alt_screen_padding = []
-loginless_conversion = []
-external_agent_mode_context = []
 avatar_in_tab_bar = []
 ssh_drag_and_drop = []
-permanent_autosuggestion_hint = []
 cycle_next_command_suggestion = []
 multi_workspace = []
 ime_marked_text = []
@@ -705,7 +691,6 @@ suggested_rules = []
 command_correction_key = []
 full_source_code_embedding = []
 use_tantivy_search = []
-agent_management_popup = []
 simulate_github_unauthed = []
 reload_stale_conversation_files = []
 nld_fasttext_model = ["input_classifier/fasttext"]
@@ -719,7 +704,6 @@ agent_decides_command_execution = []
 fast_forward_autoexecute_button = []
 code_find_replace = []
 command_palette_file_search = []
-conversation_filter = []
 ai_context_menu_commands = []
 preview_channel = []
 ai_context_menu_code = []
