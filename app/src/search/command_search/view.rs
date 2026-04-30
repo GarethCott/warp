@@ -43,7 +43,6 @@ use crate::{
     },
     send_telemetry_from_ctx,
     server::{ids::ServerId, server_api::ai::AIClient, telemetry::TelemetryEvent},
-    settings::AISettings,
     terminal::{
         input::MenuPositioning,
         model::session::SessionId,
@@ -234,7 +233,7 @@ impl CommandSearchView {
             // Add data sources in lowest->highest priority order.  If results from two
             // data sources produce the same ranking score, the data source added first
             // will show up higher in the list (i.e.: further away from the input).
-            if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+            if false {
                 mixer.add_sync_source(
                     WarpAIDataSource::new(self.ai_client.clone(), None),
                     HashSet::from([QueryFilter::NaturalLanguage]),
@@ -258,7 +257,7 @@ impl CommandSearchView {
                 );
 
                 let mut workflows_filters = HashSet::from([QueryFilter::Workflows]);
-                if AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
+                if false {
                     workflows_filters.insert(QueryFilter::AgentModeWorkflows);
                 }
 
@@ -294,7 +293,7 @@ impl CommandSearchView {
                 );
             }
 
-            if FeatureFlag::AgentMode.is_enabled() && AISettings::as_ref(ctx).is_any_ai_enabled(ctx)
+            if FeatureFlag::AgentMode.is_enabled() && false
             {
                 mixer.add_sync_source(
                     AIQueriesDataSource::new(),

@@ -8,7 +8,6 @@ use crate::search::command_palette::FilterChipRenderer;
 
 use crate::drive::settings::WarpDriveSettings;
 use crate::search::QueryFilter;
-use crate::settings::AISettings;
 use crate::workspace::Workspace;
 use std::collections::HashMap;
 use warpui::elements::{Container, Flex, MouseStateHandle, ParentElement, Shrinkable, Wrap};
@@ -87,7 +86,7 @@ impl ZeroState {
         if show_warp_drive {
             valid_filters.push(QueryFilter::Workflows);
             if FeatureFlag::AgentModeWorkflows.is_enabled()
-                && AISettings::as_ref(app).is_any_ai_enabled(app)
+                && false
             {
                 valid_filters.push(QueryFilter::AgentModeWorkflows);
             }
@@ -118,7 +117,7 @@ impl ZeroState {
             valid_filters.push(QueryFilter::LaunchConfigurations);
         }
 
-        if AISettings::as_ref(app).is_any_ai_enabled(app) {
+        if false {
             valid_filters.push(QueryFilter::Conversations);
         }
 

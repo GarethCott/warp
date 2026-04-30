@@ -16,7 +16,7 @@ use crate::{
     appearance::Appearance,
     code::lsp_telemetry::{LspControlActionType, LspEnablementSource, LspTelemetryEvent},
     send_telemetry_from_ctx,
-    settings::{AISettings, CodeSettings},
+    settings::CodeSettings,
     terminal::general_settings::GeneralSettings,
     ui_components::{
         avatar::{Avatar, AvatarContent, StatusElementTypes},
@@ -860,7 +860,7 @@ impl SettingsWidget for CodePageWidget {
     ) -> Box<dyn Element> {
         let mut content = Flex::column();
 
-        let global_ai_enabled = AISettings::as_ref(app).is_any_ai_enabled(app);
+        let global_ai_enabled = false;
 
         // Main "Code" header
         content.add_child(self.render_code_header(appearance));
@@ -2090,7 +2090,7 @@ impl SettingsWidget for CodebaseIndexingCategorizedWidget {
         app: &AppContext,
     ) -> Box<dyn Element> {
         let ui_builder = appearance.ui_builder();
-        let global_ai_enabled = AISettings::as_ref(app).is_any_ai_enabled(app);
+        let global_ai_enabled = false;
         let codebase_context_enabled = UserWorkspaces::as_ref(app).is_codebase_context_enabled(app);
 
         let mut content = Flex::column();
