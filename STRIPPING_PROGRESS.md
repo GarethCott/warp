@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-31).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-34).
 
 ---
 
@@ -48,12 +48,15 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Deleted entire `TerminalViewZeroStateBlock` subsystem: 410-line file, two enum variants, dead removal loop, dead insertion site (cleanup-29: -481 net lines)
 - Collapsed `should_render_use_agent_footer` tail to literal `false` after warpify + CLI-agent live branches (cleanup-30)
 - Collapsed AI prompt-history path in up-arrow suggestions, dropped `terminal_view_id` parameter + `include_prompts` field, marked `HistoryInputSuggestion::AIQuery` as `#[allow(dead_code)]` for follow-up (cleanup-31)
+- Deleted `TerminalInputMessageBar` subsystem (467-line file, function, field, mod, all imports) (cleanup-32: -518 net lines)
+- Deleted dead Ask-AI block toolbelt button (constructor, field, layout/paint/dispatch sites, mouse state) (cleanup-33: -94 net lines)
+- Deleted dead "Add as context" selection tooltip in code editor + `Editor::is_selecting` (cleanup-34: -115 net lines)
 
-**Total stripped: ~2300+ lines of dead code, 6 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~3000+ lines of dead code, 7 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
-- The `show_terminal_zero_state_block` setting (and its features-page widget) is now an orphan write target — no readers. Clean removal would touch the settings widget machinery.
+- The `show_terminal_zero_state_block` and `show_terminal_input_message_bar` settings (and their features-page widgets) are now orphan write targets — no readers. Clean removal would touch the settings widget machinery.
 
 ---
 
