@@ -12,7 +12,6 @@ use crate::code_review::CodeReviewTelemetryEvent;
 use crate::menu::{Event, Menu, MenuItem, MenuItemFields};
 use crate::notebooks::editor::view::{EditorViewEvent, RichTextEditorView};
 use crate::send_telemetry_from_ctx;
-use crate::settings::AISettings;
 use crate::view_components::action_button::{
     ActionButton, ActionButtonTheme, ButtonSize, NakedTheme, SecondaryTheme,
 };
@@ -282,7 +281,7 @@ impl CommentListView {
 
     pub fn debug_state(&self, ctx: &AppContext) -> CommentListDebugState {
         let ai_available = AIRequestUsageModel::as_ref(ctx).has_any_ai_remaining(ctx);
-        let ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+        let ai_enabled = false;
         let sendable_comments = self
             .comments_by_id
             .values()
@@ -931,7 +930,7 @@ impl CommentListView {
 
     fn render_send_button(&self, appearance: &Appearance, ctx: &AppContext) -> Box<dyn Element> {
         let ai_available = AIRequestUsageModel::as_ref(ctx).has_any_ai_remaining(ctx);
-        let ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
+        let ai_enabled = false;
         let has_sendable_comments = self.has_non_outdated_comments();
 
         // CLI agents don't consume AI credits, so bypass the ai_available check.
