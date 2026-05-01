@@ -1654,6 +1654,7 @@ impl BlocklistAIHistoryModel {
     /// categorized as `DifferentSession`.
     ///
     /// Ambient agent sessions are always excluded.
+    #[allow(dead_code)]
     pub(crate) fn all_ai_queries(
         &self,
         terminal_view_id: Option<EntityId>,
@@ -2282,6 +2283,7 @@ impl AIQueryHistory {
     }
 }
 
+#[allow(dead_code)]
 fn ai_exchange_to_query_history(
     value: &AIAgentExchange,
     history_order: HistoryOrder,
@@ -2297,6 +2299,7 @@ fn ai_exchange_to_query_history(
     })
 }
 
+#[allow(dead_code)]
 fn persisted_ai_input_to_query_history(
     value: &PersistedAIInput,
     history_order: HistoryOrder,

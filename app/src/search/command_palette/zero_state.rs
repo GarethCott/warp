@@ -85,11 +85,6 @@ impl ZeroState {
         let mut valid_filters = vec![];
         if show_warp_drive {
             valid_filters.push(QueryFilter::Workflows);
-            if FeatureFlag::AgentModeWorkflows.is_enabled()
-                && false
-            {
-                valid_filters.push(QueryFilter::AgentModeWorkflows);
-            }
             valid_filters.push(QueryFilter::Notebooks);
 
             valid_filters.push(QueryFilter::EnvironmentVariables);
@@ -115,10 +110,6 @@ impl ZeroState {
 
         if ContextFlag::LaunchConfigurations.is_enabled() {
             valid_filters.push(QueryFilter::LaunchConfigurations);
-        }
-
-        if false {
-            valid_filters.push(QueryFilter::Conversations);
         }
 
         valid_filters.into_iter()
