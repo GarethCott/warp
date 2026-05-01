@@ -5,7 +5,7 @@ use pathfinder_color::ColorU;
 
 use std::borrow::Cow;
 
-use warp_core::{features::FeatureFlag, ui::appearance::Appearance};
+use warp_core::ui::appearance::Appearance;
 use warpui::{
     elements::{Border, Container, CrossAxisAlignment, Expanded, Flex, ParentElement, Text},
     keymap::Keystroke,
@@ -20,9 +20,7 @@ use crate::{
     terminal::{self, TOGGLE_AUTOEXECUTE_MODE_KEYBINDING},
     ui_components::blended_colors,
     util::bindings::keybinding_name_to_keystroke,
-    workspace::view::{
-        TOGGLE_CONVERSATION_LIST_VIEW_BINDING_NAME, TOGGLE_RIGHT_PANEL_BINDING_NAME,
-    },
+    workspace::view::TOGGLE_RIGHT_PANEL_BINDING_NAME,
 };
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -162,21 +160,6 @@ pub fn render_agent_shortcuts_view(
                 ShortcutProps {
                     keystroke,
                     text: "open code review".into(),
-                    ..Default::default()
-                },
-                app,
-            ));
-        }
-    }
-
-    if FeatureFlag::AgentViewConversationListView.is_enabled() {
-        if let Some(keystroke) =
-            keybinding_name_to_keystroke(TOGGLE_CONVERSATION_LIST_VIEW_BINDING_NAME, app)
-        {
-            shortcuts.push(render_shortcut(
-                ShortcutProps {
-                    keystroke,
-                    text: "toggle conversation list".into(),
                     ..Default::default()
                 },
                 app,
