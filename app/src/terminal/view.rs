@@ -488,10 +488,8 @@ use crate::terminal::model::{
     blocks::BlockListPoint,
 };
 use crate::terminal::view::inline_banner::{
-    render_agent_mode_setup_banner, AgentModeSetupSpeedbumpBannerAction,
-    AgentModeSetupSpeedbumpBannerState, AliasExpansionBannerState,
-    NotificationsDiscoveryBannerState, NotificationsErrorBannerState, PromptSuggestionBannerState,
-    VimModeBannerState,
+    AliasExpansionBannerState, NotificationsDiscoveryBannerState, NotificationsErrorBannerState,
+    PromptSuggestionBannerState, VimModeBannerState,
 };
 use crate::terminal::view::ssh_file_upload::FileUploadId;
 use crate::terminal::waterfall_gap_element::WaterfallGapElement;
@@ -1023,7 +1021,6 @@ pub enum InlineBannerType {
     OpenInWarp,
     VimMode,
     CodebaseIndexSpeedbump,
-    AgentModeSetup,
     AnonymousUserAISignUp,
     AwsBedrockLogin,
     AwsCliNotInstalled,
@@ -1037,7 +1034,6 @@ impl InlineBannerType {
             // Agent-related banners: visible in agent view
             Self::PromptSuggestions
             | Self::CodebaseIndexSpeedbump
-            | Self::AgentModeSetup
             | Self::AnonymousUserAISignUp
             | Self::AwsBedrockLogin
             | Self::AwsCliNotInstalled => true,
@@ -1100,8 +1096,6 @@ struct InlineBannersState {
     vim_banner_state: Option<VimModeBannerState>,
 
     codebase_index_speedbump_banner: Option<CodebaseIndexSpeedbumpBannerState>,
-
-    agent_setup_speedbump_banner: Option<AgentModeSetupSpeedbumpBannerState>,
 
     anonymous_user_ai_sign_up_banner: Option<AnonymousUserAISignUpBannerState>,
 
@@ -3941,25 +3935,6 @@ impl TerminalView {
         ctx.subscribe_to_view(&environment_setup_mode_selector, |me, _, event, ctx| {
             me.handle_environment_setup_mode_selector_event(event, ctx);
         });
-
-        if FeatureFlag::CodebaseIndexSpeedbump.is_enabled() {
-            // Check whether or not to show the codebase index speedbump when the codebase indexing settings change.
-            ctx.subscribe_to_model(&CodeSettings::handle(ctx), |me, _, _, ctx| {
-                me.check_codebase_index_speedbump_on_settings_changed(ctx);
-            });
-
-            // Check whether or not to show the codebase index speedbump when AI settings change.
-            ctx.subscribe_to_model(&AISettings::handle(ctx), |me, _, ai_settings_event, ctx| {
-                match ai_settings_event {
-                    AISettingsChangedEvent::IsAnyAIEnabled { .. }
-                    | AISettingsChangedEvent::AgentModeCodingPermissions { .. }
-                    | AISettingsChangedEvent::AgentModeCodingFileReadAllowlist { .. } => {
-                        me.check_codebase_index_speedbump_on_settings_changed(ctx);
-                    }
-                    _ => {}
-                }
-            });
-        }
 
         ctx.subscribe_to_model(&AISettings::handle(ctx), |me, _, ai_settings_event, ctx| {
             if let AISettingsChangedEvent::AwsBedrockCredentialsEnabled { .. } = ai_settings_event {
@@ -9094,28 +9069,6 @@ impl TerminalView {
         });
     }
 
-    fn agent_mode_setup_speedbump_banner_action(
-        &mut self,
-        action: AgentModeSetupSpeedbumpBannerAction,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        match action {
-            AgentModeSetupSpeedbumpBannerAction::Close => {
-                send_telemetry_from_ctx!(TelemetryEvent::AgentModeSetupBannerDismissed, ctx);
-                self.remove_agent_setup_speedbump_banner(ctx)
-            }
-            AgentModeSetupSpeedbumpBannerAction::SetupAgentMode => {
-                send_telemetry_from_ctx!(TelemetryEvent::AgentModeSetupBannerAccepted, ctx);
-                #[cfg(feature = "local_fs")]
-                if let Some(repo_path) = self.current_repo_path.clone() {
-                    self.mark_agent_init_callout_as_shown_for_directory(&repo_path, ctx);
-                }
-                self.remove_agent_setup_speedbump_banner(ctx);
-                self.init_project(false, ctx)
-            }
-        }
-    }
-
     fn codebase_index_speedbump_banner_action(
         &mut self,
         action: CodebaseIndexSpeedbumpBannerAction,
@@ -9253,26 +9206,6 @@ impl TerminalView {
                 .remove_inline_banner(banner_state.id);
             ctx.notify();
         }
-    }
-
-    #[cfg(feature = "local_fs")]
-    fn remove_agent_setup_speedbump_banner(&mut self, ctx: &mut ViewContext<Self>) {
-        if let Some(banner_state) = self
-            .inline_banners_state
-            .agent_setup_speedbump_banner
-            .take()
-        {
-            self.model
-                .lock()
-                .block_list_mut()
-                .remove_inline_banner(banner_state.id);
-            ctx.notify();
-        }
-    }
-
-    #[cfg(not(feature = "local_fs"))]
-    fn remove_agent_setup_speedbump_banner(&mut self, _ctx: &mut ViewContext<Self>) {
-        // No-op when local filesystem is unavailable.
     }
 
     fn anonymous_user_ai_sign_up_banner_action(
@@ -10962,11 +10895,6 @@ impl TerminalView {
                                         }
 
                                         me.start_lsp_server_in_active_pwd(ctx);
-
-                                        me.update_repo_banner_state(
-                                            repo_path.clone(),
-                                            ctx,
-                                        );
                                     } else {
                                         me.clear_git_repo_status(ctx);
                                         ctx.notify();
@@ -12269,14 +12197,11 @@ impl TerminalView {
         });
     }
 
-    // Initialize project for a path and suppress the agent mode setup banner for that path. This also auto-opens
-    // the code-review pane after the initialization step completes.
+    // Initialize project for a path. This also auto-opens the code-review pane
+    // after the initialization step completes.
     fn init_project_and_suppress_banners(&mut self, path: PathBuf, ctx: &mut ViewContext<Self>) {
         log::info!("Indexing and running /init for new repo at {path:?}");
 
-        // Ensure we don't hit speedumps - Mark this as "already shown and dismissed"
-        // This method is used when opening a new repo that the user has selected directly.
-        self.mark_agent_init_callout_as_shown_for_directory(&path, ctx);
         AISettings::handle(ctx).update(ctx, |ai_settings, ctx| {
             let mut dismissed_paths = ai_settings
                 .codebase_index_speedbump_banner_dismissed_for_repo_paths
@@ -12290,14 +12215,6 @@ impl TerminalView {
         });
 
         self.init_project(true, ctx);
-    }
-
-    // Show or hide codebase index speedbump depending when a settings change happens.
-    fn check_codebase_index_speedbump_on_settings_changed(&mut self, ctx: &mut ViewContext<Self>) {
-        if let Some(working_directory) = self.pwd_if_local(ctx) {
-            let path_buf = PathBuf::from(&working_directory);
-            self.update_repo_banner_state(path_buf, ctx);
-        }
     }
 
     fn summarize_conversation(&mut self, ctx: &mut ViewContext<Self>) {
@@ -12756,53 +12673,6 @@ impl TerminalView {
         });
 
         ctx.notify();
-    }
-
-    #[cfg(feature = "local_fs")]
-    fn update_repo_banner_state(&mut self, directory: PathBuf, ctx: &mut ViewContext<Self>) {
-        self.update_agent_mode_setup_speedbump_banner(directory, ctx);
-    }
-
-    #[cfg(not(feature = "local_fs"))]
-    fn update_repo_banner_state(&mut self, _directory: PathBuf, _ctx: &mut ViewContext<Self>) {
-        // Repo setup is not supported without a local filesystem.
-    }
-
-    #[cfg(feature = "local_fs")]
-    fn update_agent_mode_setup_speedbump_banner(
-        &mut self,
-        _directory: PathBuf,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        // The "set up agent mode" banner is permanently disabled in this fork
-        // (`should_show_agent_mode_setup_for_directory` always returns false).
-        // Defensively remove any stale banner state.
-        self.remove_agent_setup_speedbump_banner(ctx);
-    }
-
-    fn mark_agent_init_callout_as_shown_for_directory(
-        &self,
-        directory: &Path,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        let mut shown_repo_paths = AISettings::as_ref(ctx)
-            .agent_mode_setup_banner_shown_for_repo_paths
-            .clone();
-        if shown_repo_paths
-            .iter()
-            .any(|shown_path| shown_path == directory)
-        {
-            return;
-        }
-        shown_repo_paths.push(directory.to_path_buf());
-        AISettings::handle(ctx).update(ctx, |ai_settings, ctx| {
-            if let Err(e) = ai_settings
-                .agent_mode_setup_banner_shown_for_repo_paths
-                .set_value(shown_repo_paths, ctx)
-            {
-                log::error!("Failed to persist 'Agent Mode setup banner shown' setting: {e}");
-            }
-        });
     }
 
     fn reset_onboarding_blocks(&mut self, ctx: &mut ViewContext<Self>) {
@@ -21587,13 +21457,6 @@ impl TerminalView {
             );
         }
 
-        if let Some(banner_state) = &self.inline_banners_state.agent_setup_speedbump_banner {
-            inline_banners.insert(
-                banner_state.id,
-                render_agent_mode_setup_banner(banner_state, appearance),
-            );
-        }
-
         if let Some(banner_state) = &self.inline_banners_state.anonymous_user_ai_sign_up_banner {
             inline_banners.insert(banner_state.id, banner_state.render(appearance));
         }
@@ -24094,7 +23957,6 @@ impl TypedActionView for TerminalView {
             | OpenAddPromptPane
             | AddProjectAtCurrentDirectory
             | CodebaseIndexSpeedbumpBanner(_)
-            | AgentModeSetupSpeedbumpBanner(_)
             | AnonymousUserAISignUpBanner(_)
             | SetupCloudEnvironment(_)
             | SetupCloudEnvironmentAndStart(_)
@@ -24775,9 +24637,6 @@ impl TypedActionView for TerminalView {
             }
             CodebaseIndexSpeedbumpBanner(action) => {
                 self.codebase_index_speedbump_banner_action(*action, ctx);
-            }
-            AgentModeSetupSpeedbumpBanner(action) => {
-                self.agent_mode_setup_speedbump_banner_action(*action, ctx)
             }
             AnonymousUserAISignUpBanner(action) => {
                 self.anonymous_user_ai_sign_up_banner_action(*action, ctx);
