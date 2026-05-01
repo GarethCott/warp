@@ -1913,13 +1913,6 @@ impl AIBlock {
                 }
                 AIAgentAction {
                     id: action_id,
-                    action: AIAgentActionType::AskUserQuestion { questions },
-                    ..
-                } if FeatureFlag::AskUserQuestion.is_enabled() => {
-                    self.handle_ask_user_question_stream_update(action_id, questions, ctx);
-                }
-                AIAgentAction {
-                    id: action_id,
                     action: AIAgentActionType::SuggestNewConversation { .. },
                     ..
                 } => {
@@ -3272,6 +3265,7 @@ impl AIBlock {
         }
     }
 
+    #[allow(dead_code)]
     fn handle_ask_user_question_stream_update(
         &mut self,
         action_id: &AIAgentActionId,
@@ -3316,6 +3310,7 @@ impl AIBlock {
         ctx.notify();
     }
 
+    #[allow(dead_code)]
     fn handle_ask_user_question_view_event(
         &mut self,
         action_id: &AIAgentActionId,

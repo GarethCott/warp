@@ -200,6 +200,7 @@ pub(crate) struct Props<'a> {
     /// Controls how agent thinking/reasoning traces are displayed.
     pub(super) thinking_display_mode: crate::settings::ThinkingDisplayMode,
     pub(super) conversation_has_imported_comments: bool,
+    #[allow(dead_code)]
     pub(super) ask_user_question_view: Option<&'a ViewHandle<AskUserQuestionView>>,
 }
 
@@ -579,19 +580,6 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                                 .map(|requested_mcp_tool| requested_mcp_tool.render())
                             {
                                 output_items.add_child(rendered_mcp_tool);
-                            }
-                        }
-                        AIAgentOutputMessageType::Action(AIAgentAction {
-                            action: AIAgentActionType::AskUserQuestion { .. },
-                            id,
-                            ..
-                        }) if FeatureFlag::AskUserQuestion.is_enabled() => {
-                            should_render_footer = false;
-                            should_render_suggestions = false;
-                            if let Some(rendered_ask_user_question) =
-                                render_ask_user_question(id, props, app)
-                            {
-                                output_items.add_child(rendered_ask_user_question);
                             }
                         }
                         AIAgentOutputMessageType::Action(AIAgentAction {
@@ -2127,6 +2115,7 @@ fn render_unit_test_suggestion(
         .finish()
 }
 
+#[allow(dead_code)]
 fn render_ask_user_question(
     action_id: &AIAgentActionId,
     props: Props,
