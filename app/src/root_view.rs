@@ -24,7 +24,6 @@ use crate::settings::apply_onboarding_settings;
 use crate::settings::cloud_preferences_syncer::{
     CloudPreferencesSyncer, CloudPreferencesSyncerEvent,
 };
-use crate::settings::AISettings;
 use crate::workspace::tab_settings::TabSettings;
 use onboarding::{
     AgentOnboardingEvent, AgentOnboardingView, OnboardingIntention, SelectedSettings,
@@ -2156,16 +2155,6 @@ impl RootView {
                 mark_local_onboarding_completed(ctx);
                 if FeatureFlag::HOAOnboardingFlow.is_enabled() {
                     mark_hoa_onboarding_completed(ctx);
-                }
-
-                // Terminal-intent users should not see the conversation list
-                // auto-opened for discoverability.
-                if matches!(selected_settings, SelectedSettings::Terminal { .. }) {
-                    AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                        report_if_error!(settings
-                            .has_auto_opened_conversation_list
-                            .set_value(true, ctx));
-                    });
                 }
 
                 let is_logged_in = AuthStateProvider::as_ref(ctx).get().is_logged_in();
