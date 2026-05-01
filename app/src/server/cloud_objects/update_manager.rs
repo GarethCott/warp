@@ -78,7 +78,6 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::sync::{mpsc::SyncSender, Arc};
 use std::time::Duration;
-use warp_core::features::FeatureFlag;
 use warp_graphql::mcp_gallery_template::MCPGalleryTemplate;
 use warp_graphql::object_permissions::AccessLevel;
 use warp_graphql::scalars::time::ServerTimestamp;
@@ -137,7 +136,6 @@ pub enum UpdateManagerEvent {
     ObjectOperationComplete { result: ObjectOperationResult },
     CloudPreferencesUpdated { updated: Vec<Preference> },
     MCPGalleryUpdated { templates: Vec<MCPGalleryTemplate> },
-    AmbientTaskUpdated { timestamp: DateTime<Utc> },
 }
 
 /// An enum for choosing the behavior of the fetch_single_cloud_object function.
@@ -1079,15 +1077,6 @@ impl UpdateManager {
         self.refresh_updated_objects(ctx);
     }
 
-    fn handle_ambient_task_changed(
-        &mut self,
-        _task_id: String,
-        timestamp: DateTime<Utc>,
-        ctx: &mut ModelContext<UpdateManager>,
-    ) {
-        ctx.emit(UpdateManagerEvent::AmbientTaskUpdated { timestamp });
-    }
-
     /// Fetches environment "last used" timestamps from the server and merges them
     /// into the in-memory environment objects.
     fn fetch_and_merge_environment_timestamps(&mut self, ctx: &mut ModelContext<UpdateManager>) {
@@ -1238,10 +1227,8 @@ impl UpdateManager {
             ObjectUpdateMessage::TeamMembershipsChanged => {
                 self.handle_team_memberships_changed(ctx);
             }
-            ObjectUpdateMessage::AmbientTaskUpdated { task_id, timestamp } => {
-                if FeatureFlag::AmbientAgentsRTC.is_enabled() {
-                    self.handle_ambient_task_changed(task_id, timestamp, ctx);
-                }
+            ObjectUpdateMessage::AmbientTaskUpdated { task_id: _, timestamp: _ } => {
+                // strip(neuter): AmbientAgentsRTC was stripped in this fork.
             }
         }
     }

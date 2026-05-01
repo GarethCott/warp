@@ -145,6 +145,7 @@ pub fn init(app: &mut AppContext) {
 }
 
 /// View-level interactions for the ask-user-question UI (buttons, keyboard, and text input).
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub enum AskUserQuestionViewAction {
     OptionToggled { option_index: usize },
@@ -221,6 +222,7 @@ struct AskUserQuestionEditingState {
 
 impl AskUserQuestionEditingState {
     // Helpers for reading/updating the active question cursor and per-question draft slots.
+    #[allow(dead_code)]
     fn new(draft_count: usize) -> Self {
         Self {
             current_question_index: 0,
@@ -267,6 +269,7 @@ impl AskUserQuestionEditingState {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 /// Lifecycle state for the questionnaire flow.
 /// `Editing` is mutable local draft state; `Completed` is the frozen submitted summary.
@@ -354,6 +357,7 @@ struct AskUserQuestionSession {
 /// Owns questionnaire prompts and applies state transitions independently of persisted action
 /// status, returning effects for the view to execute.
 impl AskUserQuestionSession {
+    #[allow(dead_code)]
     fn new(mut questions: Vec<AskUserQuestionItem>) -> Self {
         // Put multi-select questions before single-select so the last question
         // can auto-submit after a single option toggle.
@@ -734,6 +738,7 @@ pub(crate) struct AskUserQuestionView {
     next_button: CompactibleActionButton,
 }
 
+#[allow(dead_code)]
 impl AskUserQuestionView {
     pub fn new(
         action_model: ModelHandle<BlocklistAIActionModel>,

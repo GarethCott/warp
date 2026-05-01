@@ -217,10 +217,6 @@ fn get_supported_tools(params: &RequestParams) -> Vec<api::ToolType> {
         supported_tools.push(api::ToolType::SendMessageToAgent);
     }
 
-    if FeatureFlag::AskUserQuestion.is_enabled() && params.ask_user_question_enabled {
-        supported_tools.push(api::ToolType::AskUserQuestion);
-    }
-
     supported_tools
 }
 
