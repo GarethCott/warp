@@ -15,6 +15,7 @@ use crate::{
 
 /// How long to poll for the agent to be ready.
 /// This should be long enough that the shared session will be joinable.
+#[allow(dead_code)]
 pub const TASK_STATUS_POLLING_DURATION: Duration = Duration::from_secs(80);
 
 #[cfg(not(test))]

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -31,29 +32,13 @@ pub const MAX_ATTACHMENT_COUNT_FOR_CLOUD_QUERY: usize = 25;
 /// Makes a best-effort attempt to download all attachments.
 /// Individual download failures are logged but don't cause the entire function to fail.
 pub(crate) async fn fetch_and_download_attachments(
-    ai_client: Arc<dyn AIClient>,
-    http_client: Arc<ServerApi>,
-    task_id: String,
-    attachments_dir: PathBuf,
+    _ai_client: Arc<dyn AIClient>,
+    _http_client: Arc<ServerApi>,
+    _task_id: String,
+    _attachments_dir: PathBuf,
 ) -> anyhow::Result<Option<String>> {
-    if !FeatureFlag::AmbientAgentsImageUpload.is_enabled() {
-        return Ok(None);
-    }
-
-    let attachments = ai_client
-        .get_task_attachments(task_id.clone())
-        .await
-        .context("Failed to fetch task attachments")?;
-
-    log::info!("Fetched {} task attachments", attachments.len());
-
-    if attachments.is_empty() {
-        return Ok(None);
-    }
-
-    download_and_write_attachments(attachments, &attachments_dir, &http_client).await?;
-
-    Ok(Some(attachments_dir.to_string_lossy().into_owned()))
+    // strip(neuter): AmbientAgentsImageUpload is gated off in this fork.
+    Ok(None)
 }
 
 /// Fetches handoff snapshot attachments for the active execution and downloads

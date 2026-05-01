@@ -8528,9 +8528,11 @@ impl Input {
                         check_alias_expansion = true;
                     }
 
-                    // Check if "@" was just typed in a valid context
+                    // Check if "@" was just typed in a valid context.
+                    // strip(neuter): AtMenuOutsideOfAIMode is gated off in this
+                    // fork, so the menu only opens when AI input is enabled.
                     if FeatureFlag::AIContextMenuEnabled.is_enabled()
-                        && (is_ai_input_enabled || FeatureFlag::AtMenuOutsideOfAIMode.is_enabled())
+                        && is_ai_input_enabled
                         && Some(PlainTextEditorViewAction::InsertChar) == last_action
                         && *edit_origin == EditOrigin::UserTyped
                     {

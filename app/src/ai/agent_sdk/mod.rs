@@ -1347,6 +1347,7 @@ fn launch_command(
 
 /// Check if we're running within Warp (for example, if this is an invocation of the Warp CLI
 /// within a Warp terminal session).
+#[allow(dead_code)]
 pub fn is_running_in_warp() -> bool {
     std::env::var("TERM_PROGRAM")
         .map(|v| v == "WarpTerminal")
