@@ -13,7 +13,6 @@ use super::{
     features_page::FeaturesPageView,
     keybindings::KeybindingsView,
     main_page::MainSettingsPageView,
-    mcp_servers_page::MCPServersSettingsPageView,
     privacy_page::PrivacyPageView,
     warpify_page::WarpifyPageView,
     SettingsSection,
@@ -104,7 +103,6 @@ pub enum SettingsPageViewHandle {
     Privacy(ViewHandle<PrivacyPageView>),
     Warpify(ViewHandle<WarpifyPageView>),
     CloudEnvironments(ViewHandle<EnvironmentsPageView>),
-    MCPServers(ViewHandle<MCPServersSettingsPageView>),
 }
 
 impl SettingsPageViewHandle {
@@ -120,14 +118,7 @@ impl SettingsPageViewHandle {
             Privacy(view_handle) => ChildView::new(view_handle).finish(),
             Warpify(view_handle) => ChildView::new(view_handle).finish(),
             CloudEnvironments(view_handle) => ChildView::new(view_handle).finish(),
-            MCPServers(view_handle) => ChildView::new(view_handle).finish(),
         }
-    }
-}
-
-impl From<ViewHandle<MCPServersSettingsPageView>> for SettingsPageViewHandle {
-    fn from(view_handle: ViewHandle<MCPServersSettingsPageView>) -> Self {
-        SettingsPageViewHandle::MCPServers(view_handle)
     }
 }
 

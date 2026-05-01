@@ -688,6 +688,7 @@ impl MCPServer {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Author {
     CurrentUser,
@@ -695,6 +696,7 @@ pub enum Author {
     Unknown,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum MCPServerUpdate {
     CloudTemplate {

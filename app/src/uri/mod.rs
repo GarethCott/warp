@@ -42,13 +42,6 @@ use self::docker::open_docker_container;
 
 const DESKTOP_REDIRECT_URI_PATH: &str = "/desktop_redirect";
 
-/// Args for opening the MCP settings page via deeplink, with optional auto-install.
-/// The `autoinstall` value is the raw query param string; it is matched case-insensitively
-/// against gallery titles in `autoinstall_from_gallery`.
-pub struct OpenMCPSettingsArgs {
-    pub autoinstall: Option<String>,
-}
-
 /// Source query parameter value indicating auth was initiated from cloud agent setup.
 /// Used to skip opening settings page after GitHub auth completes.
 pub const CLOUD_SETUP_SOURCE: &str = "cloud_setup";
@@ -361,20 +354,6 @@ impl UriHost {
                                     ctx,
                                 );
                             }
-                        }
-                        "mcp" => {
-                            // warp://settings/mcp?autoinstall=<name> auto-installs a gallery MCP server.
-                            // The value is matched case-insensitively against gallery titles.
-                            let autoinstall =
-                                query_string.get("autoinstall").map(|v| v.to_string());
-                            let args = OpenMCPSettingsArgs { autoinstall };
-                            dispatch_action_in_new_or_existing_window(
-                                primary_window_id,
-                                "root_view:open_mcp_settings_in_existing_window",
-                                "root_view:open_mcp_settings_in_new_window",
-                                &args,
-                                ctx,
-                            );
                         }
                         "platform" => {
                             dispatch_action_in_new_or_existing_window(

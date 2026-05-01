@@ -73,7 +73,6 @@ pub enum DrivePanelEvent {
     OpenSharedObjectsCreationDeniedModal(DriveObjectType, ServerId),
     OpenTeamSettingsPage,
     OpenAIFactCollection,
-    OpenMCPServerCollection,
     OpenImportModal {
         owner: Owner,
         initial_folder_id: Option<SyncId>,
@@ -227,9 +226,6 @@ impl DrivePanel {
             },
             DriveIndexEvent::OpenAIFactCollection => {
                 self.open_ai_fact_collection_pane(ctx);
-            }
-            DriveIndexEvent::OpenMCPServerCollection => {
-                self.open_mcp_server_collection_pane(ctx);
             }
             DriveIndexEvent::OpenWorkflowInPane {
                 cloud_object_type_and_id,
@@ -577,10 +573,6 @@ impl DrivePanel {
 
     pub fn open_ai_fact_collection_pane(&mut self, ctx: &mut ViewContext<Self>) {
         ctx.emit(DrivePanelEvent::OpenAIFactCollection);
-    }
-
-    pub fn open_mcp_server_collection_pane(&mut self, ctx: &mut ViewContext<Self>) {
-        ctx.emit(DrivePanelEvent::OpenMCPServerCollection);
     }
 
     /// Recomputes and intializes the section states for the WD Index. This is needed after

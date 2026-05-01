@@ -119,10 +119,12 @@ impl MCPGalleryManager {
         self.gallery_items.values().cloned().collect()
     }
 
+    #[allow(dead_code)]
     pub fn get_gallery_item(&self, gallery_uuid: Uuid) -> Option<&GalleryMCPServer> {
         self.gallery_items.get(&gallery_uuid)
     }
 
+    #[allow(dead_code)]
     pub fn get_templatable_mcp_server(&self, gallery_uuid: Uuid) -> Option<&TemplatableMCPServer> {
         self.templatable_mcp_servers.get(&gallery_uuid)
     }

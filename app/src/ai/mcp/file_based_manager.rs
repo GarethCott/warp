@@ -370,11 +370,13 @@ impl FileBasedMCPManager {
     }
 
     /// Returns all detected file-based MCP server installations.
+    #[allow(dead_code)]
     pub fn file_based_servers(&self) -> Vec<&TemplatableMCPServerInstallation> {
         self.file_based_servers.values().collect()
     }
 
     /// Returns the installation with the given UUID, if any.
+    #[allow(dead_code)]
     pub fn get_installation_by_uuid(
         &self,
         uuid: Uuid,
@@ -385,6 +387,7 @@ impl FileBasedMCPManager {
     }
 
     /// Returns all root paths for the given installation scoped to a specific provider.
+    #[allow(dead_code)]
     pub fn directory_paths_for_installation_and_provider(
         &self,
         uuid: Uuid,
