@@ -1,8 +1,4 @@
 //! Commands to interact with ambient agents on Warp's platform.
-use std::io::Write as _;
-use std::sync::Arc;
-use std::time::Duration;
-
 use crate::ai::ambient_agents::spawn::{
     spawn_task, AmbientAgentEvent, SessionJoinInfo, TASK_STATUS_POLLING_DURATION,
 };
@@ -12,17 +8,15 @@ use crate::ai::ambient_agents::{AgentConfigSnapshot, AmbientAgentTask};
 use crate::ai::artifacts::Artifact;
 use crate::auth::AuthStateProvider;
 use crate::server::server_api::ai::{
-    AIClient, AgentMessageHeader, AgentRunEvent, AgentSource, ArtifactType, ExecutionLocation,
-    ListAgentMessagesRequest, ReadAgentMessageResponse, RunSortBy, RunSortOrder,
-    SendAgentMessageRequest, SendAgentMessageResponse, SpawnAgentRequest, TaskListFilter,
+    AgentMessageHeader, AgentSource, ArtifactType, ExecutionLocation, ListAgentMessagesRequest,
+    ReadAgentMessageResponse, RunSortBy, RunSortOrder, SendAgentMessageRequest,
+    SendAgentMessageResponse, SpawnAgentRequest, TaskListFilter,
 };
-use crate::server::server_api::ServerApi;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::{
     terminal::shared_session, util::time_format::format_approx_duration_from_now_utc,
     ServerApiProvider,
 };
-use anyhow::{anyhow, Context as _};
 use comfy_table::Cell;
 use futures::{future, StreamExt};
 use serde::Serialize;
@@ -39,7 +33,6 @@ use warp_cli::{
 };
 use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
-use warpui::r#async::Timer;
 use warpui::{
     platform::TerminationMode, r#async::Spawnable, AppContext, ModelContext, SingletonEntity,
 };
@@ -53,7 +46,6 @@ use crate::server::ids::{ServerId, SyncId};
 use super::common::{EnvironmentChoice, ResolveConfigurationError};
 
 const MAX_LINE_WIDTH: usize = 90;
-const STREAM_RETRY_BACKOFF_STEPS: &[u64] = &[1, 2, 5, 10];
 
 /// Singleton model that runs async work for ambient agent CLI commands.
 struct AmbientAgentRunner;
@@ -687,19 +679,13 @@ impl AmbientAgentRunner {
 
     fn watch_messages(
         &self,
-        args: MessageWatchArgs,
-        output_format: OutputFormat,
-        ctx: &mut ModelContext<Self>,
+        _args: MessageWatchArgs,
+        _output_format: OutputFormat,
+        _ctx: &mut ModelContext<Self>,
     ) -> anyhow::Result<()> {
-        ensure_stream_output_format(output_format)?;
-        let provider = ServerApiProvider::as_ref(ctx);
-        let server_api = provider.get();
-        let ai_client = provider.get_ai_client();
-
-        let future = async move { watch_messages_forever(server_api, ai_client, args).await };
-        self.spawn_command(future, ctx);
-
-        Ok(())
+        // strip(neuter): agent-event streaming was deleted with the
+        // OrchestrationEventStreamer / agent_events stack.
+        anyhow::bail!("agent message watch is not supported in this build")
     }
 
     fn read_message(
@@ -896,164 +882,10 @@ struct MessageDeliveredResult<'a> {
     delivered: bool,
 }
 
-#[derive(Serialize)]
-struct MessageWatchEvent {
-    sequence: i64,
-    message_id: String,
-    sender_run_id: String,
-    subject: String,
-    body: String,
-    occurred_at: String,
-}
-
 fn format_optional_timestamp(timestamp: Option<&str>) -> &str {
     timestamp.unwrap_or("-")
 }
 
-fn ensure_stream_output_format(output_format: OutputFormat) -> anyhow::Result<()> {
-    if output_format == OutputFormat::Ndjson {
-        return Ok(());
-    }
-
-    Err(anyhow!(
-        "Streaming commands require `--output-format ndjson`"
-    ))
-}
-
-fn stream_retry_backoff(failures: usize) -> Duration {
-    let index = failures
-        .saturating_sub(1)
-        .min(STREAM_RETRY_BACKOFF_STEPS.len() - 1);
-    Duration::from_secs(STREAM_RETRY_BACKOFF_STEPS[index])
-}
-
-fn write_stream_record<T: Serialize>(record: &T) -> anyhow::Result<()> {
-    let mut stdout = std::io::stdout();
-    super::output::write_json_line(record, &mut stdout)?;
-    stdout.flush().context("unable to flush stdout")?;
-    Ok(())
-}
-async fn watch_messages_forever(
-    server_api: Arc<ServerApi>,
-    ai_client: Arc<dyn AIClient>,
-    args: MessageWatchArgs,
-) -> anyhow::Result<()> {
-    let run_id = args.run_id;
-    let watched_run_ids = vec![run_id.clone()];
-    let mut last_seen_sequence = args.since_sequence;
-    let mut initial_connect = true;
-    let mut failures = 0usize;
-
-    loop {
-        let mut stream = match server_api
-            .stream_agent_events(&watched_run_ids, last_seen_sequence)
-            .await
-        {
-            Ok(stream) => {
-                if !initial_connect {
-                    eprintln!(
-                        "Reconnected message watch for run {run_id} at sequence {last_seen_sequence}."
-                    );
-                }
-                initial_connect = false;
-                failures = 0;
-                stream
-            }
-            Err(err) => {
-                if initial_connect {
-                    return Err(err.context("Failed to open agent event stream"));
-                }
-
-                failures += 1;
-                let backoff = stream_retry_backoff(failures);
-                eprintln!(
-                    "Message watch reconnect failed: {err:#}. Retrying in {}s.",
-                    backoff.as_secs()
-                );
-                Timer::after(backoff).await;
-                continue;
-            }
-        };
-
-        loop {
-            match stream.next().await {
-                Some(Ok(reqwest_eventsource::Event::Open)) => {}
-                Some(Ok(reqwest_eventsource::Event::Message(message))) => {
-                    let event = match serde_json::from_str::<AgentRunEvent>(&message.data) {
-                        Ok(event) => event,
-                        Err(err) => {
-                            eprintln!("Skipping malformed agent event payload: {err}");
-                            continue;
-                        }
-                    };
-
-                    if event.sequence <= last_seen_sequence {
-                        continue;
-                    }
-
-                    if event.event_type != "new_message" || event.run_id != run_id {
-                        last_seen_sequence = event.sequence;
-                        continue;
-                    }
-
-                    let Some(message_id) = event.ref_id.clone() else {
-                        eprintln!(
-                            "Skipping new_message event without ref_id at sequence {}.",
-                            event.sequence
-                        );
-                        last_seen_sequence = event.sequence;
-                        continue;
-                    };
-
-                    let message = match ai_client.read_agent_message(&message_id).await {
-                        Ok(message) => message,
-                        Err(err) => {
-                            failures += 1;
-                            let backoff = stream_retry_backoff(failures);
-                            eprintln!(
-                                "Failed to hydrate message {message_id}: {err:#}. Retrying in {}s.",
-                                backoff.as_secs()
-                            );
-                            Timer::after(backoff).await;
-                            break;
-                        }
-                    };
-
-                    let record = MessageWatchEvent {
-                        sequence: event.sequence,
-                        message_id: message.message_id,
-                        sender_run_id: message.sender_run_id,
-                        subject: message.subject,
-                        body: message.body,
-                        occurred_at: event.occurred_at,
-                    };
-                    write_stream_record(&record)?;
-                    last_seen_sequence = event.sequence;
-                }
-                Some(Err(err)) => {
-                    failures += 1;
-                    let backoff = stream_retry_backoff(failures);
-                    eprintln!(
-                        "Message watch disconnected: {err}. Retrying in {}s.",
-                        backoff.as_secs()
-                    );
-                    Timer::after(backoff).await;
-                    break;
-                }
-                None => {
-                    failures += 1;
-                    let backoff = stream_retry_backoff(failures);
-                    eprintln!(
-                        "Message watch stream closed. Reconnecting in {}s.",
-                        backoff.as_secs()
-                    );
-                    Timer::after(backoff).await;
-                    break;
-                }
-            }
-        }
-    }
-}
 
 fn print_send_message_response(
     response: &SendAgentMessageResponse,
