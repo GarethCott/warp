@@ -86,7 +86,6 @@ pub enum CustomAction {
     CopyBlock,
     CopyBlockCommand,
     CopyBlockOutput,
-    ViewSharedBlocks,
     CloseTab,
     CloseOtherTabs,
     CloseTabsRight,
@@ -443,7 +442,6 @@ pub fn custom_tag_to_keystroke(custom: CustomTag) -> Option<Keystroke> {
         | CustomAction::CloseTab
         | CustomAction::CloseOtherTabs
         | CustomAction::CloseTabsRight
-        | CustomAction::ViewSharedBlocks
         | CustomAction::ShowAccount
         | CustomAction::ShowAppearance
         | CustomAction::SaveCurrentConfig
