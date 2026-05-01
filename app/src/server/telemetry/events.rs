@@ -650,12 +650,6 @@ pub enum LaunchConfigUiLocation {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum AICommandSearchEntrypoint {
-    ShortHandTrigger,
-    Keybinding,
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum SecretInteraction {
     RevealSecret,
     HideSecret,
@@ -1516,9 +1510,6 @@ pub enum TelemetryEvent {
     },
     GlobalSearchOpened,
     GlobalSearchQueryStarted,
-    AICommandSearchOpened {
-        entrypoint: AICommandSearchEntrypoint,
-    },
     OpenNotebook(NotebookTelemetryMetadata),
     EditNotebook {
         metadata: NotebookTelemetryMetadata,
@@ -1590,8 +1581,6 @@ pub enum TelemetryEvent {
     InputSelectAll,
     InputPaste,
     InputCommandSearch,
-    InputAICommandSearch,
-    InputAskWarpAI,
     SaveAsWorkflowModal {
         source: SaveAsWorkflowModalSource,
     },
@@ -3078,9 +3067,6 @@ impl TelemetryEvent {
                 filters,
                 error_payload,
             } => Some(json!({ "filter": filters, "error": error_payload })),
-            TelemetryEvent::AICommandSearchOpened { entrypoint } => {
-                Some(json!({ "entrypoint": entrypoint }))
-            }
             TelemetryEvent::OpenNotebook(metadata) => Some(json!(metadata)),
             TelemetryEvent::EditNotebook {
                 metadata,
@@ -4013,8 +3999,6 @@ impl TelemetryEvent {
             | TelemetryEvent::InputSelectAll
             | TelemetryEvent::InputPaste
             | TelemetryEvent::InputCommandSearch
-            | TelemetryEvent::InputAICommandSearch
-            | TelemetryEvent::InputAskWarpAI
             | TelemetryEvent::SetNewWindowsAtCustomSize
             | TelemetryEvent::DisableInputSync
             | TelemetryEvent::ShowSubshellBanner
@@ -4651,7 +4635,6 @@ impl TelemetryEvent {
             | TelemetryEvent::CommandSearchResultAccepted { .. }
             | TelemetryEvent::CommandSearchFilterChanged { .. }
             | TelemetryEvent::CommandSearchAsyncQueryCompleted { .. }
-            | TelemetryEvent::AICommandSearchOpened { .. }
             | TelemetryEvent::OpenNotebook(_)
             | TelemetryEvent::EditNotebook { .. }
             | TelemetryEvent::NotebookAction(_)
@@ -4681,8 +4664,6 @@ impl TelemetryEvent {
             | TelemetryEvent::InputSelectAll
             | TelemetryEvent::InputPaste
             | TelemetryEvent::InputCommandSearch
-            | TelemetryEvent::InputAICommandSearch
-            | TelemetryEvent::InputAskWarpAI
             | TelemetryEvent::SaveAsWorkflowModal { .. }
             | TelemetryEvent::ExperimentTriggered { .. }
             | TelemetryEvent::ToggleSyncAllPanesInAllTabs { .. }
@@ -5202,7 +5183,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::CommandSearchResultAccepted => EnablementState::Always,
             Self::CommandSearchFilterChanged => EnablementState::Always,
             Self::CommandSearchAsyncQueryCompleted => EnablementState::Always,
-            Self::AICommandSearchOpened => EnablementState::Always,
             Self::OpenedAltScreenFind => EnablementState::Always,
             Self::UserInitiatedClose => EnablementState::Always,
             Self::QuitModalShown => EnablementState::Always,
@@ -5228,8 +5208,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::InputSelectAll => EnablementState::Always,
             Self::InputPaste => EnablementState::Always,
             Self::InputCommandSearch => EnablementState::Always,
-            Self::InputAICommandSearch => EnablementState::Always,
-            Self::InputAskWarpAI => EnablementState::Always,
             Self::SaveAsWorkflowModal => EnablementState::Always,
             Self::ExperimentTriggered => EnablementState::Always,
             Self::ToggleSyncAllPanesInAllTabs => EnablementState::Always,
@@ -5693,7 +5671,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::CommandSearchResultAccepted => "Command Search Result Accepted",
             Self::CommandSearchFilterChanged => "Command Search Filter Changed",
             Self::CommandSearchAsyncQueryCompleted => "Command Search Async Query Completed",
-            Self::AICommandSearchOpened => "AI Command Search opened",
             Self::OpenNotebook => "Notebook Opened",
             Self::EditNotebook => "Notebook Edited",
             Self::NotebookAction => "Notebook Action",
@@ -5726,8 +5703,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::InputSelectAll => "InputBoxSelectAll",
             Self::InputPaste => "InputBoxPaste",
             Self::InputCommandSearch => "InputBoxCommandSearch",
-            Self::InputAICommandSearch => "InputBoxAICommandSearch",
-            Self::InputAskWarpAI => "InputBoxAskWarpAI",
             Self::SaveAsWorkflowModal => "Opened Save As Workflow Modal",
             Self::ExperimentTriggered => "experiments.client.enroll_client",
             Self::ToggleSyncAllPanesInAllTabs => "Toggle Sync Inputs Across All Panes in All Tabs",
@@ -6316,9 +6291,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::CommandSearchAsyncQueryCompleted => {
                 "Finished searching for a command in the background"
             }
-            Self::AICommandSearchOpened => {
-                "Opened the modal for AI Command Search, where you can use natural language to search for commands"
-            }
             Self::OpenNotebook => "Opened a notebook",
             Self::EditNotebook => "Edited a notebook",
             Self::NotebookAction => {
@@ -6379,10 +6351,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::InputCommandSearch => {
                 "Opened Command Search via the Input Editor's context menu (right clicking the buffer)"
             }
-            Self::InputAICommandSearch => {
-                "Opened AI Command Search via the Input Editor's context menu (right clicking the buffer)"
-            }
-            Self::InputAskWarpAI => "Clicked \"Ask Warp AI\" from the Input Editor's context menu",
             Self::SaveAsWorkflowModal => {
                 "Opened the modal to create a new workflow using a Block's context--command, etc."
             }
