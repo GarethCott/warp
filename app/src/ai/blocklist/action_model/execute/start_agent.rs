@@ -6,7 +6,6 @@ use crate::ai::agent::{
     AIAgentAction, AIAgentActionResultType, AIAgentActionType, LifecycleEventType,
     StartAgentExecutionMode, StartAgentResult,
 };
-use crate::ai::blocklist::orchestration_event_streamer::OrchestrationEventStreamer;
 use crate::ai::blocklist::orchestration_events::OrchestrationEventService;
 use crate::ai::blocklist::{BlocklistAIHistoryEvent, BlocklistAIHistoryModel};
 use warp_cli::agent::Harness;
@@ -109,19 +108,9 @@ impl StartAgentExecutor {
                         let _ = pending.sender.try_send(StartAgentDecision::Started {
                             agent_id: id.clone(),
                         });
-                        if FeatureFlag::OrchestrationV2.is_enabled() {
-                            OrchestrationEventStreamer::handle(ctx).update(ctx, |streamer, ctx| {
-                                streamer.register_watched_run_id(
-                                    pending.parent_conversation_id,
-                                    id,
-                                    ctx,
-                                );
-                            });
-                        } else {
-                            OrchestrationEventService::handle(ctx).update(ctx, |svc, ctx| {
-                                svc.emit_child_startup_started(*conversation_id, ctx);
-                            });
-                        }
+                        OrchestrationEventService::handle(ctx).update(ctx, |svc, ctx| {
+                            svc.emit_child_startup_started(*conversation_id, ctx);
+                        });
                     }
                     None => {
                         log::error!(

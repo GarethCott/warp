@@ -36,6 +36,7 @@ impl MessageHydrator {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) async fn hydrate_event_for_recipient(
         &self,
         event: &AgentRunEvent,
@@ -94,6 +95,7 @@ impl MessageHydrator {
             .with_context(|| format!("Failed to read agent message {message_id}"))
     }
 
+    #[allow(dead_code)]
     pub(crate) async fn read_message_from_event_with_timeout(
         &self,
         event: &AgentRunEvent,

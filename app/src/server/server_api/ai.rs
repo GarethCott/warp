@@ -869,16 +869,6 @@ pub trait AIClient: 'static + Send + Sync {
         request: ListAgentMessagesRequest,
     ) -> anyhow::Result<Vec<AgentMessageHeader>, anyhow::Error>;
 
-    /// Persists the latest observed event sequence number for a run on the
-    /// server. Used to keep the server-side cursor in sync with the client so
-    /// that driver/cloud restores can resume without replaying events the
-    /// parent has already acted on.
-    async fn update_event_sequence_on_server(
-        &self,
-        run_id: &str,
-        sequence: i64,
-    ) -> anyhow::Result<(), anyhow::Error>;
-
     async fn mark_message_delivered(&self, message_id: &str) -> anyhow::Result<(), anyhow::Error>;
 
     async fn read_agent_message(
@@ -1687,22 +1677,6 @@ impl AIClient for ServerApi {
         let path = format!("agent/messages/{run_id}?{}", params.join("&"));
         let response: Vec<AgentMessageHeader> = self.get_public_api(&path).await?;
         Ok(response)
-    }
-
-    async fn update_event_sequence_on_server(
-        &self,
-        run_id: &str,
-        sequence: i64,
-    ) -> anyhow::Result<(), anyhow::Error> {
-        #[derive(serde::Serialize)]
-        struct UpdateBody {
-            sequence: i64,
-        }
-        self.patch_public_api_unit(
-            &format!("agent/runs/{run_id}/event-sequence"),
-            &UpdateBody { sequence },
-        )
-        .await
     }
 
     async fn mark_message_delivered(&self, message_id: &str) -> anyhow::Result<(), anyhow::Error> {
