@@ -68,8 +68,6 @@ pub enum CLIAgentInputState {
 pub enum CLIAgentRichInputCloseReason {
     /// User explicitly closed (Escape, Ctrl-G, footer button).
     Manual,
-    /// Auto-closed due to agent status change (e.g. Blocked).
-    AutoToggle,
     /// Auto-dismissed after submitting a prompt.
     Submit,
     /// Closed for another reason (chip removed, session ended, shared session sync).
@@ -83,9 +81,6 @@ pub enum CLIAgentInputEntrypoint {
     CtrlG,
     /// User clicked the rich input button in the CLI agent footer.
     FooterButton,
-    /// Automatically opened when the CLI agent resumed work (left a blocked state)
-    /// and the auto-show setting is enabled.
-    AutoShow,
     /// Rich input was opened to mirror a shared-session participant's state.
     SharedSessionSync,
 }
