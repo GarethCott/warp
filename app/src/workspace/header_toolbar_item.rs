@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::auth::AuthStateProvider;
 use crate::features::FeatureFlag;
 use crate::settings::AISettings;
 use crate::ui_components::icons::Icon;
@@ -29,7 +28,6 @@ use warpui::{AppContext, SingletonEntity};
 pub enum HeaderToolbarItemKind {
     TabsPanel,
     ToolsPanel,
-    AgentManagement,
     CodeReview,
     NotificationsMailbox,
 }
@@ -39,7 +37,6 @@ impl HeaderToolbarItemKind {
         match self {
             Self::TabsPanel => "Tabs Panel",
             Self::ToolsPanel => "Tools Panel",
-            Self::AgentManagement => "Agent Management",
             Self::CodeReview => "Code Review",
             Self::NotificationsMailbox => "Notifications",
         }
@@ -49,7 +46,6 @@ impl HeaderToolbarItemKind {
         match self {
             Self::TabsPanel => Icon::Menu,
             Self::ToolsPanel => Icon::Tool2,
-            Self::AgentManagement => Icon::Grid,
             Self::CodeReview => Icon::Diff,
             Self::NotificationsMailbox => Icon::Inbox,
         }
@@ -65,15 +61,6 @@ impl HeaderToolbarItemKind {
                     && *TabSettings::as_ref(app).use_vertical_tabs
             }
             Self::ToolsPanel => true,
-            Self::AgentManagement => {
-                let is_web_anonymous_user = AuthStateProvider::as_ref(app)
-                    .get()
-                    .is_user_web_anonymous_user()
-                    .unwrap_or_default();
-                AISettings::as_ref(app).is_any_ai_enabled(app)
-                    && FeatureFlag::AgentManagementView.is_enabled()
-                    && !is_web_anonymous_user
-            }
             Self::CodeReview => cfg!(feature = "local_fs"),
             Self::NotificationsMailbox => FeatureFlag::HOANotifications.is_enabled(),
         }
@@ -99,7 +86,7 @@ impl HeaderToolbarItemKind {
     }
 
     pub fn default_left() -> Vec<Self> {
-        vec![Self::TabsPanel, Self::ToolsPanel, Self::AgentManagement]
+        vec![Self::TabsPanel, Self::ToolsPanel]
     }
 
     pub fn default_right() -> Vec<Self> {
@@ -111,7 +98,6 @@ impl HeaderToolbarItemKind {
         vec![
             Self::TabsPanel,
             Self::ToolsPanel,
-            Self::AgentManagement,
             Self::CodeReview,
             Self::NotificationsMailbox,
         ]
