@@ -250,7 +250,6 @@ use crate::remote_server::manager::RemoteServerManagerEvent;
 use crate::terminal::keys_settings::KeysSettings;
 use crate::terminal::shared_session::SharedSessionActionSource;
 
-use crate::ai::blocklist::agent_view::editor::{AgentToolbarEditorEvent, AgentToolbarEditorModal};
 use crate::prompt::editor_modal::{
     EditorModal as PromptEditorModal, EditorModalEvent as PromptEditorModalEvent,
     OpenSource as PromptEditorOpenSource,
@@ -936,7 +935,6 @@ pub struct Workspace {
     require_login_modal: ViewHandle<AuthView>,
     workflow_modal: ViewHandle<WorkflowModal>,
     prompt_editor_modal: ViewHandle<PromptEditorModal>,
-    agent_toolbar_editor_modal: ViewHandle<AgentToolbarEditorModal>,
     header_toolbar_editor_modal: ViewHandle<HeaderToolbarEditorModal>,
     header_toolbar_context_menu: ViewHandle<Menu<WorkspaceAction>>,
     show_header_toolbar_context_menu: Option<Vector2F>,
@@ -1398,16 +1396,6 @@ impl Workspace {
         let modal = ctx.add_typed_action_view(PromptEditorModal::new);
         ctx.subscribe_to_view(&modal, |me, _, event, ctx| {
             me.handle_prompt_editor_modal_event(event, ctx);
-        });
-        modal
-    }
-
-    fn build_agent_toolbar_editor_modal(
-        ctx: &mut ViewContext<Self>,
-    ) -> ViewHandle<AgentToolbarEditorModal> {
-        let modal = ctx.add_typed_action_view(AgentToolbarEditorModal::new);
-        ctx.subscribe_to_view(&modal, |me, _, event, ctx| {
-            me.handle_agent_toolbar_editor_modal_event(event, ctx);
         });
         modal
     }
@@ -2871,7 +2859,6 @@ impl Workspace {
             .collect();
 
         let prompt_editor_modal = Self::build_prompt_editor_modal(ctx);
-        let agent_toolbar_editor_modal = Self::build_agent_toolbar_editor_modal(ctx);
 
         let import_modal = Self::build_import_modal(ctx);
 
@@ -3037,7 +3024,6 @@ impl Workspace {
             update_toast_stack,
             cached_keybindings,
             prompt_editor_modal,
-            agent_toolbar_editor_modal,
             header_toolbar_editor_modal: Self::build_header_toolbar_editor_modal(ctx),
             header_toolbar_context_menu: Self::build_header_toolbar_context_menu(ctx),
             show_header_toolbar_context_menu: None,
@@ -5319,20 +5305,6 @@ impl Workspace {
         match event {
             PromptEditorModalEvent::Close => {
                 self.current_workspace_state.is_prompt_editor_open = false;
-                self.focus_active_tab(ctx);
-                ctx.notify();
-            }
-        }
-    }
-
-    fn handle_agent_toolbar_editor_modal_event(
-        &mut self,
-        event: &AgentToolbarEditorEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        match event {
-            AgentToolbarEditorEvent::Close => {
-                self.current_workspace_state.is_agent_toolbar_editor_open = false;
                 self.focus_active_tab(ctx);
                 ctx.notify();
             }
@@ -15816,17 +15788,10 @@ impl Workspace {
 
     fn open_agent_toolbar_editor(
         &mut self,
-        mode: AgentToolbarEditorMode,
-        ctx: &mut ViewContext<Self>,
+        _mode: AgentToolbarEditorMode,
+        _ctx: &mut ViewContext<Self>,
     ) {
-        if !FeatureFlag::AgentToolbarEditor.is_enabled() {
-            return;
-        }
-        self.agent_toolbar_editor_modal
-            .update(ctx, |modal, ctx| modal.open(mode, ctx));
-        self.close_all_overlays(ctx);
-        self.current_workspace_state.is_agent_toolbar_editor_open = true;
-        ctx.focus(&self.agent_toolbar_editor_modal);
+        // strip(neuter): AgentToolbarEditor was stripped in this fork.
     }
 
     fn open_theme_creator_modal(&mut self, ctx: &mut ViewContext<Self>) {
@@ -21557,12 +21522,6 @@ impl View for Workspace {
 
         if self.current_workspace_state.is_prompt_editor_open {
             stack.add_child(ChildView::new(&self.prompt_editor_modal).finish());
-        }
-
-        if FeatureFlag::AgentToolbarEditor.is_enabled()
-            && self.current_workspace_state.is_agent_toolbar_editor_open
-        {
-            stack.add_child(ChildView::new(&self.agent_toolbar_editor_modal).finish());
         }
 
         if self.current_workspace_state.is_header_toolbar_editor_open {

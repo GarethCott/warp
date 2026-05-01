@@ -15267,21 +15267,9 @@ impl TerminalView {
             .agent_view_state()
             .is_active();
         let edit_menu_item = if has_cli_agent_session {
-            FeatureFlag::AgentToolbarEditor.is_enabled().then(|| {
-                MenuItemFields::new("Edit CLI agent toolbelt")
-                    .with_on_select_action(TerminalAction::ContextMenu(
-                        ContextMenuAction::EditCLIAgentToolbar,
-                    ))
-                    .into_item()
-            })
+            None
         } else if is_agent_view_active {
-            FeatureFlag::AgentToolbarEditor.is_enabled().then(|| {
-                MenuItemFields::new("Edit agent toolbelt")
-                    .with_on_select_action(TerminalAction::ContextMenu(
-                        ContextMenuAction::EditAgentToolbar,
-                    ))
-                    .into_item()
-            })
+            None
         } else {
             Some(
                 MenuItemFields::new("Edit prompt")
@@ -22072,14 +22060,10 @@ impl TerminalView {
             CopyRprompt => self.copy_rprompt(ctx),
             EditPrompt => self.edit_prompt(ctx),
             EditAgentToolbar => {
-                if FeatureFlag::AgentToolbarEditor.is_enabled() {
-                    ctx.emit(Event::OpenAgentToolbarEditor);
-                }
+                // strip(neuter): AgentToolbarEditor was stripped in this fork.
             }
             EditCLIAgentToolbar => {
-                if FeatureFlag::AgentToolbarEditor.is_enabled() {
-                    ctx.emit(Event::OpenCLIAgentToolbarEditor);
-                }
+                // strip(neuter): AgentToolbarEditor was stripped in this fork.
             }
             OpenWorkflowModal => self.open_workflow_modal(ctx),
             OpenShareSessionModal => self.open_share_session_modal(source, ctx),

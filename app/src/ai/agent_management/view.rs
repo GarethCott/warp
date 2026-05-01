@@ -956,7 +956,7 @@ impl AgentManagementView {
                 let artifacts = t.artifacts(ctx);
 
                 let copy_link_url = t.session_or_conversation_link(ctx);
-                let mut config = match t {
+                let config = match t {
                     ConversationOrTask::Task(task) => ActionButtonsConfig::for_task(
                         task.task_id,
                         &t.display_status(ctx),
@@ -971,11 +971,6 @@ impl AgentManagementView {
                         )
                     }
                 };
-                // Show info button in card hover for ViewDetails if feature flag enabled
-                if FeatureFlag::AgentManagementDetailsView.is_enabled() {
-                    config.view_details_item_id = Some(item_id.clone());
-                }
-
                 CardData {
                     item_id,
                     artifacts,
