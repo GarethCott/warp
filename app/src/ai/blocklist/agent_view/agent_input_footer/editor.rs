@@ -52,6 +52,7 @@ pub enum AgentToolbarEditorAction {
     Activate,
 }
 
+#[allow(dead_code)]
 fn open_toolbar_items_from_settings<V: View>(
     chip_configurator: &mut ChipConfigurator,
     mode: AgentToolbarEditorMode,
@@ -159,6 +160,7 @@ fn save_toolbar_selection<V: View>(
 }
 
 impl AgentToolbarEditorModal {
+    #[allow(dead_code)]
     pub fn new(_ctx: &mut ViewContext<Self>) -> Self {
         Self {
             mouse_handles: Default::default(),
@@ -168,6 +170,7 @@ impl AgentToolbarEditorModal {
         }
     }
 
+    #[allow(dead_code)]
     pub fn open(&mut self, mode: AgentToolbarEditorMode, ctx: &mut ViewContext<Self>) {
         self.reset();
         self.mode = mode;
