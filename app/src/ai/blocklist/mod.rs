@@ -71,9 +71,6 @@ pub(crate) use view_util::format_credits;
 pub use crate::ai::blocklist::block::{secret_redaction, AIBlockResponseRating, TextLocation};
 pub use block::keyboard_navigable_buttons;
 pub use block::toggleable_items;
-pub use controller::input_context::{
-    BLOCK_CONTEXT_ATTACHMENT_REGEX, DIFF_HUNK_ATTACHMENT_REGEX, DRIVE_OBJECT_ATTACHMENT_REGEX,
-};
 pub use permissions::{BlocklistAIPermissions, CommandExecutionPermissionAllowedReason};
 pub use suggestion_chip_view::*;
 pub use view_util::error_color;

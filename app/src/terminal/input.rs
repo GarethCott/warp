@@ -112,8 +112,6 @@ use crate::{
             BlocklistAIContextEvent, BlocklistAIContextModel, BlocklistAIController,
             BlocklistAIControllerEvent, BlocklistAIHistoryEvent, BlocklistAIHistoryModel,
             BlocklistAIInputEvent, BlocklistAIInputModel, InputConfig, InputType,
-            BLOCK_CONTEXT_ATTACHMENT_REGEX, DIFF_HUNK_ATTACHMENT_REGEX,
-            DRIVE_OBJECT_ATTACHMENT_REGEX,
         },
         llms::{LLMPreferences, LLMPreferencesEvent},
         predict::{
@@ -434,9 +432,6 @@ const HISTORY_DETAILS_VIEW_WIDTH_REQUIREMENT: f32 = 1100.;
 const MIN_BUFFER_LEN_TO_SHOW_COMPLETIONS_WHILE_TYPING: usize = 2;
 
 const AI_COMMAND_SEARCH_TRIGGER: &str = "#";
-
-/// If the editor buffer matches this prefix, AI input is enabled.
-const AI_INPUT_PREFIX: &str = "* ";
 
 /// If the editor buffer matches this prefix, terminal input is enabled and locked.
 const TERMINAL_INPUT_PREFIX: &str = "!";
@@ -8575,14 +8570,6 @@ impl Input {
                     }
                 });
 
-                // Force AI mode if buffer contains any attachment patterns (blocks, drive objects, diffs)
-                if false && edit_origin.is_user() {
-                    let buffer_text = self.buffer_text(ctx);
-                    if Self::buffer_contains_attachment_patterns(&buffer_text) {
-                        self.ensure_agent_mode_for_ai_features(false, ctx);
-                    }
-                }
-
                 if should_open_ai_context_menu {
                     let cursor_pos = self.editor.read(ctx, |editor, ctx| {
                         editor.start_byte_index_of_last_selection(ctx)
@@ -8712,70 +8699,8 @@ impl Input {
                     }
                 }
 
-                if false
-                    && self.editor_starts_with_command_search_trigger(ctx)
-                    && *edit_origin == EditOrigin::UserTyped
-                    && !self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
-                {
-                    // If last buffer didn't start with '#' and current buffer does,
-                    // then show command search.
-                    let last_buffer_text = self.editor.as_ref(ctx).last_buffer_text(ctx);
-                    if !last_buffer_text.starts_with(AI_COMMAND_SEARCH_TRIGGER) {
-                        self.show_ai_command_search(ctx);
-                    }
-                    ctx.notify();
-                }
-
                 let is_input_mode_locked = self.ai_input_model.as_ref(ctx).is_input_type_locked();
                 let buffer_text = self.buffer_text(ctx);
-
-                // If the last buffer didn't start with the AI input prefix and the current buffer does, then enable AI input.
-                if FeatureFlag::AgentMode.is_enabled()
-                    && !FeatureFlag::AgentView.is_enabled()
-                    && false
-                    && (!is_ai_input_enabled || !is_input_mode_locked)
-                {
-                    if buffer_text.starts_with(AI_INPUT_PREFIX)
-                        && *edit_origin == EditOrigin::UserTyped
-                    {
-                        let last_buffer_text = self.editor.as_ref(ctx).last_buffer_text(ctx);
-
-                        if !last_buffer_text.starts_with(AI_INPUT_PREFIX) {
-                            // Remove the prefix from the editor contents.
-                            let is_input_buffer_empty =
-                                self.editor.update(ctx, |editor_view, ctx| {
-                                    if let Some(query) =
-                                        editor_view.buffer_text(ctx).strip_prefix(AI_INPUT_PREFIX)
-                                    {
-                                        editor_view.set_buffer_text(query, ctx);
-                                    }
-                                    editor_view.buffer_text(ctx).is_empty()
-                                });
-
-                            self.ai_input_model.update(ctx, |ai_input_model, ctx| {
-                                ai_input_model.set_input_config(
-                                    InputConfig {
-                                        input_type: InputType::AI,
-                                        is_locked: true,
-                                    },
-                                    is_input_buffer_empty,
-                                    ctx,
-                                );
-                            });
-                        }
-                    } else if buffer_text.is_empty() && is_input_mode_locked {
-                        self.ai_input_model.update(ctx, |input_model, ctx| {
-                            input_model.set_input_config_for_classic_mode(
-                                input_model
-                                    .input_config()
-                                    .unlocked_if_autodetection_enabled(false, ctx),
-                                ctx,
-                            );
-                        });
-                    }
-
-                    ctx.notify();
-                }
 
                 let ai_settings = AISettings::as_ref(ctx);
                 if FeatureFlag::AgentView.is_enabled() && buffer_text.is_empty() {
@@ -9079,26 +9004,7 @@ impl Input {
                     }
                 }
             }
-            EditorEvent::BufferReplaced => {
-                let ai_input_model = self.ai_input_model.as_ref(ctx);
-                if FeatureFlag::AgentMode.is_enabled()
-                    && false
-                    && !ai_input_model.is_ai_input_enabled()
-                    && ai_input_model.is_input_type_locked()
-                {
-                    // If this edit effectively emptied the buffer and we're in shell mode,
-                    // unlock the input so autodetection can kick in.
-                    self.ai_input_model.update(ctx, |input_model, ctx| {
-                        input_model.set_input_config_for_classic_mode(
-                            input_model
-                                .input_config()
-                                .unlocked_if_autodetection_enabled(false, ctx),
-                            ctx,
-                        );
-                    });
-                    ctx.notify();
-                }
-            }
+            EditorEvent::BufferReplaced => {}
             EditorEvent::SelectionChanged => {
                 let mode = self.suggestions_mode_model.as_ref(ctx).mode().clone();
                 let is_completion_suggestions =
@@ -13718,14 +13624,6 @@ impl Input {
     /// editor contents.
     fn editor_starts_with_command_search_trigger(&self, ctx: &AppContext) -> bool {
         self.buffer_text(ctx).starts_with(AI_COMMAND_SEARCH_TRIGGER)
-    }
-
-    /// Returns whether the buffer contains any attachment patterns (blocks, drive objects, or diffs).
-    /// These patterns indicate the user is referencing context that requires AI mode.
-    fn buffer_contains_attachment_patterns(buffer_text: &str) -> bool {
-        BLOCK_CONTEXT_ATTACHMENT_REGEX.is_match(buffer_text)
-            || DRIVE_OBJECT_ATTACHMENT_REGEX.is_match(buffer_text)
-            || DIFF_HUNK_ATTACHMENT_REGEX.is_match(buffer_text)
     }
 
     /// Shows the AI command search panel.
