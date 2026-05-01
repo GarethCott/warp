@@ -58,6 +58,16 @@ pub enum RequestLimitRefreshDuration {
     EveryTwoWeeks,
 }
 
+impl From<warp_graphql::ai::RequestLimitRefreshDuration> for RequestLimitRefreshDuration {
+    fn from(value: warp_graphql::ai::RequestLimitRefreshDuration) -> Self {
+        match value {
+            warp_graphql::ai::RequestLimitRefreshDuration::Monthly => Self::Monthly,
+            warp_graphql::ai::RequestLimitRefreshDuration::Weekly => Self::Weekly,
+            warp_graphql::ai::RequestLimitRefreshDuration::EveryTwoWeeks => Self::EveryTwoWeeks,
+        }
+    }
+}
+
 /// The current rate limit info for the user.
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct RequestLimitInfo {
@@ -79,6 +89,26 @@ pub struct RequestLimitInfo {
     pub max_files_per_repo: usize,
     #[serde(default)]
     pub embedding_generation_batch_size: usize,
+}
+
+impl From<warp_graphql::ai::RequestLimitInfo> for RequestLimitInfo {
+    fn from(value: warp_graphql::ai::RequestLimitInfo) -> Self {
+        Self {
+            is_unlimited: value.is_unlimited,
+            limit: value.request_limit as usize,
+            num_requests_used_since_refresh: value.requests_used_since_last_refresh as usize,
+            next_refresh_time: value.next_refresh_time,
+            request_limit_refresh_duration: value.request_limit_refresh_duration.into(),
+            is_unlimited_voice: value.is_unlimited_voice,
+            voice_request_limit: value.voice_request_limit as usize,
+            voice_requests_used_since_last_refresh: value.voice_requests_used_since_last_refresh
+                as usize,
+            is_unlimited_codebase_indices: value.is_unlimited_codebase_indices,
+            max_codebase_indices: value.max_codebase_indices as usize,
+            max_files_per_repo: value.max_files_per_repo as usize,
+            embedding_generation_batch_size: value.embedding_generation_batch_size as usize,
+        }
+    }
 }
 
 fn default_voice_requests_limit() -> usize {

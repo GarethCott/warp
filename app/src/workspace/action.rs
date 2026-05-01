@@ -221,7 +221,6 @@ pub enum WorkspaceAction {
     DispatchToSettingsTab(SettingsTabAction),
     ToggleResourceCenter,
     ToggleUserMenu,
-    ClickedAIAssistantIcon,
     ToggleKeybindingsPage,
     ShowCommandSearch(CommandSearchOptions),
     CreatePersonalNotebook,
@@ -783,7 +782,6 @@ impl WorkspaceAction {
             | DispatchToSettingsTab { .. }
             | ToggleResourceCenter
             | ToggleUserMenu
-            | ClickedAIAssistantIcon
             | OpenCloudAgentSetupGuide
             | ToggleKeybindingsPage
             | ShowCommandSearch(_)

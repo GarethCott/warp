@@ -24,9 +24,7 @@ use warpui::{
 };
 
 use crate::{
-    ai_assistant::{
-        execution_context::WarpAiExecutionContext, GenerateCommandsFromNaturalLanguageError,
-    },
+    ai_assistant::execution_context::WarpAiExecutionContext,
     appearance::Appearance,
     auth::{
         auth_manager::AuthManager, auth_state::AuthState, auth_view_modal::AuthViewVariant,
@@ -796,20 +794,10 @@ impl CommandSearchView {
                     .first_data_source_error()
                     .map(|(.., e)| e)
                 {
-                    let is_ratelimit_error = error
-                        .as_any()
-                        .downcast_ref::<GenerateCommandsFromNaturalLanguageError>()
-                        .map(|generate_commands_error| {
-                            matches!(
-                                generate_commands_error,
-                                GenerateCommandsFromNaturalLanguageError::RateLimited
-                            )
-                        })
-                        .unwrap_or(false);
                     column.add_child(self.render_error_header(
                         app,
                         error.user_facing_error(),
-                        is_ratelimit_error,
+                        false,
                         appearance,
                     ));
                 }

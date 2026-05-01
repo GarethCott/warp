@@ -21,7 +21,9 @@ pub mod web_handoff;
 use crate::ai::agent_conversations_model::AgentConversationsModel;
 use crate::ai::blocklist::BlocklistAIHistoryModel;
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
-use crate::ai_assistant::requests::REQUEST_LIMIT_INFO_CACHE_KEY;
+/// Cache key for the legacy AI assistant request-limit info, retained so the
+/// logout flow can clear residue from prior installations of upstream warp.
+const REQUEST_LIMIT_INFO_CACHE_KEY: &str = "AIAssistantRequestLimitInfo";
 use crate::code::editor_management::{CodeEditorStatus, CodeEditorSummary};
 use crate::env_vars::manager::EnvVarCollectionManager;
 use crate::notebooks::manager::NotebookManager;
