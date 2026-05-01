@@ -15,7 +15,6 @@ use super::{
     main_page::MainSettingsPageView,
     mcp_servers_page::MCPServersSettingsPageView,
     privacy_page::PrivacyPageView,
-    show_blocks_view::ShowBlocksView,
     warpify_page::WarpifyPageView,
     SettingsSection,
 };
@@ -99,7 +98,6 @@ pub enum SettingsPageViewHandle {
     Main(ViewHandle<MainSettingsPageView>),
     Appearance(ViewHandle<AppearanceSettingsPageView>),
     Features(ViewHandle<FeaturesPageView>),
-    SharedBlocks(ViewHandle<ShowBlocksView>),
     Keybindings(ViewHandle<KeybindingsView>),
     About(ViewHandle<AboutPageView>),
     Code(ViewHandle<CodeSettingsPageView>),
@@ -116,7 +114,6 @@ impl SettingsPageViewHandle {
             Main(view_handle) => ChildView::new(view_handle).finish(),
             Appearance(view_handle) => ChildView::new(view_handle).finish(),
             Features(view_handle) => ChildView::new(view_handle).finish(),
-            SharedBlocks(view_handle) => ChildView::new(view_handle).finish(),
             Keybindings(view_handle) => ChildView::new(view_handle).finish(),
             About(view_handle) => ChildView::new(view_handle).finish(),
             Code(view_handle) => ChildView::new(view_handle).finish(),
