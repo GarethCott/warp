@@ -9,7 +9,6 @@ use crate::ai::agent::{
 use crate::ai::blocklist::orchestration_events::OrchestrationEventService;
 use crate::ai::blocklist::{BlocklistAIHistoryEvent, BlocklistAIHistoryModel};
 use warp_cli::agent::Harness;
-use warp_core::features::FeatureFlag;
 
 use super::{ActionExecution, AnyActionExecution, ExecuteActionInput, PreprocessActionInput};
 
@@ -120,16 +119,14 @@ impl StartAgentExecutor {
                         let _ = pending.sender.try_send(StartAgentDecision::Error(
                             "Server did not assign an agent identifier".to_string(),
                         ));
-                        if !FeatureFlag::OrchestrationV2.is_enabled() {
-                            OrchestrationEventService::handle(ctx).update(ctx, |svc, ctx| {
-                                svc.emit_child_startup_errored(
-                                    *conversation_id,
-                                    "missing_agent_id".to_string(),
-                                    "Server did not assign an agent identifier".to_string(),
-                                    ctx,
-                                );
-                            });
-                        }
+                        OrchestrationEventService::handle(ctx).update(ctx, |svc, ctx| {
+                            svc.emit_child_startup_errored(
+                                *conversation_id,
+                                "missing_agent_id".to_string(),
+                                "Server did not assign an agent identifier".to_string(),
+                                ctx,
+                            );
+                        });
                     }
                 }
             }
@@ -156,16 +153,14 @@ impl StartAgentExecutor {
                     let _ = pending
                         .sender
                         .try_send(StartAgentDecision::Error(error_msg.clone()));
-                    if !FeatureFlag::OrchestrationV2.is_enabled() {
-                        OrchestrationEventService::handle(ctx).update(ctx, |svc, ctx| {
-                            svc.emit_child_startup_errored(
-                                *conversation_id,
-                                "conversation_status".to_string(),
-                                error_msg,
-                                ctx,
-                            );
-                        });
-                    }
+                    OrchestrationEventService::handle(ctx).update(ctx, |svc, ctx| {
+                        svc.emit_child_startup_errored(
+                            *conversation_id,
+                            "conversation_status".to_string(),
+                            error_msg,
+                            ctx,
+                        );
+                    });
                 }
             }
             BlocklistAIHistoryEvent::CreatedSubtask { .. }
@@ -235,113 +230,28 @@ impl StartAgentExecutor {
             StartAgentExecutionMode::Local {
                 harness_type: Some(harness_type),
             } => {
-                let Some(harness) = Harness::parse_local_child_harness(&harness_type) else {
+                if Harness::parse_local_child_harness(&harness_type).is_none() {
                     return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
                         StartAgentResult::Error {
                             error: invalid_local_child_harness_error(&harness_type),
                             version,
                         },
                     ));
-                };
-
-                if !FeatureFlag::OrchestrationV2.is_enabled() {
-                    return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
-                        StartAgentResult::Error {
-                            error: "Local harness child agents require orchestration v2."
-                                .to_string(),
-                            version,
-                        },
-                    ));
                 }
-
-                let parent_run_id = BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&parent_conversation_id)
-                    .and_then(|conversation| conversation.run_id());
-                let Some(parent_run_id) = parent_run_id else {
-                    return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
-                        StartAgentResult::Error {
-                            error:
-                                "Local harness child agents require the parent run_id to be available."
-                                    .to_string(),
-                            version,
-                        },
-                    ));
-                };
-
-                (
-                    StartAgentExecutionMode::Local {
-                        harness_type: Some(harness.to_string()),
+                return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
+                    StartAgentResult::Error {
+                        error: "Local harness child agents require orchestration v2.".to_string(),
+                        version,
                     },
-                    Some(parent_run_id),
-                )
+                ));
             }
-            StartAgentExecutionMode::Remote {
-                environment_id,
-                skill_references,
-                model_id,
-                computer_use_enabled,
-                worker_host,
-                harness_type,
-                title,
-            } => {
-                if !FeatureFlag::OrchestrationV2.is_enabled() {
-                    return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
-                        StartAgentResult::Error {
-                            error: "Remote child agents require orchestration v2.".to_string(),
-                            version,
-                        },
-                    ));
-                }
-
-                let harness_type = Harness::parse_orchestration_harness(&harness_type)
-                    .map(|harness| harness.to_string())
-                    .unwrap_or(harness_type);
-                if Harness::parse_orchestration_harness(&harness_type) == Some(Harness::OpenCode) {
-                    return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
-                        StartAgentResult::Error {
-                            error: "Remote child agents do not support the opencode harness yet."
-                                .to_string(),
-                            version,
-                        },
-                    ));
-                }
-
-                // An empty environment_id is allowed and means the child will be spawned with an
-                // empty environment (no preconfigured repositories, secrets, or integrations).
-                // Callers are discouraged from relying on this, but we intentionally do not reject
-                // it here so that agent authors can opt into running without an environment.
-                if environment_id.trim().is_empty() {
-                    log::warn!(
-                        "Starting remote child agent with empty environment_id; the child will run \
-                         with an empty environment."
-                    );
-                }
-
-                let parent_run_id = BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&parent_conversation_id)
-                    .and_then(|conversation| conversation.run_id());
-                let Some(parent_run_id) = parent_run_id else {
-                    return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
-                        StartAgentResult::Error {
-                            error: "Remote child agents require the parent run_id to be available."
-                                .to_string(),
-                            version,
-                        },
-                    ));
-                };
-
-                (
-                    StartAgentExecutionMode::Remote {
-                        environment_id,
-                        skill_references,
-                        model_id,
-                        computer_use_enabled,
-                        worker_host,
-                        harness_type,
-                        title,
+            StartAgentExecutionMode::Remote { .. } => {
+                return ActionExecution::Sync(AIAgentActionResultType::StartAgent(
+                    StartAgentResult::Error {
+                        error: "Remote child agents require orchestration v2.".to_string(),
+                        version,
                     },
-                    Some(parent_run_id),
-                )
+                ));
             }
         };
 

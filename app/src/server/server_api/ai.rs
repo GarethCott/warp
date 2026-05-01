@@ -191,49 +191,6 @@ pub struct SpawnAgentRequest {
     pub referenced_attachments: Vec<String>,
 }
 
-// --- Orchestrations V2 messaging types ---
-
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct SendAgentMessageRequest {
-    pub to: Vec<String>,
-    pub subject: String,
-    pub body: String,
-    pub sender_run_id: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct ListAgentMessagesRequest {
-    pub unread_only: bool,
-    pub since: Option<String>,
-    pub limit: i32,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct SendAgentMessageResponse {
-    pub message_ids: Vec<String>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct AgentMessageHeader {
-    pub message_id: String,
-    pub sender_run_id: String,
-    pub subject: String,
-    pub sent_at: String,
-    pub delivered_at: Option<String>,
-    pub read_at: Option<String>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ReadAgentMessageResponse {
-    pub message_id: String,
-    pub sender_run_id: String,
-    pub subject: String,
-    pub body: String,
-    pub sent_at: String,
-    pub delivered_at: Option<String>,
-    pub read_at: Option<String>,
-}
-
 #[derive(serde::Deserialize)]
 pub struct SpawnAgentResponse {
     pub task_id: AmbientAgentTaskId,
@@ -845,26 +802,6 @@ pub trait AIClient: 'static + Send + Sync {
         &self,
         task_id: &AmbientAgentTaskId,
     ) -> anyhow::Result<Vec<TaskAttachment>, anyhow::Error>;
-
-    // --- Orchestrations V2 messaging ---
-
-    async fn send_agent_message(
-        &self,
-        request: SendAgentMessageRequest,
-    ) -> anyhow::Result<SendAgentMessageResponse, anyhow::Error>;
-
-    async fn list_agent_messages(
-        &self,
-        run_id: &str,
-        request: ListAgentMessagesRequest,
-    ) -> anyhow::Result<Vec<AgentMessageHeader>, anyhow::Error>;
-
-    async fn mark_message_delivered(&self, message_id: &str) -> anyhow::Result<(), anyhow::Error>;
-
-    async fn read_agent_message(
-        &self,
-        message_id: &str,
-    ) -> anyhow::Result<ReadAgentMessageResponse, anyhow::Error>;
 
     /// Fetch a normalized conversation by conversation ID.
     async fn get_public_conversation(
@@ -1638,50 +1575,6 @@ impl AIClient for ServerApi {
                     .unwrap_or_else(|| "application/octet-stream".to_string()),
             })
             .collect())
-    }
-
-    // --- Orchestrations V2 messaging ---
-
-    async fn send_agent_message(
-        &self,
-        request: SendAgentMessageRequest,
-    ) -> anyhow::Result<SendAgentMessageResponse, anyhow::Error> {
-        let response: SendAgentMessageResponse =
-            self.post_public_api("agent/messages", &request).await?;
-        Ok(response)
-    }
-
-    async fn list_agent_messages(
-        &self,
-        run_id: &str,
-        request: ListAgentMessagesRequest,
-    ) -> anyhow::Result<Vec<AgentMessageHeader>, anyhow::Error> {
-        let mut params = vec![format!("limit={}", request.limit)];
-        if request.unread_only {
-            params.push("unread=true".to_string());
-        }
-        if let Some(since) = request.since {
-            params.push(format!("since={}", urlencoding::encode(&since)));
-        }
-
-        let path = format!("agent/messages/{run_id}?{}", params.join("&"));
-        let response: Vec<AgentMessageHeader> = self.get_public_api(&path).await?;
-        Ok(response)
-    }
-
-    async fn mark_message_delivered(&self, message_id: &str) -> anyhow::Result<(), anyhow::Error> {
-        self.post_public_api_unit(&format!("agent/messages/{message_id}/delivered"), &())
-            .await
-    }
-
-    async fn read_agent_message(
-        &self,
-        message_id: &str,
-    ) -> anyhow::Result<ReadAgentMessageResponse, anyhow::Error> {
-        let response: ReadAgentMessageResponse = self
-            .post_public_api(&format!("agent/messages/{message_id}/read"), &())
-            .await?;
-        Ok(response)
     }
 
     async fn get_public_conversation(
