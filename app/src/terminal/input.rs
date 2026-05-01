@@ -141,8 +141,8 @@ use crate::{
     debounce::debounce,
     editor::{
         default_cursor_colors, position_id_for_cached_point, position_id_for_cursor,
-        position_id_for_first_cursor, AttachedImage as AttachedImageRawData,
-        AutosuggestionLocation, AutosuggestionType, BaselinePositionComputationMethod,
+        position_id_for_first_cursor, AutosuggestionLocation, AutosuggestionType,
+        BaselinePositionComputationMethod,
         CommandXRayAnchor, CrdtOperation, CursorColors, DisplayPoint, EditOrigin, EditorAction,
         EditorDecoratorElements, EditorOptions, EditorSnapshot, EditorView, Event as EditorEvent,
         ImageContextOptions, InteractionState, PathTransformerFn, PlainTextEditorViewAction,
@@ -266,8 +266,7 @@ use warp_editor::editor::NavigationKey;
 use warp_util::path::ShellFamily;
 use warpui::{
     accessibility::{AccessibilityContent, ActionAccessibilityContent, WarpA11yRole},
-    clipboard::{ClipboardContent, ImageData},
-    clipboard_utils::CLIPBOARD_IMAGE_MIME_TYPES,
+    clipboard::ClipboardContent,
     color::ColorU,
     elements::{
         resizable_state_handle, Align, AnchorPair, ChildAnchor, Clipped, ConstrainedBox, Container,
@@ -5638,18 +5637,16 @@ impl Input {
                 if let AISettingsChangedEvent::IsAnyAIEnabled { .. } = event {
                     let is_input_buffer_empty = self.editor.as_ref(ctx).buffer_text(ctx).is_empty();
                     // If there is no AI enabled, ensure input is locked in command mode.
-                    if !false {
-                        self.ai_input_model.update(ctx, |input_model, ctx| {
-                            input_model.set_input_config(
-                                InputConfig {
-                                    input_type: InputType::Shell,
-                                    is_locked: true,
-                                },
-                                is_input_buffer_empty,
-                                ctx,
-                            );
-                        });
-                    }
+                    self.ai_input_model.update(ctx, |input_model, ctx| {
+                        input_model.set_input_config(
+                            InputConfig {
+                                input_type: InputType::Shell,
+                                is_locked: true,
+                            },
+                            is_input_buffer_empty,
+                            ctx,
+                        );
+                    });
                 }
 
                 ctx.notify();
@@ -9550,58 +9547,10 @@ impl Input {
         }
     }
 
-    /// Process paste event by checking clipboard for images and handling appropriately.
+    /// Process paste event by inserting clipboard text content.
     fn process_paste_event(&mut self, ctx: &mut ViewContext<Self>) {
-        // Read from app clipboard
         let content = ctx.clipboard().read();
-
-        // If AI is disabled, attachment isn't possible
-        if !false {
-            self.insert_clipboard_text_content(ctx, content);
-            return;
-        }
-
-        // Shared session viewers cannot attach images unless in cloud mode
-        let is_viewer = self.model.lock().shared_session_status().is_viewer();
-        let is_cloud_mode_with_images = FeatureFlag::CloudModeImageContext.is_enabled()
-            && self
-                .ambient_agent_view_model()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model.as_ref(ctx).is_ambient_agent()
-                });
-        if is_viewer && !is_cloud_mode_with_images {
-            self.insert_clipboard_text_content(ctx, content);
-            return;
-        }
-
-        // Check if we should insert clipboard text in advance
-        let mut already_inserted_text = false;
-        if warpui::clipboard::should_insert_text_on_paste(&content) {
-            self.insert_clipboard_text_content(ctx, content.clone());
-            already_inserted_text = true;
-        }
-
-        // Try to attach images
-        // If any attachment fails, should_insert_text = true.
-        let should_insert_text = if content.has_image_data() {
-            // If we have image data, process the image data.
-            self.handle_pasted_image_data(content.clone(), ctx) == 0
-        } else if content.num_paths() > 0 {
-            // Else, we check the pasted file paths for any images.
-            let image_filepaths = warpui::clipboard_utils::get_image_filepaths_from_paths(
-                content.paths.as_deref().unwrap_or(&[]),
-            );
-            let num_images_expected = image_filepaths.len();
-            self.handle_pasted_or_dragdropped_image_filepaths(image_filepaths, ctx)
-                < num_images_expected
-        } else {
-            true
-        };
-
-        // Fallback to inserting text
-        if should_insert_text && !already_inserted_text {
-            self.insert_clipboard_text_content(ctx, content);
-        }
+        self.insert_clipboard_text_content(ctx, content);
     }
 
     /// Insert clipboard text content (paths / plaintext)
@@ -9661,29 +9610,6 @@ impl Input {
     }
 
     /// Handle direct image data from clipboard (e.g., copied images). Returns number of images attached.
-    fn handle_pasted_image_data(
-        &mut self,
-        clipboard_content: ClipboardContent,
-        ctx: &mut ViewContext<Self>,
-    ) -> usize {
-        if self.check_image_limits_for_paste(1, ctx) == 0 {
-            return 0;
-        }
-
-        if let Some(images) = clipboard_content.images {
-            let best_image = CLIPBOARD_IMAGE_MIME_TYPES
-                .iter()
-                .find_map(|format| images.iter().find(|img| img.mime_type == *format));
-
-            if let Some(image) = best_image {
-                self.process_and_attach_clipboard_image(image.clone(), ctx);
-                return 1;
-            }
-        }
-
-        0
-    }
-
     /// Handle pasted file paths that point to images for auto-attachment. Returns number of images attached.
     pub fn handle_pasted_or_dragdropped_image_filepaths(
         &mut self,
@@ -9723,51 +9649,6 @@ impl Input {
             editor.read_and_process_images_async(num_paths, paths_to_process, ctx);
         });
         num_paths
-    }
-
-    /// Convert clipboard image data to AttachedImage and attach to editor in Agent Mode.
-    fn process_and_attach_clipboard_image(
-        &mut self,
-        image: ImageData,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        self.maybe_enter_agent_view_for_image_add(ctx);
-
-        // Switch to AI mode with block-level lock, unless already AI-mode-locked
-        if !self.is_locked_in_ai_mode(ctx) {
-            self.set_input_mode_agent(true, ctx);
-            self.update_image_context_options(ctx);
-        }
-
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-
-        let ext = match image.mime_type.as_str() {
-            "image/png" => "png",
-            "image/jpeg" | "image/jpg" => "jpg",
-            "image/gif" => "gif",
-            "image/webp" => "webp",
-            _ => "img",
-        };
-
-        // Use preserved filename if available, otherwise generate fallback name
-        let file_name = if let Some(original_filename) = &image.filename {
-            original_filename.clone()
-        } else {
-            format!("pasted-image-{timestamp}.{ext}")
-        };
-
-        let attached_image = AttachedImageRawData {
-            data: image.data,
-            mime_type: image.mime_type,
-            file_name,
-        };
-
-        self.editor.update(ctx, |editor, ctx| {
-            editor.process_and_attach_images_as_ai_context(1, vec![attached_image], ctx);
-        });
     }
 
     /// Enters agent view when adding images, unless the CLI agent rich input is
@@ -12687,12 +12568,6 @@ impl Input {
         self.ai_input_model.update(ctx, |ai_input_model, ctx| {
             ai_input_model.set_input_config(new_config, true, ctx);
         });
-    }
-
-    /// Returns true if the input is locked in AI mode
-    fn is_locked_in_ai_mode(&self, ctx: &ViewContext<Self>) -> bool {
-        let ai_input_model = self.ai_input_model.as_ref(ctx);
-        ai_input_model.is_input_type_locked() && ai_input_model.input_type().is_ai()
     }
 
     fn get_command(&mut self, ctx: &mut ViewContext<Self>) -> String {

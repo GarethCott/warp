@@ -3518,7 +3518,6 @@ impl Workspace {
                 shell,
             } => {
                 self.configure_empty_workspace(previous_active_window, shell, ctx);
-                self.maybe_auto_open_conversation_list(ctx);
             }
             NewWorkspaceSource::Restored {
                 window_snapshot,
@@ -3579,7 +3578,6 @@ impl Workspace {
 
                 self.activate_tab_internal(active_tab_index, ctx);
                 self.check_and_trigger_onboarding(ctx);
-                self.maybe_auto_open_conversation_list(ctx);
             }
             NewWorkspaceSource::FromTemplate { window_template } => {
                 self.open_launch_config_window(window_template, ctx);
@@ -7727,46 +7725,6 @@ impl Workspace {
         });
 
         ctx.notify();
-    }
-
-    /// Auto-opens the conversation list on first app start.
-    /// Once we've done this once, we persist a preference so subsequent restarts
-    /// will respect the user's visibility preference (restored from workspace state).
-    fn maybe_auto_open_conversation_list(&mut self, ctx: &mut ViewContext<Self>) {
-        if !FeatureFlag::AgentViewConversationListView.is_enabled()
-            || !false
-        {
-            return;
-        }
-
-        let has_auto_opened = *AISettings::as_ref(ctx).has_auto_opened_conversation_list;
-        if has_auto_opened {
-            return;
-        }
-
-        // Only auto-open on terminal tabs, not on settings or other non-terminal tabs
-        let has_terminal = self
-            .active_tab_pane_group()
-            .as_ref(ctx)
-            .has_terminal_panes();
-        if !has_terminal {
-            return;
-        }
-
-        // For first-time-users, auto-open the conversation list for discoverability
-        if !self.active_tab_pane_group().as_ref(ctx).left_panel_open {
-            self.open_left_panel(ctx);
-        }
-        self.left_panel_view.update(ctx, |lp, ctx| {
-            lp.restore_active_view_from_snapshot(ToolPanelView::ConversationListView, ctx);
-        });
-
-        // Mark that we've done the one-time auto-open
-        AISettings::handle(ctx).update(ctx, |settings, ctx| {
-            report_if_error!(settings
-                .has_auto_opened_conversation_list
-                .set_value(true, ctx));
-        });
     }
 
     fn close_left_panel(&mut self, ctx: &mut ViewContext<Self>) {
@@ -14839,35 +14797,7 @@ impl Workspace {
                             ctx,
                         );
                     }
-                    OpenWarpAI => {
-                        if !false {
-                            return;
-                        }
-
-                        if FeatureFlag::AgentMode.is_enabled() {
-                            let active_terminal_view = self.active_session_view(ctx).expect("There must be an active terminal view if the user selected a command search result");
-
-                            active_terminal_view.update(ctx, |terminal_view, ctx| {
-                                terminal_view.ask_blocklist_ai(
-                                    &AskAIType::FromAICommandSearch {
-                                        query: Arc::new(query.to_owned()),
-                                    },
-                                    ctx,
-                                )
-                            });
-                        } else {
-                            active_input_handle.update(ctx, |input, ctx| {
-                                input.replace_buffer_content("", ctx);
-                            });
-
-                            self.ask_ai_assistant(
-                                &AskAIType::FromAICommandSearch {
-                                    query: Arc::new(query.to_string()),
-                                },
-                                ctx,
-                            );
-                        }
-                    }
+                    OpenWarpAI => {}
                     AcceptAIQuery(ai_query) => {
                         let active_terminal_view = self.active_session_view(ctx).expect("There must be an active terminal view if the user selected a command search result");
 
