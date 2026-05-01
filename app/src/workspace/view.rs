@@ -10445,14 +10445,6 @@ impl Workspace {
         custom_tab_title: Option<String>,
         ctx: &mut ViewContext<Self>,
     ) {
-        // Remember whether the left panel was open on the current active pane group
-        // before creating a new active pane group.
-        let left_panel_was_open = if self.tabs.is_empty() {
-            false
-        } else {
-            self.active_tab_pane_group().as_ref(ctx).left_panel_open
-        };
-
         // Capture the active tab's colors before creating the new tab.
         let active_tab = self.tabs.get(self.active_tab_index);
         let active_tab_selected_color = active_tab.map(|tab| tab.selected_color);
@@ -10525,16 +10517,6 @@ impl Workspace {
             }
         }
 
-        // If the previous tab's left panel was open, maintain that state with the new tab
-        // (unless we're restoring the tab from a persisted snapshot).
-        if FeatureFlag::AgentViewConversationListView.is_enabled()
-            && !is_restoration
-            && left_panel_was_open
-        {
-            self.active_tab_pane_group().update(ctx, |pg, ctx| {
-                pg.set_left_panel_open(true, ctx);
-            });
-        }
     }
 
     pub fn add_tab_from_existing_pane(
@@ -20569,15 +20551,7 @@ impl TypedActionView for Workspace {
                 }
             }
             ToggleConversationListView => {
-                if FeatureFlag::AgentViewConversationListView.is_enabled() {
-                    let is_showing = self.left_panel_view.as_ref(ctx).active_view()
-                        == ToolPanelView::ConversationListView;
-                    self.toggle_left_panel_view(
-                        &LeftPanelAction::ConversationListView,
-                        is_showing,
-                        ctx,
-                    );
-                }
+                // strip(neuter): AgentViewConversationListView is gated off in this fork.
             }
             ShowRewindConfirmationDialog {
                 ai_block_view_id,

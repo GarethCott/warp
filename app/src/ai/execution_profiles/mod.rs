@@ -141,13 +141,6 @@ impl ComputerUsePermission {
     /// Resolves the effective cloud agent computer use state by reading the workspace
     /// autonomy setting and user's local preference from their respective singletons.
     pub fn resolve_cloud_agent_state(ctx: &AppContext) -> CloudAgentComputerUseState {
-        if !FeatureFlag::AgentModeComputerUse.is_enabled() {
-            return CloudAgentComputerUseState {
-                enabled: false,
-                is_forced_by_org: false,
-            };
-        }
-
         let autonomy_setting = UserWorkspaces::as_ref(ctx)
             .ai_autonomy_settings()
             .computer_use_setting;
