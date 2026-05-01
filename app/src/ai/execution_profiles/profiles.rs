@@ -281,36 +281,6 @@ impl AIExecutionProfilesModel {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn create_profile(&mut self, ctx: &mut ModelContext<Self>) -> Option<ClientProfileId> {
-        let profile_id = ClientProfileId::new();
-
-        let Some(owner) = UserWorkspaces::as_ref(ctx).personal_drive(ctx) else {
-            log::error!("Failed to create AI execution profile: personal drive not available");
-            return None;
-        };
-
-        let mut new_profile = self.default_profile(ctx).data().clone();
-        new_profile.name = "".to_string();
-        new_profile.is_default_profile = false;
-        new_profile.autosync_plans_to_warp_drive = true;
-
-        let update_manager = UpdateManager::handle(ctx);
-        let client_id = ClientId::default();
-        update_manager.update(ctx, |update_manager, ctx| {
-            update_manager.create_ai_execution_profile(new_profile, client_id, owner, ctx);
-        });
-
-        self.profile_id_to_sync_id
-            .insert(profile_id, SyncId::ClientId(client_id));
-
-        send_telemetry_from_ctx!(TelemetryEvent::AIExecutionProfileCreated, ctx);
-
-        ctx.emit(AIExecutionProfilesModelEvent::ProfileCreated);
-
-        Some(profile_id)
-    }
-
     pub fn delete_profile(&mut self, profile_id: ClientProfileId, ctx: &mut ModelContext<Self>) {
         let id = self.default_profile_state.id();
         if id == profile_id {

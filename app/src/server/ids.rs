@@ -1,6 +1,6 @@
 // Re-export types from warp_server_client.
 pub use warp_server_client::ids::{
-    parse_sqlite_id_to_uid, ApiKeyUid, ClientId, HashableId, HashedSqliteId, ObjectUid, ServerId,
+    parse_sqlite_id_to_uid, ClientId, HashableId, HashedSqliteId, ObjectUid, ServerId,
     ServerIdAndType, SyncId, ToServerId,
 };
 

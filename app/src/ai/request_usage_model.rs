@@ -459,15 +459,6 @@ impl AIRequestUsageModel {
         self.request_limit_info.is_unlimited
     }
 
-    #[allow(dead_code)]
-    pub fn refresh_duration_to_string(&self) -> String {
-        match self.request_limit_info.request_limit_refresh_duration {
-            RequestLimitRefreshDuration::Weekly => "weekly".to_string(),
-            RequestLimitRefreshDuration::Monthly => "monthly".to_string(),
-            RequestLimitRefreshDuration::EveryTwoWeeks => "biweekly".to_string(),
-        }
-    }
-
     pub fn bonus_grants(&self) -> &[BonusGrant] {
         &self.bonus_grants
     }
@@ -500,14 +491,6 @@ impl AIRequestUsageModel {
             .filter(|grant| grant.expiration.is_none_or(|exp| now < exp))
             .map(|grant| grant.request_credits_remaining)
             .sum()
-    }
-
-    #[allow(dead_code)]
-    pub fn total_current_workspace_bonus_credits_remaining(&self, ctx: &AppContext) -> i32 {
-        UserWorkspaces::as_ref(ctx)
-            .current_workspace()
-            .map(|workspace| self.total_workspace_bonus_credits_remaining(workspace.uid))
-            .unwrap_or(0)
     }
 
     fn total_user_interactive_bonus_credits_remaining(&self) -> i32 {

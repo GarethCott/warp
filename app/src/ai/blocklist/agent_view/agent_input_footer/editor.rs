@@ -8,14 +8,12 @@ use warpui::keymap::FixedBinding;
 use warpui::{AppContext, Element, Entity, SingletonEntity, TypedActionView, View, ViewContext};
 
 use crate::chip_configurator::{
-    render_chip_editor_modal, render_chip_editor_sections, ChipConfigurator,
-    ChipConfiguratorAction, ChipConfiguratorLayout, ChipEditorModalConfig, ChipEditorMouseHandles,
-    ChipEditorSectionsConfig,
+    render_chip_editor_modal, ChipConfigurator, ChipConfiguratorAction, ChipConfiguratorLayout,
+    ChipEditorModalConfig, ChipEditorMouseHandles,
 };
 use crate::report_if_error;
 use crate::terminal::session_settings::{
-    AgentToolbarChipSelection, CLIAgentToolbarChipSelection, SessionSettings,
-    SessionSettingsChangedEvent, ToolbarChipSelection,
+    AgentToolbarChipSelection, CLIAgentToolbarChipSelection, SessionSettings, ToolbarChipSelection,
 };
 use crate::Appearance;
 
@@ -44,26 +42,10 @@ pub struct AgentToolbarEditorModal {
     is_dirty: bool,
 }
 
-#[allow(dead_code)]
-pub struct AgentToolbarInlineEditor {
-    mouse_handles: ChipEditorMouseHandles,
-    chip_configurator: ChipConfigurator,
-    mode: AgentToolbarEditorMode,
-}
-
 #[derive(Clone, Copy, Debug)]
 pub enum AgentToolbarEditorAction {
     Cancel,
     Save,
-    Chip(ChipConfiguratorAction),
-    ResetDefault,
-    /// Dummy action used as on_click for chip bank clicks (no-op).
-    Activate,
-}
-
-#[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
-pub enum AgentToolbarInlineEditorAction {
     Chip(ChipConfiguratorAction),
     ResetDefault,
     /// Dummy action used as on_click for chip bank clicks (no-op).
@@ -129,102 +111,6 @@ fn toolbar_items_match_defaults(
 ) -> bool {
     let (default_left, default_right, _) = AgentToolbarItemKind::defaults_for_mode(mode);
     default_left.as_slice() == left && default_right.as_slice() == right
-}
-
-#[allow(dead_code)]
-impl AgentToolbarInlineEditor {
-    pub fn new(mode: AgentToolbarEditorMode, ctx: &mut ViewContext<Self>) -> Self {
-        let mut editor = Self {
-            mouse_handles: Default::default(),
-            chip_configurator: ChipConfigurator::new(ChipConfiguratorLayout::LeftRightZones),
-            mode,
-        };
-        editor.reset_from_settings(ctx);
-
-        ctx.subscribe_to_model(&SessionSettings::handle(ctx), |me, _, event, ctx| {
-            let should_refresh = matches!(
-                (me.mode, event),
-                (
-                    AgentToolbarEditorMode::AgentView,
-                    SessionSettingsChangedEvent::AgentToolbarChipSelectionSetting { .. },
-                ) | (
-                    AgentToolbarEditorMode::CLIAgent,
-                    SessionSettingsChangedEvent::CLIAgentToolbarChipSelectionSetting { .. },
-                )
-            );
-
-            if should_refresh && me.chip_configurator.current_dragging_state.is_none() {
-                me.reset_from_settings(ctx);
-                ctx.notify();
-            }
-        });
-
-        editor
-    }
-
-    fn reset_from_settings(&mut self, ctx: &mut ViewContext<Self>) {
-        open_toolbar_items_from_settings(&mut self.chip_configurator, self.mode, ctx);
-    }
-
-    fn save_current_selection(&self, ctx: &mut ViewContext<Self>) {
-        let left = self.chip_configurator.left_item_kinds();
-        let right = self.chip_configurator.right_item_kinds();
-        save_toolbar_selection(self.mode, left, right, ctx);
-    }
-
-    fn is_at_defaults(&self) -> bool {
-        is_toolbar_editor_at_defaults(self.mode, &self.chip_configurator)
-    }
-}
-
-impl Entity for AgentToolbarInlineEditor {
-    type Event = ();
-}
-
-impl TypedActionView for AgentToolbarInlineEditor {
-    type Action = AgentToolbarInlineEditorAction;
-
-    fn handle_action(&mut self, action: &Self::Action, ctx: &mut ViewContext<Self>) {
-        match action {
-            Self::Action::Chip(chip_action) => {
-                let should_save = self.chip_configurator.handle_action(chip_action, ctx);
-                if should_save {
-                    self.save_current_selection(ctx);
-                }
-                ctx.notify();
-            }
-            Self::Action::ResetDefault => {
-                open_default_toolbar_items(&mut self.chip_configurator, self.mode, ctx);
-                self.save_current_selection(ctx);
-                ctx.notify();
-            }
-            Self::Action::Activate => {
-                // no-op — used as the on_click for chip bank items
-            }
-        }
-    }
-}
-
-impl View for AgentToolbarInlineEditor {
-    fn ui_name() -> &'static str {
-        "AgentToolbarInlineEditor"
-    }
-
-    fn render(&self, app: &AppContext) -> Box<dyn Element> {
-        let appearance = Appearance::as_ref(app);
-        render_chip_editor_sections(
-            &self.chip_configurator,
-            ChipEditorSectionsConfig {
-                available_section_label: "Available chips",
-                is_at_defaults: self.is_at_defaults(),
-                reset_action: AgentToolbarInlineEditorAction::ResetDefault,
-                activate_action: AgentToolbarInlineEditorAction::Activate,
-                chip_action_wrapper: AgentToolbarInlineEditorAction::Chip,
-                mouse_handles: &self.mouse_handles,
-            },
-            appearance,
-        )
-    }
 }
 
 pub fn init(app: &mut AppContext) {
