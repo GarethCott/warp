@@ -252,7 +252,6 @@ pub enum DriveIndexAction {
         initial_folder_id: Option<SyncId>,
     },
     OpenAIFactCollection,
-    OpenMCPServerCollection,
     CreateObject {
         object_type: DriveObjectType,
         space: Space,
@@ -453,7 +452,6 @@ pub enum DriveIndexEvent {
         initial_folder_id: Option<SyncId>,
     },
     OpenAIFactCollection,
-    OpenMCPServerCollection,
     OpenObject(CloudObjectTypeAndId),
     OpenWorkflowInPane {
         cloud_object_type_and_id: CloudObjectTypeAndId,
@@ -4985,9 +4983,7 @@ impl DriveIndex {
                     }
                 }
                 WarpDriveItemId::MCPServerCollection => {
-                    if let DriveIndexAction::EnterKey = key {
-                        ctx.emit(DriveIndexEvent::OpenMCPServerCollection);
-                    }
+                    // strip(neuter): MCP settings page deleted in this fork.
                 }
                 WarpDriveItemId::Object(cloud_id) => match cloud_id {
                     CloudObjectTypeAndId::Notebook(_) => {
@@ -5259,9 +5255,6 @@ impl TypedActionView for DriveIndex {
             DriveIndexAction::OpenAIFactCollection => {
                 ctx.emit(DriveIndexEvent::OpenAIFactCollection);
             }
-            DriveIndexAction::OpenMCPServerCollection => {
-                ctx.emit(DriveIndexEvent::OpenMCPServerCollection);
-            }
             DriveIndexAction::OpenObject(cloud_object_type_and_id) => {
                 if !matches!(self.index_variant, DriveIndexVariant::Trash) {
                     self.set_selected_object(
@@ -5406,9 +5399,7 @@ impl TypedActionView for DriveIndex {
                         log::error!("Use DriveIndexAction::OpenAIFactCollection to open the pane view instead");
                     }
                     DriveObjectType::MCPServer | DriveObjectType::MCPServerCollection => {
-                        log::error!(
-                            "Use DriveIndexAction::OpenMCPServerCollection to open the pane view instead"
-                        );
+                        // strip(neuter): MCP settings page deleted in this fork.
                     }
                 }
 

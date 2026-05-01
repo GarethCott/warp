@@ -1865,6 +1865,7 @@ impl UpdateManager {
     }
 
     #[cfg(not(target_family = "wasm"))]
+    #[allow(dead_code)]
     pub fn update_templatable_mcp_server(
         &mut self,
         templatable_mcp_server: TemplatableMCPServer,

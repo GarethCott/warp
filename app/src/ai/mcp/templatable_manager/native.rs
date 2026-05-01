@@ -166,6 +166,7 @@ pub enum McpIntegration {
     Figma,
 }
 
+#[allow(dead_code)]
 impl TemplatableMCPServerManager {
     /// Returns `true` if the given MCP integration is currently running.
     pub fn is_mcp_server_running(&self, integration: McpIntegration) -> bool {

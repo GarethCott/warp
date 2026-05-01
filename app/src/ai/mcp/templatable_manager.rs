@@ -207,6 +207,7 @@ impl TemplatableMCPServerManager {
         self.server_states.get(&installation_uuid).copied()
     }
 
+    #[allow(dead_code)]
     pub fn get_server_error_message(&self, installation_uuid: Uuid) -> Option<&str> {
         self.server_error_messages
             .get(&installation_uuid)
@@ -247,6 +248,7 @@ impl TemplatableMCPServerManager {
             })
     }
 
+    #[allow(dead_code)]
     pub fn tools_for_server(&self, uuid: Uuid) -> Vec<rmcp::model::Tool> {
         self.active_servers
             .get(&uuid)
