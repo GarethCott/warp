@@ -1,9 +1,6 @@
 use itertools::Itertools;
-use warp_core::features::FeatureFlag;
-use warpui::{Entity, ModelHandle, SingletonEntity};
+use warpui::{Entity, ModelHandle};
 
-use crate::ai::skills::SkillManager;
-use crate::cloud_object::model::persistence::CloudModel;
 use crate::search::data_source::{Query, QueryResult};
 use crate::search::mixer::DataSourceRunErrorWrapper;
 use crate::search::slash_command_menu::static_commands::commands;
@@ -92,60 +89,6 @@ impl SyncDataSource for ZeroStateDataSource {
             {
                 results.push(
                     InlineItem::from_slash_command(id, command, app)
-                        .with_compact_layout(self.is_cloud_mode_v2)
-                        .into(),
-                );
-            }
-        }
-
-        if self.is_cloud_mode_v2
-            && FeatureFlag::ListSkills.is_enabled()
-            && false
-        {
-            let slash_command_data_source = self.slash_command_data_source.as_ref(app);
-            let cli_agent_providers = slash_command_data_source.active_cli_agent_providers(app);
-            let cwd = slash_command_data_source
-                .active_session_for_v2_zero_state()
-                .as_ref(app)
-                .current_working_directory();
-            let cwd_path = cwd.as_ref().map(std::path::Path::new);
-            let skill_manager_handle = SkillManager::handle(app);
-            let skill_manager = skill_manager_handle.as_ref(app);
-            let skills = skill_manager.get_skills_for_working_directory(cwd_path, app);
-
-            for mut skill in skills
-                .into_iter()
-                .sorted_by(|a, b| b.name.to_lowercase().cmp(&a.name.to_lowercase()))
-            {
-                if let Some(providers) = &cli_agent_providers {
-                    if !skill_manager.skill_exists_for_any_provider(&skill, providers) {
-                        continue;
-                    }
-                    skill.provider = skill_manager.best_supported_provider(&skill, providers);
-                }
-                results.push(
-                    InlineItem::from_skill(&skill, app)
-                        .with_compact_layout(self.is_cloud_mode_v2)
-                        .into(),
-                );
-            }
-        }
-
-        if self.is_cloud_mode_v2 && false {
-            let saved_prompts: Vec<_> = CloudModel::as_ref(app)
-                .get_all_active_workflows()
-                .filter(|cw| cw.model().data.is_agent_mode_workflow())
-                .sorted_by(|a, b| {
-                    b.model()
-                        .data
-                        .name()
-                        .to_lowercase()
-                        .cmp(&a.model().data.name().to_lowercase())
-                })
-                .collect();
-            for saved_prompt in saved_prompts {
-                results.push(
-                    InlineItem::from_saved_prompt(saved_prompt, app)
                         .with_compact_layout(self.is_cloud_mode_v2)
                         .into(),
                 );
