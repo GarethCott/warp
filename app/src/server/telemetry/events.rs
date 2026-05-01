@@ -770,10 +770,6 @@ pub enum AgentModeEntrypoint {
     #[serde(rename = "new_pane_binding")]
     NewPaneBinding,
 
-    /// The stars button in the hoverable block "toolbelt".
-    #[serde(rename = "block_toolbelt")]
-    BlockToolbelt,
-
     /// The "Ask Agent Mode" option from AI command search.
     #[serde(rename = "ai_command_search")]
     AICommandSearch,

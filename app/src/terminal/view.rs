@@ -23911,7 +23911,6 @@ impl TypedActionView for TerminalView {
             | CopySharedSessionLink { .. }
             | OpenSharedSessionOnDesktop { .. }
             | MakeAllParticipantsReaders { .. }
-            | AskAIAssistant { .. }
             | ToggleSnackbarInActivePane
             | SetInputModeAgent
             | SetInputModeTerminal
@@ -24303,18 +24302,6 @@ impl TypedActionView for TerminalView {
                 self.open_workflow_modal_with_existing(*workflow_id, ctx)
             }
             OpenBlockListContextMenu => self.open_block_list_context_menu_via_keybinding(ctx),
-            AskAIAssistant { block_index } => {
-                if FeatureFlag::AgentMode.is_enabled() {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::AgentModeClickedEntrypoint {
-                            entrypoint: AgentModeEntrypoint::BlockToolbelt,
-                        },
-                        ctx
-                    );
-                }
-
-                self.ask_ai(&AskAISource::Block(*block_index), ctx)
-            }
             TriggerSubshellBootstrap => self.trigger_subshell_bootstrap(None, false, ctx),
             ShowSubshellBanner(command) => {
                 // Abort handle is no longer needed since we've waited the 1s already.
