@@ -724,17 +724,12 @@ impl AIConversation {
         self.task_id = Some(id);
     }
 
-    /// Returns the server-side agent identifier appropriate for the active
-    /// orchestration version: `task_id` (as string) under v2,
-    /// `server_conversation_token` under v1.
+    /// Returns the server-side agent identifier (v1 orchestration uses
+    /// `server_conversation_token`; v2 was stripped in this fork).
     pub fn orchestration_agent_id(&self) -> Option<String> {
-        if FeatureFlag::OrchestrationV2.is_enabled() {
-            self.run_id()
-        } else {
-            self.server_conversation_token
-                .as_ref()
-                .map(|t| t.as_str().to_string())
-        }
+        self.server_conversation_token
+            .as_ref()
+            .map(|t| t.as_str().to_string())
     }
 
     /// Updates the server conversation token for this conversation.

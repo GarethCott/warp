@@ -21,13 +21,11 @@ pub(crate) enum TeamAgentCommunicationKind {
 #[serde(rename_all = "snake_case")]
 pub(crate) enum TeamAgentCommunicationTransport {
     Local,
-    ServerApi,
 }
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum TeamAgentOrchestrationVersion {
     V1,
-    V2,
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -38,7 +36,6 @@ pub(crate) enum TeamAgentCommunicationFailureReason {
     MissingSourceIdentifier,
     UnknownAgent,
     NoTargets,
-    RequestFailed,
 }
 
 #[derive(Debug, Serialize)]

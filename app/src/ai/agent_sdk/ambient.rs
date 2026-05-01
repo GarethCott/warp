@@ -8,26 +8,22 @@ use crate::ai::ambient_agents::{AgentConfigSnapshot, AmbientAgentTask};
 use crate::ai::artifacts::Artifact;
 use crate::auth::AuthStateProvider;
 use crate::server::server_api::ai::{
-    AgentMessageHeader, AgentSource, ArtifactType, ExecutionLocation, ListAgentMessagesRequest,
-    ReadAgentMessageResponse, RunSortBy, RunSortOrder, SendAgentMessageRequest,
-    SendAgentMessageResponse, SpawnAgentRequest, TaskListFilter,
+    AgentSource, ArtifactType, ExecutionLocation, RunSortBy, RunSortOrder, SpawnAgentRequest,
+    TaskListFilter,
 };
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::{
     terminal::shared_session, util::time_format::format_approx_duration_from_now_utc,
     ServerApiProvider,
 };
-use comfy_table::Cell;
 use futures::{future, StreamExt};
-use serde::Serialize;
 
 use warp_cli::{
     agent::{Harness, OutputFormat, Prompt, RunCloudArgs},
     json_filter::JsonOutput,
     task::{
-        ArtifactTypeArg, ExecutionLocationArg, ListTasksArgs, MessageCommand, MessageDeliveredArgs,
-        MessageListArgs, MessageReadArgs, MessageSendArgs, MessageWatchArgs, RunSortByArg,
-        RunSortOrderArg, RunSourceArg, RunStateArg, TaskGetArgs,
+        ArtifactTypeArg, ExecutionLocationArg, ListTasksArgs, RunSortByArg, RunSortOrderArg,
+        RunSourceArg, RunStateArg, TaskGetArgs,
     },
     GlobalOptions,
 };
@@ -181,33 +177,6 @@ fn sort_order_from_arg(arg: RunSortOrderArg) -> RunSortOrder {
     match arg {
         RunSortOrderArg::Asc => RunSortOrder::Asc,
         RunSortOrderArg::Desc => RunSortOrder::Desc,
-    }
-}
-
-/// Run a message-related CLI command.
-pub fn run_message(
-    ctx: &mut AppContext,
-    global_options: GlobalOptions,
-    command: MessageCommand,
-) -> anyhow::Result<()> {
-    let runner = ctx.add_singleton_model(|_ctx| AmbientAgentRunner);
-    let output_format = global_options.output_format;
-    match command {
-        MessageCommand::Watch(args) => runner.update(ctx, |runner, ctx| {
-            runner.watch_messages(args, output_format, ctx)
-        }),
-        MessageCommand::Send(args) => runner.update(ctx, |runner, ctx| {
-            runner.send_message(args, output_format, ctx)
-        }),
-        MessageCommand::List(args) => runner.update(ctx, |runner, ctx| {
-            runner.list_messages(args, output_format, ctx)
-        }),
-        MessageCommand::Read(args) => runner.update(ctx, |runner, ctx| {
-            runner.read_message(args, output_format, ctx)
-        }),
-        MessageCommand::MarkDelivered(args) => runner.update(ctx, |runner, ctx| {
-            runner.mark_message_delivered(args, output_format, ctx)
-        }),
     }
 }
 
@@ -626,104 +595,6 @@ impl AmbientAgentRunner {
         Ok(())
     }
 
-    fn send_message(
-        &self,
-        args: MessageSendArgs,
-        output_format: OutputFormat,
-        ctx: &mut ModelContext<Self>,
-    ) -> anyhow::Result<()> {
-        let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client();
-
-        let future = async move {
-            let response = ai_client
-                .send_agent_message(SendAgentMessageRequest {
-                    to: args.to,
-                    subject: args.subject,
-                    body: args.body,
-                    sender_run_id: args.sender_run_id,
-                })
-                .await?;
-            print_send_message_response(&response, output_format)?;
-            Ok(())
-        };
-        self.spawn_command(future, ctx);
-
-        Ok(())
-    }
-    fn list_messages(
-        &self,
-        args: MessageListArgs,
-        output_format: OutputFormat,
-        ctx: &mut ModelContext<Self>,
-    ) -> anyhow::Result<()> {
-        let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client();
-
-        let future = async move {
-            let messages = ai_client
-                .list_agent_messages(
-                    &args.run_id,
-                    ListAgentMessagesRequest {
-                        unread_only: args.unread,
-                        since: args.since,
-                        limit: args.limit,
-                    },
-                )
-                .await?;
-            super::output::print_list(messages, output_format);
-            Ok(())
-        };
-        self.spawn_command(future, ctx);
-
-        Ok(())
-    }
-
-    fn watch_messages(
-        &self,
-        _args: MessageWatchArgs,
-        _output_format: OutputFormat,
-        _ctx: &mut ModelContext<Self>,
-    ) -> anyhow::Result<()> {
-        // strip(neuter): agent-event streaming was deleted with the
-        // OrchestrationEventStreamer / agent_events stack.
-        anyhow::bail!("agent message watch is not supported in this build")
-    }
-
-    fn read_message(
-        &self,
-        args: MessageReadArgs,
-        output_format: OutputFormat,
-        ctx: &mut ModelContext<Self>,
-    ) -> anyhow::Result<()> {
-        let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client();
-
-        let future = async move {
-            let message = ai_client.read_agent_message(&args.message_id).await?;
-            print_read_message_response(&message, output_format)?;
-            Ok(())
-        };
-        self.spawn_command(future, ctx);
-
-        Ok(())
-    }
-
-    fn mark_message_delivered(
-        &self,
-        args: MessageDeliveredArgs,
-        output_format: OutputFormat,
-        ctx: &mut ModelContext<Self>,
-    ) -> anyhow::Result<()> {
-        let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client();
-
-        let future = async move {
-            ai_client.mark_message_delivered(&args.message_id).await?;
-            print_mark_message_delivered_result(&args.message_id, output_format)?;
-            Ok(())
-        };
-        self.spawn_command(future, ctx);
-
-        Ok(())
-    }
-
     /// Get the appropriate emoji for a task state.
     fn get_state_emoji(state: &AmbientAgentTaskState) -> &'static str {
         match state {
@@ -873,150 +744,6 @@ impl AmbientAgentRunner {
         }
 
         lines.join("\n")
-    }
-}
-
-#[derive(Serialize)]
-struct MessageDeliveredResult<'a> {
-    message_id: &'a str,
-    delivered: bool,
-}
-
-fn format_optional_timestamp(timestamp: Option<&str>) -> &str {
-    timestamp.unwrap_or("-")
-}
-
-
-fn print_send_message_response(
-    response: &SendAgentMessageResponse,
-    output_format: OutputFormat,
-) -> anyhow::Result<()> {
-    let mut stdout = std::io::stdout();
-    write_send_message_response(response, output_format, &mut stdout)
-}
-
-fn write_send_message_response<W>(
-    response: &SendAgentMessageResponse,
-    output_format: OutputFormat,
-    mut output: W,
-) -> anyhow::Result<()>
-where
-    W: std::io::Write,
-{
-    match output_format {
-        OutputFormat::Json => super::output::write_json(response, &mut output),
-        OutputFormat::Ndjson => super::output::write_json_line(response, &mut output),
-        OutputFormat::Pretty | OutputFormat::Text => {
-            writeln!(
-                &mut output,
-                "Sent {} message(s).",
-                response.message_ids.len()
-            )?;
-            if !response.message_ids.is_empty() {
-                writeln!(&mut output, "Message IDs:")?;
-                for message_id in &response.message_ids {
-                    writeln!(&mut output, "- {message_id}")?;
-                }
-            }
-            Ok(())
-        }
-    }
-}
-
-fn print_read_message_response(
-    response: &ReadAgentMessageResponse,
-    output_format: OutputFormat,
-) -> anyhow::Result<()> {
-    let mut stdout = std::io::stdout();
-    write_read_message_response(response, output_format, &mut stdout)
-}
-
-fn write_read_message_response<W>(
-    response: &ReadAgentMessageResponse,
-    output_format: OutputFormat,
-    mut output: W,
-) -> anyhow::Result<()>
-where
-    W: std::io::Write,
-{
-    match output_format {
-        OutputFormat::Json => super::output::write_json(response, &mut output),
-        OutputFormat::Ndjson => super::output::write_json_line(response, &mut output),
-        OutputFormat::Pretty | OutputFormat::Text => {
-            writeln!(&mut output, "Message ID: {}", response.message_id)?;
-            writeln!(&mut output, "From: {}", response.sender_run_id)?;
-            writeln!(&mut output, "Subject: {}", response.subject)?;
-            writeln!(&mut output, "Sent At: {}", response.sent_at)?;
-            writeln!(
-                &mut output,
-                "Delivered At: {}",
-                format_optional_timestamp(response.delivered_at.as_deref())
-            )?;
-            writeln!(
-                &mut output,
-                "Read At: {}",
-                format_optional_timestamp(response.read_at.as_deref())
-            )?;
-            writeln!(&mut output)?;
-            writeln!(&mut output, "Body:")?;
-            writeln!(&mut output, "{}", response.body)?;
-            Ok(())
-        }
-    }
-}
-
-fn print_mark_message_delivered_result(
-    message_id: &str,
-    output_format: OutputFormat,
-) -> anyhow::Result<()> {
-    let mut stdout = std::io::stdout();
-    write_mark_message_delivered_result(message_id, output_format, &mut stdout)
-}
-
-fn write_mark_message_delivered_result<W>(
-    message_id: &str,
-    output_format: OutputFormat,
-    mut output: W,
-) -> anyhow::Result<()>
-where
-    W: std::io::Write,
-{
-    let result = MessageDeliveredResult {
-        message_id,
-        delivered: true,
-    };
-
-    match output_format {
-        OutputFormat::Json => super::output::write_json(&result, &mut output),
-        OutputFormat::Ndjson => super::output::write_json_line(&result, &mut output),
-        OutputFormat::Pretty | OutputFormat::Text => {
-            writeln!(&mut output, "Marked message delivered: {message_id}")?;
-            Ok(())
-        }
-    }
-}
-
-impl super::output::TableFormat for AgentMessageHeader {
-    fn header() -> Vec<Cell> {
-        vec![
-            Cell::new("MESSAGE ID"),
-            Cell::new("FROM"),
-            Cell::new("SUBJECT"),
-            Cell::new("SENT AT"),
-            Cell::new("DELIVERED AT"),
-            Cell::new("READ AT"),
-        ]
-    }
-
-    fn row(&self) -> Vec<Cell> {
-        vec![
-            Cell::new(&self.message_id),
-            Cell::new(&self.sender_run_id),
-            Cell::new(&self.subject),
-            Cell::new(&self.sent_at),
-            Cell::new(format_optional_timestamp(self.delivered_at.as_deref())),
-            Cell::new(format_optional_timestamp(self.read_at.as_deref())),
-        ]
     }
 }
 

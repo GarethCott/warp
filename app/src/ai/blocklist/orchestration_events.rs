@@ -12,7 +12,6 @@ use crate::ai::agent::{
 };
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use warp_core::features::FeatureFlag;
 use warp_core::send_telemetry_from_ctx;
 use warp_multi_agent_api as api;
 use warpui::{Entity, ModelContext, SingletonEntity};
@@ -363,35 +362,32 @@ impl OrchestrationEventService {
                     // persisted, so re-register subscriptions for each
                     // restored child whose parent is loaded locally so that
                     // child status transitions continue to propagate after
-                    // a restart. V2 uses the server event log and does not
-                    // need this.
-                    if !FeatureFlag::OrchestrationV2.is_enabled() {
-                        let parent_agent_id = {
-                            let history_model = BlocklistAIHistoryModel::as_ref(ctx);
-                            let Some(child_conv) = history_model.conversation(conversation_id)
-                            else {
-                                continue;
-                            };
-                            if !child_conv.is_child_agent_conversation() {
-                                continue;
-                            }
-                            child_conv
-                                .parent_conversation_id()
-                                .and_then(|pid| history_model.conversation(&pid))
-                                .and_then(|p| p.server_conversation_token())
-                                .map(|t| t.as_str().to_string())
+                    // a restart.
+                    let parent_agent_id = {
+                        let history_model = BlocklistAIHistoryModel::as_ref(ctx);
+                        let Some(child_conv) = history_model.conversation(conversation_id)
+                        else {
+                            continue;
                         };
-                        if let Some(parent_agent_id) = parent_agent_id {
-                            // `None` event-type filter = subscribe to all
-                            // lifecycle types. The original filter (if any)
-                            // is not persisted; subscribing broader than the
-                            // original is acceptable per the tech spec.
-                            self.register_lifecycle_subscription(
-                                *conversation_id,
-                                parent_agent_id,
-                                None,
-                            );
+                        if !child_conv.is_child_agent_conversation() {
+                            continue;
                         }
+                        child_conv
+                            .parent_conversation_id()
+                            .and_then(|pid| history_model.conversation(&pid))
+                            .and_then(|p| p.server_conversation_token())
+                            .map(|t| t.as_str().to_string())
+                    };
+                    if let Some(parent_agent_id) = parent_agent_id {
+                        // `None` event-type filter = subscribe to all
+                        // lifecycle types. The original filter (if any)
+                        // is not persisted; subscribing broader than the
+                        // original is acceptable per the tech spec.
+                        self.register_lifecycle_subscription(
+                            *conversation_id,
+                            parent_agent_id,
+                            None,
+                        );
                     }
                 }
             }
@@ -483,13 +479,6 @@ impl OrchestrationEventService {
         }
 
         if is_restored || !is_child_agent_conversation {
-            return;
-        }
-
-        // When v2 is enabled, lifecycle events are delivered via the server
-        // event log (poller reports → polls back → enqueues). Skip the v1
-        // local dispatch to avoid duplicate delivery.
-        if FeatureFlag::OrchestrationV2.is_enabled() {
             return;
         }
 

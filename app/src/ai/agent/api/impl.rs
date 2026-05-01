@@ -104,7 +104,7 @@ pub async fn generate_multi_agent_output(
                 FeatureFlag::SummarizationViaMessageReplacement.is_enabled(),
             supports_bundled_skills: FeatureFlag::BundledSkills.is_enabled(),
             supports_research_agent: params.research_agent_enabled,
-            supports_orchestration_v2: FeatureFlag::OrchestrationV2.is_enabled(),
+            supports_orchestration_v2: false,
         }),
         metadata: Some(api::request::Metadata {
             logging: logging_metadata,
@@ -213,11 +213,7 @@ fn get_supported_tools(params: &RequestParams) -> Vec<api::ToolType> {
     }
 
     if params.orchestration_enabled {
-        supported_tools.push(if FeatureFlag::OrchestrationV2.is_enabled() {
-            api::ToolType::StartAgentV2
-        } else {
-            api::ToolType::StartAgent
-        });
+        supported_tools.push(api::ToolType::StartAgent);
         supported_tools.push(api::ToolType::SendMessageToAgent);
     }
 
