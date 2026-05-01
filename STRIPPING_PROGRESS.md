@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-04-30 (post-cleanup-47).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-05-01 (post-cleanup-50).
 
 ---
 
@@ -64,12 +64,14 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Deleted unreachable Platform / OzCloudAPIKeys settings page: `platform_page.rs` (726 lines) + the entire `platform/` subdir (`create_api_key_modal.rs` 731 lines, `expire_api_key_button.rs` 128 lines, mod.rs), plus mod.rs/settings_page.rs plumbing. AuthClient's API-key trait methods annotated `#[allow(dead_code)]` (cleanup-45: -1625 net lines)
 - Deleted unreachable Teams settings page: `teams_page.rs` (4097 lines) + 4 companion files (`tab_menu.rs` 58 lines, `transfer_ownership_confirmation_modal.rs` 154 lines, `clickable_text_input.rs` 183 lines, `cloud_action_confirmation_dialog.rs` 225 lines). Removed cascade in mod.rs/settings_page.rs/root_view.rs (2 fns + 2 action registrations)/uri/mod.rs (URI handler)/workspace/view.rs (helper method)/server/telemetry/events.rs (`TeamsInviteOption` import + `ChangedInviteViewOption` variant + 3 dispatch arms). Annotated 12 orphan items in workspaces/server/word_block_editor/ai with `#[allow(dead_code)]` (cleanup-46: -4827 net lines)
 - Deleted unreachable Referrals settings page: `referrals_page.rs` (1132 lines) + the 4 entry-point buttons that fed it (settings main page `EarnRewardsWidget`, resource center invite button, user-menu "Invite a friend", macOS app menu "Refer a friend"). Removed `WorkspaceAction::ShowReferralSettingsPage` variant + handler, 2 keybindings, `CustomAction::ReferAFriend` variant + its `is_undoable` arm, and a chain of now-unused imports/constants (`SEND_SVG_PATH`, `REFERRAL_CTA`, `SECTION_SPACING_BOTTOM`) (cleanup-47: -1371 net lines)
+- Deleted unreachable BillingAndUsage settings page: `billing_and_usage_page.rs` (3697 lines) + companion subdir (`overage_limit_modal.rs` 357 lines, `usage_history_entry.rs` 225 lines, `usage_history_model.rs` 139 lines), plus `admin_actions.rs` (36 lines) and `tab_selector.rs` (99 lines) which only existed to support the billing page. Extracted `create_discount_badge` into a new 22-line `view_components/discount_badge.rs` so the two terminal modals (`buy_credits_banner`, `enable_auto_reload_modal`) keep compiling. Annotated 3 orphan items (cleanup-48: -4717 net lines)
+- Deleted unreachable Shared Blocks settings page: `show_blocks_view.rs` (812 lines) + plumbing in mod.rs/settings_page.rs/workspace/mod.rs/app_menus.rs/util/bindings.rs (cleanup-49: -847 net lines)
+- Sweep PR: removed all `#[allow(dead_code)]` annotations introduced by cleanups 43, 45, 46, 48 by deleting the items themselves (`AIExecutionProfilesModel::create_profile`, `total_current_workspace_bonus_credits_remaining`, `refresh_duration_to_string`, `UpdateManager::remove_team_objects`, `WordBlockEditorView::{num_chips, with_validator, add_word}`, `ChipEditorState`, `TeamUpdateManagerEvent` + 6 `TeamUpdateManager` methods, `DisplayMode::Settings` + collapsed irrefutable branches, 6 `BlocklistAIPermissions` methods, `AgentToolbarInlineEditor` + impls + action enum, 4 `AuthClient` trait methods + impls). Cleaned up newly-unused imports across all touched files (cleanup-50: -630 net lines)
 
-**Total stripped: ~22000+ lines of dead code, 21 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~28000+ lines of dead code, 28 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
-- **Sweep PR for `#[allow(dead_code)]` annotations.** Cleanups 43, 45, 46 added these annotations to keep individual PRs scoped. Each annotated item is genuinely orphan now (its only callers were deleted in those cleanups). Run `grep -rn "#\\[allow(dead_code)\\]" app/src` to enumerate, then delete the items + chase any cascades they expose. Specific clusters: `BlocklistAIPermissions` impl block, `AIExecutionProfilesModel::create_profile`, `AIRequestUsageModel::total_current_workspace_bonus_credits_remaining`, `UpdateManager::remove_team_objects`, `ChipEditorState` + 3 methods, `TeamUpdateManagerEvent` enum + 6 `TeamUpdateManager` methods, `AuthClient::list_api_keys` / `create_api_key` / `expire_api_key`, `AgentToolbarInlineEditor` struct + impl + `AgentToolbarInlineEditorAction` enum.
 
 ---
 
@@ -78,7 +80,7 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Master is clean: `cargo check --workspace` → zero errors, zero warnings
 - App builds & runs: `cargo run --bin warp-oss`
 - Bundle ID `dev.warp.WarpOss`, data dir `~/Library/Application Support/dev.warp.WarpOss/` — fully isolated from the official Warp install
-- 36+ commits beyond upstream
+- 41+ commits beyond upstream
 
 ---
 
@@ -193,7 +195,7 @@ grep -rn "is_any_ai_enabled" app/src --include="*.rs" | grep -vE "/ai/|_test\.rs
 5. Pick a target from "What's left to strip" above.
 6. Follow the workflow loop.
 
-If you want a single concrete next step: the last big unreachable settings page is `billing_and_usage_page.rs` (3697 lines). Has wider cascade than the others — `create_discount_badge` is re-exported and used by terminal modals (`buy_credits_banner.rs`, `enable_auto_reload_modal.rs`); the page also has its own subdirectory `billing_and_usage/` with `usage_history_entry.rs` etc. Plan: either delete the page module + the terminal modals together, or stub `create_discount_badge` somewhere that survives. After that, the next-tier targets are the bigger pages still in the sidebar (`features_page.rs` 7110 lines, `appearance_page.rs` 5186 lines, `code_page.rs` 2462 lines) — these are reachable so you can only chip widgets off them, not delete them whole. Or attack the dead-code sweep PR described in pending follow-ups.
+If you want a single concrete next step: all the obvious unreachable settings pages are gone. Remaining unreachable pages: `mcp_servers_page.rs` (587 lines) is the last big one — has a wider cascade because the `MCPServersSettingsPage` enum is used by the workspace/pane_group event chain (search for `OpenMCPServerCollection` and `OpenMCPSettingsPage`). After that, the next tier is the *reachable* pages still in the sidebar (`features_page.rs` ~7000 lines, `appearance_page.rs` 5186 lines, `code_page.rs` 2462 lines, `keybindings.rs`) — these can't be deleted whole, only chipped at by removing AI-only widgets one at a time. Other targets: the dead-on-arrival agent subtree (`app/src/ai/`, `app/src/notebooks/`, `app/src/drive/`) which still won't converge as a Tier-4 strip. Smaller wins: there's still `agent_assisted_environment_modal*` companions, MCP gallery JSON, the cloud crates in `crates/` (managed_secrets, isolation_platform, graphql, warp_graphql_schema, warp_server_client, onboarding, computer_use, ai).
 
 If those feel too risky: there's plenty of small dead-code cleanup left around the codebase. Run `cargo check --workspace 2>&1 | grep "warning"` and fix what comes up. Or grep for `// strip(neuter):` and `let _ = ` and tidy the suppressions.
 
