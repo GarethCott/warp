@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-05-01 (post-cleanup-50).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-05-01 (post-cleanup-53).
 
 ---
 
@@ -67,8 +67,11 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Deleted unreachable BillingAndUsage settings page: `billing_and_usage_page.rs` (3697 lines) + companion subdir (`overage_limit_modal.rs` 357 lines, `usage_history_entry.rs` 225 lines, `usage_history_model.rs` 139 lines), plus `admin_actions.rs` (36 lines) and `tab_selector.rs` (99 lines) which only existed to support the billing page. Extracted `create_discount_badge` into a new 22-line `view_components/discount_badge.rs` so the two terminal modals (`buy_credits_banner`, `enable_auto_reload_modal`) keep compiling. Annotated 3 orphan items (cleanup-48: -4717 net lines)
 - Deleted unreachable Shared Blocks settings page: `show_blocks_view.rs` (812 lines) + plumbing in mod.rs/settings_page.rs/workspace/mod.rs/app_menus.rs/util/bindings.rs (cleanup-49: -847 net lines)
 - Sweep PR: removed all `#[allow(dead_code)]` annotations introduced by cleanups 43, 45, 46, 48 by deleting the items themselves (`AIExecutionProfilesModel::create_profile`, `total_current_workspace_bonus_credits_remaining`, `refresh_duration_to_string`, `UpdateManager::remove_team_objects`, `WordBlockEditorView::{num_chips, with_validator, add_word}`, `ChipEditorState`, `TeamUpdateManagerEvent` + 6 `TeamUpdateManager` methods, `DisplayMode::Settings` + collapsed irrefutable branches, 6 `BlocklistAIPermissions` methods, `AgentToolbarInlineEditor` + impls + action enum, 4 `AuthClient` trait methods + impls). Cleaned up newly-unused imports across all touched files (cleanup-50: -630 net lines)
+- Deleted unreachable MCP Servers settings page: 587-line `mcp_servers_page.rs` + 60-line tests + entire `mcp_servers/` subdir (8 files, 5325 lines: edit_page 951, installation_modal 640, list_page 1826, server_card 1098, update_modal 487, destructive_mcp_confirmation_dialog 193, style 62, mod 68). Removed cascade across mod.rs/settings_page.rs/root_view.rs (open_mcp_settings_in_{new,existing}_window fns + 2 action registrations + OpenMCPSettingsArgs struct + URI handler)/workspace/view.rs (4 dispatch arms + open_mcp_servers_page method + WorkspaceAction::OpenMCPServerCollection)/workspace/mod.rs (binding)/util/bindings.rs (CustomAction)/pane_group/mod.rs (Event variant)/pane_group/pane/terminal_pane.rs (propagation arm)/terminal/view.rs (Event variant + 2 emitters → neuter)/drive/index.rs (DriveIndexAction + DriveIndexEvent variants + 3 dispatch sites)/drive/panel.rs (DrivePanelEvent variant + helper + dispatch)/drive/items/{mcp_server,mcp_server_collection}.rs (click_action → None). Annotated 8 orphan items in ai/mcp/ subtree (cleanup-51: -6217 net lines)
+- Partial sweep PR for cleanup-51's annotations: deleted prettify_json + 5 MCP manager helper methods that had no remaining callers; restored 2 gallery methods that turned out to still be needed by templatable_manager/native.rs (cleanup-52: -61 net lines)
+- Dropped dead `if false`/`&& false` branches across the codebase (5 in workspace/view.rs, 2 in command_palette/zero_state.rs, 3 in command_search/view.rs, 1 in features_page.rs). Deleted the orphan AI search modules whose only callers were the dead branches: `command_search/warp_ai.rs` (271 lines), `command_search/ai_queries/` subdir (3 files, 258 lines), `search/ai_queries/` subdir (2 files, 25 lines). Deleted the `render_ai_assistant_warm_welcome` method (~95 lines) + its mouse-state field. Dropped the unused `ai_client` field on CommandSearchView + its constructor parameter (cleanup-53: -810 net lines)
 
-**Total stripped: ~28000+ lines of dead code, 28 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~36000+ lines of dead code, 45 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
@@ -80,7 +83,7 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Master is clean: `cargo check --workspace` → zero errors, zero warnings
 - App builds & runs: `cargo run --bin warp-oss`
 - Bundle ID `dev.warp.WarpOss`, data dir `~/Library/Application Support/dev.warp.WarpOss/` — fully isolated from the official Warp install
-- 41+ commits beyond upstream
+- 50+ commits beyond upstream
 
 ---
 
@@ -195,7 +198,13 @@ grep -rn "is_any_ai_enabled" app/src --include="*.rs" | grep -vE "/ai/|_test\.rs
 5. Pick a target from "What's left to strip" above.
 6. Follow the workflow loop.
 
-If you want a single concrete next step: all the obvious unreachable settings pages are gone. Remaining unreachable pages: `mcp_servers_page.rs` (587 lines) is the last big one — has a wider cascade because the `MCPServersSettingsPage` enum is used by the workspace/pane_group event chain (search for `OpenMCPServerCollection` and `OpenMCPSettingsPage`). After that, the next tier is the *reachable* pages still in the sidebar (`features_page.rs` ~7000 lines, `appearance_page.rs` 5186 lines, `code_page.rs` 2462 lines, `keybindings.rs`) — these can't be deleted whole, only chipped at by removing AI-only widgets one at a time. Other targets: the dead-on-arrival agent subtree (`app/src/ai/`, `app/src/notebooks/`, `app/src/drive/`) which still won't converge as a Tier-4 strip. Smaller wins: there's still `agent_assisted_environment_modal*` companions, MCP gallery JSON, the cloud crates in `crates/` (managed_secrets, isolation_platform, graphql, warp_graphql_schema, warp_server_client, onboarding, computer_use, ai).
+If you want a single concrete next step: all the unreachable settings pages are gone. Remaining iso targets are tougher:
+- The reachable pages still in the sidebar (`features_page.rs` ~7000 lines, `appearance_page.rs` 5186 lines, `code_page.rs` 2462 lines, `keybindings.rs`) can only be chipped at by removing AI-only widgets one at a time.
+- `environments_page.rs` is still here (3500 lines via `update_environment_form.rs`) but reachable via `EnvironmentManagementPane`, used by app_state persistence schema, agent_input_footer, and root_view — Tier-4 territory.
+- The dead-on-arrival `app/src/ai/`, `app/src/notebooks/`, `app/src/drive/` subtrees still won't converge as a Tier-4 strip.
+- The cloud crates in `crates/`: managed_secrets, isolation_platform, graphql, warp_graphql_schema, warp_server_client, onboarding, computer_use, ai. Each is wide but tractable.
+
+Smaller wins: search the codebase for `if false`/`&& false`/`if true`/`&& true` for more dead branches; look for `#[allow(dead_code)]` annotations and verify they're still needed; search `is_any_ai_enabled()` callsites outside `/ai/` for any new orphans created by recent strips.
 
 If those feel too risky: there's plenty of small dead-code cleanup left around the codebase. Run `cargo check --workspace 2>&1 | grep "warning"` and fix what comes up. Or grep for `// strip(neuter):` and `let _ = ` and tidy the suppressions.
 
