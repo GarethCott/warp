@@ -1,4 +1,6 @@
 //! Compact free-form text input used by inline AI block actions.
+//! Orphaned after cleanup-89 deleted `ask_user_question_view.rs`.
+#![allow(dead_code)]
 use warpui::{
     presenter::ChildView, AppContext, Element, Entity, FocusContext, SingletonEntity, View,
     ViewContext, ViewHandle,
