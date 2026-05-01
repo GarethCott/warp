@@ -17,7 +17,6 @@ use crate::ai::predict::generate_ai_input_suggestions::GenerateAIInputSuggestion
 use crate::ai::predict::generate_am_query_suggestions;
 use crate::ai::predict::generate_am_query_suggestions::GenerateAMQuerySuggestionsRequest;
 use crate::ai::predict::predict_am_queries::{PredictAMQueriesRequest, PredictAMQueriesResponse};
-use crate::ai::voice::transcribe::{TranscribeRequest, TranscribeResponse};
 use crate::auth::auth_manager::AuthManager;
 use crate::auth::auth_state::AuthState;
 use crate::server::graphql::default_request_options;
@@ -322,24 +321,6 @@ impl ErrorExt for AIApiError {
     }
 }
 register_error!(AIApiError);
-
-#[derive(thiserror::Error, Debug)]
-pub enum TranscribeError {
-    #[error("Request failed due to lack of Voice quota.")]
-    QuotaLimit,
-
-    #[error("Warp is currently overloaded. Please try again later.")]
-    ServerOverloaded,
-
-    #[error("Internal error occurred at transport layer.")]
-    Transport,
-
-    #[error("Failed to deserialize JSON.")]
-    Deserialization,
-
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
-}
 
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
@@ -1034,58 +1015,6 @@ impl ServerApi {
         .json()
         .await?;
         Ok(response)
-    }
-
-    /// Hits the /ai/transcribe endpoint to get the transcription for the given audio.
-    pub async fn transcribe(
-        &self,
-        request: &TranscribeRequest,
-    ) -> Result<TranscribeResponse, TranscribeError> {
-        let auth_token = self.get_or_refresh_access_token().await?;
-
-        let request_builder = self
-            .client
-            .post(format!("{}/ai/transcribe", ChannelState::server_root_url()));
-        let response = if let Some(token) = auth_token.as_bearer_token() {
-            request_builder.bearer_auth(token)
-        } else {
-            request_builder
-        }
-        .json(request)
-        .send()
-        .await;
-
-        match response {
-            Ok(res) => {
-                if res.status().is_success() {
-                    match res.json::<TranscribeResponse>().await {
-                        Ok(output_response) => Ok(output_response),
-                        Err(e) => {
-                            log::warn!("Failed to deserialize response: {e:?}");
-                            Err(TranscribeError::Deserialization)
-                        }
-                    }
-                } else if res.status() == http::StatusCode::TOO_MANY_REQUESTS {
-                    if res
-                        .headers()
-                        .get(WARP_ERROR_CODE_HEADER)
-                        .and_then(|v| v.to_str().ok())
-                        == Some(WARP_ERROR_CODE_OUT_OF_CREDITS)
-                    {
-                        Err(TranscribeError::QuotaLimit)
-                    } else {
-                        Err(TranscribeError::ServerOverloaded)
-                    }
-                } else {
-                    log::warn!("Non-success status code received: {}", res.status());
-                    Err(TranscribeError::Transport)
-                }
-            }
-            Err(e) => {
-                log::warn!("Error while sending request: {e:?}");
-                Err(TranscribeError::Transport)
-            }
-        }
     }
 
     pub async fn generate_multi_agent_output(
