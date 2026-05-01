@@ -508,6 +508,7 @@ impl Network {
         self.send_message_to_server(message);
     }
 
+    #[allow(dead_code)]
     pub fn send_agent_prompt_rejection(
         &mut self,
         id: AgentPromptRequestId,
@@ -522,6 +523,7 @@ impl Network {
         self.send_message_to_server(message);
     }
 
+    #[allow(dead_code)]
     pub fn send_control_action_rejection(
         &mut self,
         participant_id: ParticipantId,
@@ -1338,8 +1340,11 @@ pub enum NetworkEvent {
         bytes: Vec<u8>,
     },
     AgentPromptRequested {
+        #[allow(dead_code)]
         id: AgentPromptRequestId,
+        #[allow(dead_code)]
         participant_id: ParticipantId,
+        #[allow(dead_code)]
         request: AgentPromptRequest,
     },
     LinkAccessLevelUpdateResponse {
@@ -1359,8 +1364,11 @@ pub enum NetworkEvent {
     },
     UniversalDeveloperInputContextUpdated(UniversalDeveloperInputContextUpdate),
     ControlActionRequested {
+        #[allow(dead_code)]
         participant_id: ParticipantId,
+        #[allow(dead_code)]
         request_id: ControlActionRequestId,
+        #[allow(dead_code)]
         action: ControlAction,
     },
     ViewerTerminalSizeReported {

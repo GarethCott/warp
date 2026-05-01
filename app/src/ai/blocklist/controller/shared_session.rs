@@ -35,6 +35,7 @@ pub(super) struct SharedSessionState {
 impl BlocklistAIController {
     /// Returns the current conversation ID for the active shared session stream.
     /// Returns None if there's no active shared session conversation.
+    #[allow(dead_code)]
     pub(crate) fn get_current_shared_session_conversation_id(
         &self,
         app: &AppContext,
@@ -384,6 +385,7 @@ impl BlocklistAIController {
 
     /// Sends a synthetic cancellation event to viewers when the sharer cancels a conversation.
     /// This ensures viewers see the conversation as cancelled and update their UI accordingly.
+    #[allow(dead_code)]
     pub(super) fn send_cancellation_to_viewers(&mut self, ctx: &mut ModelContext<Self>) {
         if !self
             .terminal_model

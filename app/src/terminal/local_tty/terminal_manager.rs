@@ -41,8 +41,7 @@ use crate::terminal::cli_agent_sessions::{
     CLIAgentInputState, CLIAgentSessionsModel, CLIAgentSessionsModelEvent,
 };
 use session_sharing_protocol::common::{
-    ActivePrompt, AgentPromptFailureReason, CLIAgentSessionState, CommandExecutionFailureReason,
-    ControlAction, ControlActionFailureReason, SelectedAgentModel,
+    ActivePrompt, CLIAgentSessionState, CommandExecutionFailureReason, SelectedAgentModel,
     UniversalDeveloperInputContextUpdate, WriteToPtyFailureReason,
 };
 #[cfg(not(any(test, feature = "integration_tests")))]
@@ -52,8 +51,6 @@ use session_sharing_protocol::common::{
 use settings::Setting as _;
 use warpui::r#async::executor::Background;
 use warpui::{AppContext, ModelContext, ModelHandle, SingletonEntity, ViewHandle, WindowId};
-
-use warp_core::execution_mode::AppExecutionMode;
 
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
 use crate::ai::agent::conversation::AIConversation;
@@ -1203,6 +1200,7 @@ impl TerminalManager {
     /// Streams all historical agent conversations from this terminal to viewers.
     /// This is called when starting a shared  session mid-conversation so that viewers
     /// can see all conversation history and properly continue conversations.
+    #[allow(dead_code)]
     fn stream_historical_agent_conversations(
         terminal_view: &ViewHandle<TerminalView>,
         model: &Arc<FairMutex<TerminalModel>>,
@@ -1480,10 +1478,7 @@ impl TerminalManager {
                     );
                 });
 
-                // Stream historical agent conversations so viewers have conversation and task context.
-                if FeatureFlag::AgentSharedSessions.is_enabled() {
-                    Self::stream_historical_agent_conversations(&terminal_view, &model, ctx);
-                }
+                // strip(neuter): AgentSharedSessions is gated off in this fork.
             }
             NetworkEvent::FailedToCreateSharedSession {
                 reason,
@@ -1570,47 +1565,11 @@ impl TerminalManager {
                 });
             }
             NetworkEvent::ControlActionRequested {
-                participant_id,
-                request_id,
-                action,
+                participant_id: _,
+                request_id: _,
+                action: _,
             } => {
-                if !FeatureFlag::AgentSharedSessions.is_enabled() {
-                    return;
-                }
-
-                let viewer_is_executor = terminal_view
-                    .as_ref(ctx)
-                    .shared_session_presence_manager()
-                    .and_then(|manager| manager.as_ref(ctx).viewer_role(participant_id))
-                    .map(|role| role.can_execute())
-                    .unwrap_or_else(|| {
-                        log::warn!("Failed to get viewer's role during control action request");
-                        false
-                    });
-
-                if !viewer_is_executor {
-                    network.update(ctx, |network, _ctx| {
-                        network.send_control_action_rejection(
-                            participant_id.clone(),
-                            request_id.clone(),
-                            ControlActionFailureReason::InsufficientPermissions,
-                        );
-                    });
-                    return;
-                };
-
-                match action {
-                    ControlAction::CancelConversation {
-                        server_conversation_token,
-                    } => {
-                        terminal_view.update(ctx, |view, ctx| {
-                            view.ai_controller().update(ctx, |controller, ctx| {
-                                controller
-                                    .handle_shared_session_cancel_action(*server_conversation_token, ctx);
-                            });
-                        });
-                    }
-                }
+                // strip(neuter): AgentSharedSessions is gated off in this fork.
             }
             NetworkEvent::ParticipantListUpdated(participant_list) => {
                 let was_viewer_driven_sizing_eligible = terminal_view
@@ -1821,105 +1780,11 @@ impl TerminalManager {
                 });
             }
             NetworkEvent::AgentPromptRequested {
-                id,
-                participant_id,
-                request,
+                id: _,
+                participant_id: _,
+                request: _,
             } => {
-                if !FeatureFlag::AgentSharedSessions.is_enabled() {
-                    return;
-                }
-
-                // Validate permissions for the participant that initiated the prompt.
-                // For viewers, we require Executor role. For the sharer, we allow the prompt
-                // even if they are not present in the viewer list.
-                let mut is_sharer = false;
-                let viewer_role_opt = terminal_view
-                    .as_ref(ctx)
-                    .shared_session_presence_manager()
-                    .and_then(|manager| {
-                        let manager_ref = manager.as_ref(ctx);
-                        if manager_ref.sharer_id() == *participant_id {
-                            is_sharer = true;
-                            None
-                        } else {
-                            manager_ref.viewer_role(participant_id)
-                        }
-                    });
-
-                if !is_sharer {
-                    let Some(viewer_role) = viewer_role_opt else {
-                        log::warn!(
-                            "Failed to get viewer's role during agent prompt request for participant_id={participant_id} (not sharer)"
-                        );
-                        network.update(ctx, |network, _ctx| {
-                            network.send_agent_prompt_rejection(
-                                id.clone(),
-                                participant_id.clone(),
-                                AgentPromptFailureReason::InsufficientPermissions,
-                            );
-                        });
-                        return;
-                    };
-
-                    if !viewer_role.can_execute() {
-                        network.update(ctx, |network, _ctx| {
-                            network.send_agent_prompt_rejection(
-                                id.clone(),
-                                participant_id.clone(),
-                                AgentPromptFailureReason::InsufficientPermissions,
-                            );
-                        });
-                        return;
-                    }
-
-                    // Reject the prompt if AI is disabled on the sharer's machine.
-                    // TODO(APP-2894): We should create a failure variant that better matches the error.
-                    if !crate::settings::ai::AISettings::as_ref(ctx).is_any_ai_enabled(ctx) {
-                        network.update(ctx, |network, _ctx| {
-                            network.send_agent_prompt_rejection(
-                                id.clone(),
-                                participant_id.clone(),
-                                AgentPromptFailureReason::InvalidConversation,
-                            );
-                        });
-                        return;
-                    }
-                }
-
-                // If a third-party CLI harness (e.g. Claude Code) is running, write
-                // the follow-up prompt directly to the PTY. The CLI handles it as
-                // interactive input. 
-                let terminal_view_id = terminal_view.id();
-                let has_active_cli_agent = CLIAgentSessionsModel::as_ref(ctx)
-                    .session(terminal_view_id)
-                    .is_some();
-                if has_active_cli_agent {
-                    // Reuse the rich input submit pipeline so agent-specific
-                    // strategies are applied. Bypasses the rich-input-UI side effects 
-  					// (telemetry, draft clear, editor buffer clear, pending-image consumption).
-                    terminal_view.update(ctx, |view, ctx| {
-                        view.submit_text_to_cli_agent_pty(request.prompt.clone(), ctx);
-                    });
-                    return;
-                }
-
-                // Execute the agent prompt in the Oz-harness case
-                terminal_view.update(ctx, |view, ctx| {
-                    // Clear the sharer's input (as the prompt in the input is now being executed)
-                    view.input().update(ctx, |input, ctx| {
-                        input.unfreeze_and_clear_agent_input(ctx);
-                    });
-
-                    view.ai_controller().update(ctx, |ai_controller, ctx| {
-                        ai_controller.execute_agent_prompt_for_shared_session(
-                            request.prompt.clone(),
-                            request.server_conversation_token,
-                            request.attachments.clone(),
-                            participant_id.clone(),
-                            ctx,
-                        );
-                    });
-                });
+                // strip(neuter): AgentSharedSessions is gated off in this fork.
             }
             NetworkEvent::LinkAccessLevelUpdateResponse { response } => {
                 terminal_view.update(ctx, |view, ctx| match response {
@@ -2156,8 +2021,8 @@ impl TerminalManager {
         let session_sharer = shared_session_model.clone();
         let model = model.clone();
 
-        let is_ambient_agent = FeatureFlag::AgentSharedSessions.is_enabled()
-            && AppExecutionMode::as_ref(ctx).is_autonomous();
+        // strip(neuter): AgentSharedSessions is gated off in this fork.
+        let is_ambient_agent = false;
         // TODO(ben): This is a very suboptimal way of exposing this; lifetime should be a user-visible option.
         let session_lifetime = if is_ambient_agent {
             Lifetime::Lingering

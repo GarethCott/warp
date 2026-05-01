@@ -1,6 +1,5 @@
 //! [`TerminalView`]-specific implementation for shared sessions.
 
-use crate::ai::blocklist::BlocklistAIHistoryModel;
 use crate::auth::UserUid;
 use crate::context_chips::ContextChipKind;
 use crate::drive::sharing::ShareableObject;
@@ -428,7 +427,7 @@ impl TerminalView {
         scrollback_type: SharedSessionScrollbackType,
         source: Option<SharedSessionActionSource>,
         source_type: SessionSourceType,
-        bypass_conversation_guard: bool,
+        _bypass_conversation_guard: bool,
         ctx: &mut ViewContext<Self>,
     ) {
         // We should only be attempting to share a session
@@ -442,23 +441,7 @@ impl TerminalView {
             return;
         }
 
-        // Check if we're trying to share without scrollback while agent shared sessions is enabled
-        // and there are active conversations. This would break the viewer experience since they
-        // wouldn't receive the conversation history they need to continue conversations.
-        if !bypass_conversation_guard
-            && FeatureFlag::AgentSharedSessions.is_enabled()
-            && scrollback_type == SharedSessionScrollbackType::None
-        {
-            let has_conversations = BlocklistAIHistoryModel::as_ref(ctx)
-                .all_live_conversations_for_terminal_view(ctx.handle().id())
-                .any(|conv| conv.exchange_count() > 0);
-
-            if has_conversations {
-                log::warn!("Cannot share without scrollback when agent conversations exist. Agent shared sessions require conversation history to be shared.");
-                return;
-            }
-        }
-
+        // strip(neuter): AgentSharedSessions is gated off in this fork.
         self.set_show_pane_accent_border(false, ctx);
 
         self.pending_share_source = source;
