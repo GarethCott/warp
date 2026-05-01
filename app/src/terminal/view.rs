@@ -129,7 +129,6 @@ use crate::code_review::git_status_update::{
     GitRepoStatusModel, GitStatusMetadata, GitStatusUpdateModel,
 };
 use crate::code_review::telemetry_event::CodeReviewPaneEntrypoint;
-use crate::projects::ProjectManagementModel;
 use crate::remote_server::manager::{
     RemoteServerInitPhase, RemoteServerManager, RemoteServerManagerEvent,
 };
@@ -23714,7 +23713,6 @@ impl TypedActionView for TerminalView {
             | OpenRulesPane
             | OpenEditSkillPane { .. }
             | OpenAddPromptPane
-            | AddProjectAtCurrentDirectory
             | CodebaseIndexSpeedbumpBanner(_)
             | AnonymousUserAISignUpBanner(_)
             | SetupCloudEnvironment(_)
@@ -24534,17 +24532,6 @@ impl TypedActionView for TerminalView {
                             );
                         }
                     }
-                }
-            }
-            AddProjectAtCurrentDirectory => {
-                // Get the current working directory and add it as a project
-                if let Some(current_dir) = self.pwd() {
-                    let path = PathBuf::from(&current_dir);
-
-                    // Access the ProjectManagementModel and add the project
-                    ProjectManagementModel::handle(ctx).update(ctx, |project_model, ctx| {
-                        project_model.upsert_project(path, ctx);
-                    });
                 }
             }
             OpenProjectRulesPane => {
