@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::context_chips::spacing;
 use warp_core::ui::appearance::Appearance;
 use warp_core::ui::theme::color::internal_colors;

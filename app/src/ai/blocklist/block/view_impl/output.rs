@@ -77,7 +77,6 @@ use crate::{
             },
             history_model::BlocklistAIHistoryModel,
             inline_action::{
-                ask_user_question_view::AskUserQuestionView,
                 inline_action_header::{
                     HeaderConfig, InteractionMode, INLINE_ACTION_HEADER_VERTICAL_PADDING,
                     INLINE_ACTION_HORIZONTAL_PADDING,
@@ -200,8 +199,6 @@ pub(crate) struct Props<'a> {
     /// Controls how agent thinking/reasoning traces are displayed.
     pub(super) thinking_display_mode: crate::settings::ThinkingDisplayMode,
     pub(super) conversation_has_imported_comments: bool,
-    #[allow(dead_code)]
-    pub(super) ask_user_question_view: Option<&'a ViewHandle<AskUserQuestionView>>,
 }
 
 pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
@@ -2113,21 +2110,6 @@ fn render_unit_test_suggestion(
         .with_background_color(blended_colors::fg_overlay_2(theme).into())
         .with_vertical_padding(CONTENT_ITEM_VERTICAL_MARGIN)
         .finish()
-}
-
-#[allow(dead_code)]
-fn render_ask_user_question(
-    action_id: &AIAgentActionId,
-    props: Props,
-    app: &AppContext,
-) -> Option<Box<dyn Element>> {
-    let view = props.ask_user_question_view?;
-    let should_render_inline = {
-        let ask_user_question_view = view.as_ref(app);
-        ask_user_question_view.action_id() == action_id
-            && ask_user_question_view.should_render_inline(app)
-    };
-    should_render_inline.then(|| ChildView::new(view).finish())
 }
 
 fn render_suggest_new_conversation(

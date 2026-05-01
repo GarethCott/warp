@@ -81,9 +81,6 @@ use crate::ai::agent::SearchCodebaseResult;
 use crate::ai::blocklist::action_model::NewConversationDecision;
 use crate::ai::blocklist::block::keyboard_navigable_buttons::KeyboardNavigableButtonBuilder;
 use crate::ai::blocklist::block::keyboard_navigable_buttons::KeyboardNavigableButtons;
-use crate::ai::blocklist::inline_action::ask_user_question_view::{
-    self, AskUserQuestionView, AskUserQuestionViewEvent,
-};
 use crate::ai::blocklist::inline_action::aws_bedrock_credentials_error::{
     AwsBedrockCredentialsErrorEvent, AwsBedrockCredentialsErrorView,
 };
@@ -181,7 +178,7 @@ use crate::terminal::{ShellLaunchData, TerminalView};
 use crate::view_components::DismissibleToast;
 use crate::workspace::{ForkAIConversationParams, ForkedConversationDestination, WorkspaceAction};
 use crate::{report_error, report_if_error, ToastStack};
-use ai::agent::action::{AskUserQuestionItem, InsertReviewComment};
+use ai::agent::action::InsertReviewComment;
 
 use crate::editor::InteractionState;
 use crate::server::telemetry::{AutonomySettingToggleSource, InteractionSource};
@@ -262,7 +259,6 @@ pub fn init(app: &mut AppContext) {
         ),
     ]);
 
-    ask_user_question_view::init(app);
     code_diff_view::init(app);
     requested_command::init(app);
     cli::init(app);
@@ -948,8 +944,6 @@ pub struct AIBlock {
     #[cfg(feature = "local_fs")]
     resolved_blocklist_image_sources: view_impl::common::ResolvedBlocklistImageSources,
     terminal_view_handle: WeakViewHandle<TerminalView>,
-
-    ask_user_question_view: Option<ViewHandle<AskUserQuestionView>>,
 }
 
 struct EmbeddedCodeEditorView {
@@ -1359,7 +1353,6 @@ impl AIBlock {
             #[cfg(feature = "local_fs")]
             resolved_blocklist_image_sources: Default::default(),
             terminal_view_handle,
-            ask_user_question_view: None,
         };
         me.run_secret_redaction_on_user_query(me.client_ids.conversation_id, ctx);
         me.spawn_link_detection(ctx);
@@ -3265,73 +3258,6 @@ impl AIBlock {
         }
     }
 
-    #[allow(dead_code)]
-    fn handle_ask_user_question_stream_update(
-        &mut self,
-        action_id: &AIAgentActionId,
-        questions: &[AskUserQuestionItem],
-        ctx: &mut ViewContext<Self>,
-    ) {
-        let needs_init = match self.ask_user_question_view.as_ref() {
-            Some(view) => !view.as_ref(ctx).matches_action(action_id, questions),
-            None => true,
-        };
-        if !needs_init {
-            return;
-        }
-
-        let action_model = self.action_model.clone();
-        let conversation_id = self.client_ids.conversation_id;
-        let action_id_for_view = action_id.clone();
-        let questions_for_view = questions.to_vec();
-        let view = ctx.add_typed_action_view(move |ctx| {
-            AskUserQuestionView::new(
-                action_model.clone(),
-                conversation_id,
-                action_id_for_view.clone(),
-                questions_for_view.clone(),
-                ctx,
-            )
-        });
-        let action_id_clone = action_id.clone();
-        ctx.subscribe_to_view(&view, move |me, _, event, ctx| {
-            me.handle_ask_user_question_view_event(&action_id_clone, event, ctx);
-        });
-
-        self.ask_user_question_view = Some(view.clone());
-        if self
-            .action_model
-            .as_ref(ctx)
-            .get_action_status(action_id)
-            .is_some_and(|status| status.is_blocked())
-        {
-            ctx.focus(&view);
-        }
-        ctx.notify();
-    }
-
-    #[allow(dead_code)]
-    fn handle_ask_user_question_view_event(
-        &mut self,
-        action_id: &AIAgentActionId,
-        event: &AskUserQuestionViewEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        if !self
-            .ask_user_question_view
-            .as_ref()
-            .is_some_and(|view| view.as_ref(ctx).action_id() == action_id)
-        {
-            return;
-        }
-
-        match event {
-            AskUserQuestionViewEvent::Updated => {
-                ctx.notify();
-            }
-        }
-    }
-
     fn handle_create_documents_stream_update(
         &mut self,
         action_id: &AIAgentActionId,
@@ -4425,16 +4351,6 @@ impl AIBlock {
         {
             // If there's a blocking MCP tool call, focus that.
             ctx.focus(&mcp_tool.view);
-            did_focus_subview = true;
-        } else if let Some(ask_user_question_view) =
-            self.ask_user_question_view.as_ref().filter(|view| {
-                pending_action_id.is_some_and(|id| {
-                    let view = view.as_ref(ctx);
-                    view.action_id() == id && view.is_editing()
-                })
-            })
-        {
-            ctx.focus(ask_user_question_view);
             did_focus_subview = true;
         } else if let Some(keyboard_navigable_buttons) = self.keyboard_navigable_buttons.as_ref() {
             // If there's buttons to take action on, focus those.

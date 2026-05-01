@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use warpui::{
     elements::{
         ClippedScrollStateHandle, Container, CrossAxisAlignment, DispatchEventResult, EventHandler,
