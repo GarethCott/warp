@@ -101,7 +101,7 @@ use crate::ai::attachment_utils::MAX_ATTACHMENT_SIZE_BYTES;
 use crate::ai::block_context::BlockContext;
 use crate::ai::blocklist::AttachmentType;
 use crate::ai::mcp::TemplatableMCPServerManager;
-use crate::server::server_api::ai::{AttachmentFileInfo, AttachmentInput};
+use crate::server::server_api::ai::AttachmentFileInfo;
 use crate::{
     ai::{
         agent::{AIAgentContext, EntrypointType},
@@ -11478,7 +11478,6 @@ impl Input {
             ctx.emit(Event::SubmitCLIAgentInput { text });
             return;
         }
-        let command = self.editor.as_ref(ctx).buffer_text(ctx);
 
         ctx.emit(Event::Enter);
 
@@ -11616,125 +11615,6 @@ impl Input {
             });
         } else if self.should_block_cloud_mode_setup_submission(ctx) {
             return;
-        } else if FeatureFlag::AgentMode.is_enabled()
-            && false
-            && (self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
-                || self.is_cloud_mode_input_v2_composing(ctx))
-        {
-            // If we're submitting an AI query, we want to send telemetry for the input type.
-            if FeatureFlag::NldImprovements.is_enabled() {
-                let input_model = self.ai_input_model.as_ref(ctx);
-                let input_type = input_model.input_type();
-                let is_locked = input_model.is_input_type_locked();
-                let was_lock_set_with_empty_buffer = input_model.was_lock_set_with_empty_buffer();
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::InputBufferSubmitted {
-                        input_type,
-                        is_locked,
-                        was_lock_set_with_empty_buffer,
-                    },
-                    ctx
-                );
-            }
-
-            // Check if we're configuring an ambient agent and spawn it instead of submitting a regular AI query.
-            if self
-                .ambient_agent_view_model()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model
-                        .as_ref(ctx)
-                        .is_configuring_ambient_agent()
-                })
-            {
-                let prompt = command.trim().to_owned();
-                if prompt.is_empty() {
-                    return;
-                }
-
-                // Collect pending images and files, converting to AttachmentInput for the spawn request.
-                // Only include images when CloudModeImageContext is enabled.
-                let attachments: Vec<AttachmentInput> = if FeatureFlag::CloudModeImageContext
-                    .is_enabled()
-                {
-                    let mut inputs: Vec<AttachmentInput> = self
-                        .ai_context_model
-                        .as_ref(ctx)
-                        .pending_images()
-                        .iter()
-                        .map(|image| AttachmentInput {
-                            file_name: image.file_name.clone(),
-                            mime_type: image.mime_type.clone(),
-                            data: image.data.clone(),
-                        })
-                        .collect();
-
-                    let mut skipped_files: Vec<String> = Vec::new();
-                    for file in self.ai_context_model.as_ref(ctx).pending_files() {
-                        match std::fs::read(&file.file_path) {
-                            Ok(bytes) => {
-                                if bytes.len() > MAX_ATTACHMENT_SIZE_BYTES {
-                                    skipped_files.push(file.file_name.clone());
-                                    continue;
-                                }
-                                inputs.push(AttachmentInput {
-                                    file_name: file.file_name.clone(),
-                                    mime_type: file.mime_type.clone(),
-                                    data: base64::engine::general_purpose::STANDARD.encode(&bytes),
-                                });
-                            }
-                            Err(e) => {
-                                log::error!(
-                                    "Failed to read file {}: {e}",
-                                    file.file_path.display()
-                                );
-                            }
-                        }
-                    }
-
-                    if !skipped_files.is_empty() {
-                        let window_id = ctx.window_id();
-                        let message = if skipped_files.len() == 1 {
-                            format!(
-                                "{} was not attached — exceeds 10MB limit.",
-                                skipped_files[0]
-                            )
-                        } else {
-                            format!(
-                                "{} files were not attached — exceed 10MB limit.",
-                                skipped_files.len()
-                            )
-                        };
-                        ToastStack::handle(ctx).update(ctx, |ts, ctx| {
-                            ts.add_ephemeral_toast(
-                                DismissibleToast::error(message),
-                                window_id,
-                                ctx,
-                            );
-                        });
-                    }
-
-                    inputs
-                } else {
-                    vec![]
-                };
-
-                // Clear the buffer and pending attachments after collecting them.
-                self.editor.update(ctx, |editor, ctx| {
-                    editor.clear_buffer(ctx);
-                });
-                self.ai_context_model.update(ctx, |context_model, ctx| {
-                    context_model.clear_pending_attachments(ctx);
-                });
-
-                if let Some(ambient_agent_view_model) = self.ambient_agent_view_model() {
-                    ambient_agent_view_model.update(ctx, |state, ctx| {
-                        state.spawn_agent(prompt, attachments, ctx);
-                    });
-                }
-                return;
-            }
-
-            self.submit_ai_query(None, ctx);
         } else {
             // If we're submitting a shell command, we want to send telemetry for the input type.
             if FeatureFlag::NldImprovements.is_enabled() {
