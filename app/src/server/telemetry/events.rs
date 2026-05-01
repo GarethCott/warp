@@ -615,9 +615,6 @@ pub enum PtySpawnMode {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum OpenedWarpAISource {
     GlobalEntryButton,
-    HelpWithBlock,
-    HelpWithTextSelection,
-    FromAICommandSearch,
     WarmWelcome,
 }
 
