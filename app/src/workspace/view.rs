@@ -19804,9 +19804,6 @@ impl TypedActionView for Workspace {
 
                 self.add_terminal_tab_in_ai_mode(*zero_state_prompt_suggestion_type, ctx);
             }
-            OpenCloudAgentSetupGuide => {
-                // strip(neuter): AgentManagementView is gated off in this fork.
-            }
             DragTab {
                 tab_index,
                 tab_position,
