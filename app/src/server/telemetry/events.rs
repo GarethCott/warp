@@ -573,12 +573,9 @@ pub enum CommandCorrectionEvent {
 pub enum CommandSearchResultType {
     History,
     Workflow,
-    OpenWarpAI,
-    TranslateUsingWarpAI,
     Notebook,
     EnvVarCollection,
     ViewInWarpDrive,
-    AIQuery,
     Project,
 }
 
@@ -590,9 +587,6 @@ impl From<&CommandSearchItemAction> for CommandSearchResultType {
             AcceptWorkflow(_) => Self::Workflow,
             AcceptNotebook(_) => Self::Notebook,
             AcceptEnvVarCollection(_) => Self::EnvVarCollection,
-            OpenWarpAI => Self::OpenWarpAI,
-            TranslateUsingWarpAI => Self::TranslateUsingWarpAI,
-            AcceptAIQuery(_) | RunAIQuery(_) => Self::AIQuery,
         }
     }
 }
