@@ -234,8 +234,6 @@ pub enum WorkspaceAction {
     CreateTeamFolder,
     CreateTeamEnvVarCollection,
     CreatePersonalEnvVarCollection,
-    CreatePersonalAIPrompt,
-    CreateTeamAIPrompt,
     ToggleMouseReporting,
     ToggleScrollReporting,
     ToggleFocusReporting,
@@ -418,8 +416,6 @@ pub enum WorkspaceAction {
     StartNewConversation {
         terminal_view_id: EntityId,
     },
-    /// Jump to the terminal pane of the most recent agent toast
-    JumpToLatestToast,
     /// Open a file in a new tab with a code pane
     OpenFileInNewTab {
         full_path: PathBuf,
@@ -666,7 +662,6 @@ impl From<&WorkspaceAction> for LoginGatedFeature {
             CreateTeamWorkflow => "Creating a team workflow",
             CreateTeamFolder => "Creating a team folder",
             CreateTeamEnvVarCollection => "Creating a team environment variable collection",
-            CreateTeamAIPrompt => "Creating a team prompt",
             OpenShareSessionModal(_) => "Sharing a session",
             _ => "Unknown reason",
         }
@@ -683,7 +678,6 @@ impl WorkspaceAction {
                 | CreateTeamWorkflow
                 | CreateTeamFolder
                 | CreateTeamEnvVarCollection
-                | CreateTeamAIPrompt
                 | OpenShareSessionModal(_)
         )
     }
@@ -807,8 +801,6 @@ impl WorkspaceAction {
             | CreateTeamFolder
             | CreateTeamEnvVarCollection
             | CreatePersonalEnvVarCollection
-            | CreatePersonalAIPrompt
-            | CreateTeamAIPrompt
             | OpenInExplorer { .. }
             | DragTab { .. }
             | HandoffPendingTransfer { .. }
@@ -889,7 +881,6 @@ impl WorkspaceAction {
             | FocusPane(..)
             | StartNewConversation { .. }
             | UndoRevertInCodeReviewPane { .. }
-            | JumpToLatestToast
             | NavigatePrevPaneOrPanel
             | NavigateNextPaneOrPanel
             | ToggleProjectExplorer

@@ -46,8 +46,6 @@ pub struct AgentToastStack {
     toasts: Vec<AgentToastData>,
     /// Cached keystroke for the jump to latest toast action
     jump_to_toast_shortcut: Option<Keystroke>,
-    /// Navigation data for the most recent toast. Persists even after toast is dismissed
-    latest_toast_navigation_data: Option<(WindowId, usize, EntityId)>,
 }
 
 impl AgentToastStack {
@@ -75,7 +73,6 @@ impl AgentToastStack {
             timeout,
             toasts: Vec::new(),
             jump_to_toast_shortcut,
-            latest_toast_navigation_data: None,
         }
     }
 
@@ -87,9 +84,6 @@ impl AgentToastStack {
             move |view, _, ctx| view.dismiss_toast_by_uuid(&uuid, ctx),
             |_, _| {},
         );
-
-        self.latest_toast_navigation_data =
-            Some((toast.window_id, toast.tab_index, toast.terminal_view_id));
 
         self.toasts.push(AgentToastData {
             toast,
@@ -139,14 +133,6 @@ impl AgentToastStack {
         }
     }
 
-    /// Get the UUID of the most recent (latest) toast
-    pub fn latest_toast_uuid(&self) -> Option<Uuid> {
-        self.toasts.last().map(|toast_data| toast_data.uuid)
-    }
-
-    pub fn get_latest_toast_navigation_data(&self) -> Option<(WindowId, usize, EntityId)> {
-        self.latest_toast_navigation_data
-    }
 }
 
 impl View for AgentToastStack {
