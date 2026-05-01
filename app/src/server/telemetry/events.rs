@@ -2514,8 +2514,6 @@ pub enum TelemetryEvent {
         /// Whether the command was accepted in the agent view vs terminal mode.
         is_in_agent_view: bool,
     },
-    AgentModeSetupBannerAccepted,
-    AgentModeSetupBannerDismissed,
     AgentModeSetupProjectScopedRulesAction {
         action: AgentModeSetupProjectScopedRulesActionType,
     },
@@ -4255,8 +4253,6 @@ impl TelemetryEvent {
                 "command_details": command_details,
                 "is_in_agent_view": is_in_agent_view,
             })),
-            TelemetryEvent::AgentModeSetupBannerAccepted => None,
-            TelemetryEvent::AgentModeSetupBannerDismissed => None,
             TelemetryEvent::AgentModeSetupProjectScopedRulesAction { action } => Some(json!({
                 "action": action,
             })),
@@ -4924,8 +4920,6 @@ impl TelemetryEvent {
             | TelemetryEvent::AIExecutionProfileContextWindowSelected { .. }
             | TelemetryEvent::OpenSlashMenu { .. }
             | TelemetryEvent::SlashCommandAccepted { .. }
-            | TelemetryEvent::AgentModeSetupBannerAccepted
-            | TelemetryEvent::AgentModeSetupBannerDismissed
             | TelemetryEvent::AgentModeSetupProjectScopedRulesAction { .. }
             | TelemetryEvent::AgentModeSetupCodebaseContextAction { .. }
             | TelemetryEvent::AgentModeSetupCreateEnvironmentAction { .. }
@@ -5487,8 +5481,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::AIInputNotSent { .. } => EnablementState::Always,
             Self::OpenSlashMenu { .. } => EnablementState::Always,
             Self::SlashCommandAccepted { .. } => EnablementState::Always,
-            Self::AgentModeSetupBannerAccepted { .. } => EnablementState::Always,
-            Self::AgentModeSetupBannerDismissed => EnablementState::Always,
             Self::AgentModeSetupProjectScopedRulesAction { .. } => EnablementState::Always,
             Self::AgentModeSetupCodebaseContextAction { .. } => EnablementState::Always,
             Self::AgentModeSetupCreateEnvironmentAction { .. } => EnablementState::Always,
@@ -6038,8 +6030,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::AIInputNotSent { .. } => "AI Input Not Sent",
             Self::OpenSlashMenu { .. } => "Open Slash Menu",
             Self::SlashCommandAccepted { .. } => "Slash Command Accepted",
-            Self::AgentModeSetupBannerAccepted => "Agent Mode Setup Banner Accepted",
-            Self::AgentModeSetupBannerDismissed => "Agent Mode Setup Banner Dismissed",
             Self::AgentModeSetupProjectScopedRulesAction { .. } => {
                 "Agent Mode Setup Project Scoped Rules Action"
             }
@@ -6858,8 +6848,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::AIInputNotSent { .. } => "The AI input was not sent",
             Self::OpenSlashMenu { .. } => "Opened the slash commands menu",
             Self::SlashCommandAccepted { .. } => "User accepted a slash command",
-            Self::AgentModeSetupBannerAccepted { .. } => "Agent Mode setup banner accepted",
-            Self::AgentModeSetupBannerDismissed => "Agent Mode setup banner dismissed",
             Self::AgentModeSetupProjectScopedRulesAction { .. } => {
                 "User clicked a button in the Agent Mode setup project scoped rules step"
             }
