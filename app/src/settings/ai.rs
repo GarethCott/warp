@@ -1091,18 +1091,6 @@ define_settings_group!(AISettings, settings: [
         private: true,
     }
 
-    // Whether the agent mode setup banner has been shown for a given repo path.
-    // Once shown, it will not be shown again for that repo.
-    //
-    // Not a user-visible settings - we model it as a setting so we can track state.
-    agent_mode_setup_banner_shown_for_repo_paths: AgentModeSetupBannerShownForRepoPaths {
-        type: Vec<PathBuf>,
-        default: vec![],
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Never,
-        private: true,
-    }
-
     // Whether the codebase speedbump banner has been globally dismissed ("Don't show again").
     //
     // Not a user-visible settings - we model it as a setting so we can track state.
