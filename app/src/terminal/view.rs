@@ -25413,18 +25413,7 @@ impl View for TerminalView {
         } else {
             BlocklistAIHistoryModel::as_ref(app).active_conversation(self.id())
         };
-        // Set CanResumeConversation flag if the latest exchange (across all tasks,
-        // including subtasks) was manually cancelled or finished with an error.
-        if FeatureFlag::AIResumeButton.is_enabled() {
-            let latest_exchange = active_conversation.and_then(|c| c.latest_exchange());
-            let was_manually_cancelled = latest_exchange
-                .and_then(|e| e.output_status.cancel_reason())
-                .is_some_and(|reason| reason.is_manually_cancelled());
-            let has_error = active_conversation.is_some_and(|c| c.status().is_error());
-            if was_manually_cancelled || has_error {
-                context.set.insert(init::CAN_RESUME_CONVERSATION_KEY);
-            }
-        }
+        // strip(neuter): AIResumeButton is gated off in this fork.
         if active_conversation
             .as_ref()
             .and_then(|conversation| {

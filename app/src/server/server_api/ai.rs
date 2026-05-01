@@ -765,6 +765,7 @@ pub trait AIClient: 'static + Send + Sync {
         task_id: &AmbientAgentTaskId,
     ) -> anyhow::Result<(), anyhow::Error>;
 
+    #[allow(dead_code)]
     async fn get_task_attachments(
         &self,
         task_id: String,

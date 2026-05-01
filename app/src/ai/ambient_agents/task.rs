@@ -298,6 +298,7 @@ pub struct AttachmentInput {
 #[derive(Clone, Debug)]
 pub struct TaskAttachment {
     pub file_id: String,
+    #[allow(dead_code)]
     pub filename: String,
     pub download_url: String,
     #[allow(dead_code)]

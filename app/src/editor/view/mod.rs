@@ -3120,7 +3120,9 @@ impl EditorView {
 
     pub fn set_is_ai_input(&mut self, is_ai_input: bool, ctx: &mut ViewContext<Self>) {
         self.is_ai_input = is_ai_input;
-        if !self.is_ai_input && !FeatureFlag::AtMenuOutsideOfAIMode.is_enabled() {
+        // strip(neuter): AtMenuOutsideOfAIMode is gated off in this fork — when
+        // not in AI input, the AI context menu is always closed.
+        if !self.is_ai_input {
             ctx.emit(Event::SetAIContextMenuOpen(false));
         }
         ctx.notify();

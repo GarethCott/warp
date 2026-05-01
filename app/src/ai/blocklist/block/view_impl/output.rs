@@ -1912,11 +1912,12 @@ fn render_stopped_output(props: Props, app: &AppContext) -> Box<dyn Element> {
         .finish(),
     ]);
 
-    // Only show resume button for the latest cancelled task in the conversation
-    if props
-        .model
-        .is_latest_exchange_in_terminal_pane(props.terminal_view_id, app)
-        && FeatureFlag::AIResumeButton.is_enabled()
+    // strip(neuter): AIResumeButton is gated off in this fork — keep the
+    // condition `false` so the resume button never renders.
+    if false
+        && props
+            .model
+            .is_latest_exchange_in_terminal_pane(props.terminal_view_id, app)
     {
         let ui_builder = appearance.ui_builder().clone();
 
