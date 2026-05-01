@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-05-01 (post-cleanup-70).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-05-01 (post-cleanup-71).
 
 ---
 
@@ -87,8 +87,9 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Dropped the orphan `CommandSearchItemAction` AI variants (`AcceptAIQuery`, `RunAIQuery`, `OpenWarpAI`, `TranslateUsingWarpAI`) that became zombie after cleanup-53 deleted the AI search modules. Removed: 4 enum variants + 4 dispatch arms in `Workspace` + matcher entries in `command_search/view.rs` + 3 `CommandSearchResultType` variants (`OpenWarpAI`, `TranslateUsingWarpAI`, `AIQuery`) + their conversion arms (cleanup-68: -51 net lines)
 - Sweep PR for cleanup-67: dropped the 3 orphan `OpenedWarpAISource` variants (`FromAICommandSearch`, `HelpWithBlock`, `HelpWithTextSelection`) — only producer was the deleted `From<&AskAIType>` impl (cleanup-69: -3 net lines)
 - Deleted the dead AI Assistant warm-welcome chain. `should_show_ai_assistant_warm_welcome` was always `false` (per the strip(neuter) marker added when cleanup-53 removed the warm-welcome render); the 3 `WorkspaceAction` variants (`ShowAIAssistantWarmWelcome`, `ClickedAIAssistantWarmWelcome`, `DismissAIAssistantWarmWelcome`) had no producers. Dropped variants + dispatch arms + the field + the `dismiss_ai_assistant_warm_welcome` method + the dead subterm in the tab-bar `is_tab_menu_open` predicate + the `OpenedWarpAISource::WarmWelcome` variant + the `DISMISSED_AI_ASSISTANT_WELCOME_KEY` settings constant + 3 newly-unused imports (cleanup-70: -50 net lines)
+- Dropped the dead `workspace:toggle_ai_assistant` EditableBindings (2 bindings, both gated on `IS_ANY_AI_ENABLED` + `BindingGroup::WarpAi`) + cascade: `WorkspaceAction::NewPaneInAgentMode` + `ToggleAIAssistant` variants + dispatch arms, `Workspace::add_terminal_pane_in_ai_mode`, `AgentModeEntrypoint::NewPaneBinding` telemetry variant, `TelemetryEvent::ToggleWarpAI` variant + 5 trait arms, `NEW_AGENT_PANE_LABEL` static + re-export + LazyLock import. Also removed the "Create an Agent Mode pane and check its width" integration test step in `crates/integration/src/test.rs` since the test premise no longer holds (cleanup-71: -162 net lines)
 
-**Total stripped: ~39350+ lines of dead code, 50 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~39500+ lines of dead code, 50 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
@@ -215,18 +216,18 @@ grep -rn "is_any_ai_enabled" app/src --include="*.rs" | grep -vE "/ai/|_test\.rs
 5. Pick a target from "What's left to strip" above.
 6. Follow the workflow loop.
 
-If you want a single concrete next step: all the unreachable settings pages are gone. After cleanups 55-70 the easy dead branches in `app/src/` are exhausted, the agent-mode setup banner subsystem is fully gone, the AskAI / AskAIAssistant chain across terminal/pane-group/workspace/ai_assistant has been deleted, the orphan `CommandSearchItemAction` AI variants are gone, and the AI Assistant warm-welcome chain is fully removed. Remaining iso targets are tougher:
+If you want a single concrete next step: all the unreachable settings pages are gone. After cleanups 55-71 the easy dead branches in `app/src/` are exhausted, the agent-mode setup banner subsystem is fully gone, the AskAI / AskAIAssistant chain across terminal/pane-group/workspace/ai_assistant has been deleted, the orphan `CommandSearchItemAction` AI variants are gone, the AI Assistant warm-welcome chain is fully removed, and the `workspace:toggle_ai_assistant` bindings + their `NewPaneInAgentMode`/`ToggleAIAssistant` actions are gone. Remaining iso targets are tougher:
 - The reachable pages still in the sidebar (`features_page.rs` ~7000 lines, `appearance_page.rs` 5186 lines, `code_page.rs` 2462 lines, `keybindings.rs`) can only be chipped at by removing AI-only widgets one at a time.
 - `environments_page.rs` is still here (3500 lines via `update_environment_form.rs`) but reachable via `EnvironmentManagementPane`, used by app_state persistence schema, agent_input_footer, and root_view — Tier-4 territory.
 - The dead-on-arrival `app/src/ai/`, `app/src/notebooks/`, `app/src/drive/` subtrees still won't converge as a Tier-4 strip.
 - The cloud crates in `crates/`: managed_secrets, isolation_platform, graphql, warp_graphql_schema, warp_server_client, onboarding, computer_use, ai. Each is wide but tractable.
 
 Smaller wins still available:
+- More dead `IS_ANY_AI_ENABLED`-gated EditableBindings remain in `terminal/view/init.rs` (~10), `terminal/input.rs` (3), and `workspace/mod.rs` (5+). Cleanup-71 demonstrated the pattern. Each one needs careful checking that the underlying action has no other producers, but the pattern is now established. Notable candidates: `workspace:init_project_rules` → `TerminalAction::InitProject`, `workspace:add_current_dir_as_project` → `TerminalAction::AddProjectAtCurrentDirectory`, `terminal:toggle_autoexecute_mode_keybinding`, `terminal:toggle_queue_next_prompt_keybinding`, the `EnterCloudAgentView` fixed binding.
 - Look for `#[allow(dead_code)]` annotations and verify they're still needed (149 in `app/src` per last count).
-- Search `is_any_ai_enabled()` callsites outside `/ai/` for any new orphans created by recent strips.
-- The `submit_ai_query` chain in `Input` — kept by cleanup-58 because of one live caller in `insert_zero_state_prompt_suggestion` (the zero-state prompt-suggestions banner). That banner might itself be dead-on-arrival; if so, `submit_ai_query` and `insert_zero_state_prompt_suggestion` could go too along with `ZeroStatePromptSuggestionType` / `ZeroStatePromptSuggestionTriggeredFrom`.
-- The legacy AI assistant tab-bar button (`render_legacy_warp_ai_entrypoint_button`) still renders when `!FeatureFlag::AgentMode.is_enabled()`. AgentMode is off in this fork's default features, so the button shows; but the panel it opens (`AIAssistantPanelView`) had its `ask_ai` ripped out in cleanup-67 — it's mostly an empty shell now. Worth a closer look at what's left in `ai_assistant/panel.rs` and whether the entire panel + the `ClickedAIAssistantIcon` chain can be deleted.
-- Wider orphan-telemetry sweep across `events.rs` — grep for `TelemetryEvent::` and verify each variant has a live emitter outside the file. Recent cleanups have nibbled at this but a systematic pass would find more.
+- The `submit_ai_query` chain in `Input` — kept by cleanup-58 because of one live caller in `insert_zero_state_prompt_suggestion` (the zero-state prompt-suggestions banner). That banner might itself be dead-on-arrival.
+- The legacy AI assistant tab-bar button (`render_legacy_warp_ai_entrypoint_button`) still renders when `!FeatureFlag::AgentMode.is_enabled()`. The panel it opens (`AIAssistantPanelView`) had its `ask_ai` ripped out in cleanup-67 — mostly an empty shell. Worth a closer look at whether the entire panel + the `ClickedAIAssistantIcon` chain can be deleted.
+- Wider orphan-telemetry sweep across `events.rs` — grep for `TelemetryEvent::` and verify each variant has a live emitter outside the file.
 - `set_ai_input_mode_with_query` is now used only by an onboarding-callout submit path in `terminal/view.rs` and `ai/agent_sdk/driver.rs` (the latter is in the dead-on-arrival ai/ subtree). The onboarding callout is reachable in principle — verify whether the AgentView-disabled fallback is actually triggered in this fork.
 
 If those feel too risky: there's plenty of small dead-code cleanup left around the codebase. Run `cargo check --workspace 2>&1 | grep "warning"` and fix what comes up. Or grep for `// strip(neuter):` and `let _ = ` and tidy the suppressions.
