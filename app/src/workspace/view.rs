@@ -359,12 +359,9 @@ use crate::workspace::sync_inputs::SyncedInputState;
 use crate::workspace::toast_stack::{
     ToastStack as WorkspaceToastStack, ToastStackEvent as WorkspaceToastStackEvent,
 };
-use crate::{
-    ai_assistant::{
-        panel::{AIAssistantPanelEvent, AIAssistantPanelView},
-        AI_ASSISTANT_FEATURE_NAME,
-    },
-    settings,
+use crate::ai_assistant::{
+    panel::{AIAssistantPanelEvent, AIAssistantPanelView},
+    AI_ASSISTANT_FEATURE_NAME,
 };
 use crate::{send_telemetry_from_ctx, GlobalResourceHandles};
 
@@ -387,7 +384,6 @@ use warpui::fonts::Weight;
 use warpui::modals::{AlertDialogWithCallbacks, AppModalCallback};
 use warpui::windowing::{StateEvent, WindowManager};
 
-use warp_core::user_preferences::GetUserPreferences as _;
 use warpui::clipboard::ClipboardContent;
 #[cfg(target_family = "wasm")]
 use warpui::elements::Percentage;
@@ -946,7 +942,6 @@ pub struct Workspace {
     settings_file_error: Option<crate::settings::SettingsFileError>,
     settings_error_banner_dismissed: bool,
     ai_assistant_panel: ViewHandle<AIAssistantPanelView>,
-    should_show_ai_assistant_warm_welcome: bool,
     auth_override_warning_modal: ViewHandle<AuthOverrideWarningModal>,
     require_login_modal: ViewHandle<AuthView>,
     workflow_modal: ViewHandle<WorkflowModal>,
@@ -2825,11 +2820,6 @@ impl Workspace {
             me.handle_window_settings_changed_event(event, ctx);
         });
 
-        // strip(neuter): the "Warp AI warm welcome" is gated on `&& false` in
-        // this fork, so it never shows. Keep the field so other call sites
-        // (assignments + reads) compile unchanged.
-        let should_show_ai_assistant_warm_welcome: bool = false;
-
         let tab_settings_handle = TabSettings::handle(ctx);
         ctx.subscribe_to_model(&tab_settings_handle, |me, _, event, ctx| {
             me.handle_tab_settings_change(event, ctx)
@@ -3061,7 +3051,6 @@ impl Workspace {
             settings_file_error,
             settings_error_banner_dismissed: false,
             ai_assistant_panel,
-            should_show_ai_assistant_warm_welcome,
             auth_override_warning_modal,
             suggested_agent_mode_workflow_modal,
             suggested_rule_modal,
@@ -4263,14 +4252,6 @@ impl Workspace {
         });
     }
 
-    fn dismiss_ai_assistant_warm_welcome(&mut self, ctx: &mut ViewContext<Self>) {
-        self.should_show_ai_assistant_warm_welcome = false;
-        let _ = ctx.private_user_preferences().write_value(
-            settings::DISMISSED_AI_ASSISTANT_WELCOME_KEY,
-            true.to_string(),
-        );
-        ctx.notify();
-    }
 
     /// Add and focus a new terminal pane in AI mode in a new tab.
     fn add_terminal_tab_in_ai_mode(
@@ -4337,12 +4318,6 @@ impl Workspace {
     }
 
     fn toggle_ai_assistant_panel(&mut self, ctx: &mut ViewContext<Self>) {
-        // Now that the user has interacted with the panel, we can close
-        // the dialogue and mark it as dismissed.
-        if self.should_show_ai_assistant_warm_welcome {
-            self.dismiss_ai_assistant_warm_welcome(ctx);
-        }
-
         self.tips_completed.update(ctx, |tips_completed, ctx| {
             mark_feature_used_and_write_to_user_defaults(
                 Tip::Action(TipAction::WarpAI),
@@ -11895,7 +11870,6 @@ impl Workspace {
         let is_tab_menu_open = self.show_tab_bar_overflow_menu
             || (self.show_tab_right_click_menu.is_some() && !is_vertical_tabs_active)
             || (self.show_new_session_dropdown_menu.is_some() && !is_vertical_tabs_active)
-            || (!FeatureFlag::AgentMode.is_enabled() && self.should_show_ai_assistant_warm_welcome)
             || self.is_user_menu_open
             || self.tab_bar_pinned_by_popup;
 
@@ -20163,19 +20137,6 @@ impl TypedActionView for Workspace {
                     }
                 }
             }
-            ShowAIAssistantWarmWelcome => {
-                self.should_show_ai_assistant_warm_welcome = true;
-                ctx.notify();
-            }
-            ClickedAIAssistantWarmWelcome => {
-                self.toggle_ai_assistant_panel(ctx);
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::OpenedWarpAI {
-                        source: OpenedWarpAISource::WarmWelcome
-                    },
-                    ctx
-                );
-            }
             DragTab {
                 tab_index,
                 tab_position,
@@ -20200,9 +20161,6 @@ impl TypedActionView for Workspace {
                     .write(ClipboardContent::plain_text(text.to_string()));
             }
             DismissWorkspaceBanner(banner_type) => self.dismiss_workspace_banner(ctx, banner_type),
-            DismissAIAssistantWarmWelcome => {
-                self.dismiss_ai_assistant_warm_welcome(ctx);
-            }
             Crash => {
                 #[cfg(feature = "crash_reporting")]
                 crate::crash_reporting::crash();
