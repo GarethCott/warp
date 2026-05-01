@@ -224,16 +224,6 @@ pub struct AgentMessageHeader {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct AgentRunEvent {
-    pub event_type: String,
-    pub run_id: String,
-    pub ref_id: Option<String>,
-    pub execution_id: Option<String>,
-    pub occurred_at: String,
-    pub sequence: i64,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ReadAgentMessageResponse {
     pub message_id: String,
     pub sender_run_id: String,

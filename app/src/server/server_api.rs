@@ -650,48 +650,6 @@ impl ServerApi {
         }
     }
 
-    /// Opens an SSE stream to the agent event-push endpoint.
-    ///
-    /// The returned `EventSourceStream` yields `reqwest_eventsource::Event`
-    /// items until the connection closes or an error occurs. The caller is
-    /// responsible for reading the stream and handling reconnection.
-    ///
-    /// The stream is served by warp-server-rtc (not the main warp-server pool),
-    /// so the URL is built from `ChannelState::rtc_http_url()` rather than
-    /// `server_root_url()`.
-    pub async fn stream_agent_events(
-        &self,
-        run_ids: &[String],
-        since_sequence: i64,
-    ) -> Result<http_client::EventSourceStream> {
-        debug_assert!(!run_ids.is_empty(), "run_ids must not be empty");
-        let auth_token = self
-            .get_or_refresh_access_token()
-            .await
-            .context("Failed to get access token for SSE stream")?;
-
-        let run_ids_param: String = run_ids
-            .iter()
-            .map(|id| format!("run_ids[]={}", urlencoding::encode(id)))
-            .collect::<Vec<_>>()
-            .join("&");
-        let url = format!(
-            "{}/api/v1/agent/events/stream?{run_ids_param}&since={since_sequence}",
-            ChannelState::rtc_http_url()
-        );
-
-        let mut request = self.client.get(&url);
-        if let Some(token) = auth_token.as_bearer_token() {
-            request = request.bearer_auth(token);
-        }
-
-        for (name, value) in self.ambient_agent_headers().await? {
-            request = request.header(name, value);
-        }
-
-        Ok(request.eventsource())
-    }
-
     /// Sends a POST request to a public API endpoint and returns the raw response on success.
     async fn post_public_api_response<B>(
         &self,
