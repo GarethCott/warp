@@ -1,6 +1,6 @@
 # Stripping progress / handoff
 
-This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-05-01 (post-cleanup-66).
+This doc is a snapshot of what's been done and what's left, designed so a fresh Claude session can pick up cold. Last updated 2026-05-01 (post-cleanup-67).
 
 ---
 
@@ -83,8 +83,9 @@ Personal warp fork (`GarethCott/warp`) that boots straight to a terminal with **
 - Dropped 4 dead `!false` patterns (always-true guards that hid early returns or wrapped live bodies): `Input::process_paste_event` (sole caller of `handle_pasted_image_data` → orphan chain through `process_and_attach_clipboard_image` → `is_locked_in_ai_mode`, plus 3 unused imports), `Input::handle_input_settings_event` (collapsed wrap), `Workspace::maybe_auto_open_conversation_list` (entire fn always returned, dropped + 2 callers + the orphan `has_auto_opened_conversation_list` AISetting + the writer in `root_view.rs`), and the Workspace `OpenWarpAI` arm (collapsed body to `=> {}`) (cleanup-64: -232 net lines)
 - Dropped the orphan `InputContextMenuAction::AskWarpAI` and `ShowAICommandSearch` variants (cleanup-55 deleted the menu items that produced them but left the dispatch arms per "replace-don't-delete" convention; with no constructors, both are provably orphan). Cascaded: deleted `TerminalView::ai_command_search_from_input`. `ask_ai` and `InputAction::ShowAiCommandSearch` kept — each has live callers elsewhere (cleanup-65: -13 net lines)
 - Dropped the orphan `TerminalAction::AskAIAssistant { block_index }` variant (cleanup-33 deleted its sole producer, the "Ask AI" block toolbelt button). Cascaded: deleted the dispatch arm + Display arm + accessibility-content catch-all entry + the `AgentModeEntrypoint::BlockToolbelt` telemetry-enum variant. Note: `TerminalView::Event::AskAIAssistant(AskAIType)` is a *different* enum with the same name and is still live (cleanup-66: -21 net lines)
+- Deleted the entire `AskAI` / `AskAIAssistant` chain (the big iso target the prior doc-refresh pointed at). The 5 EditableBindings in `terminal/view/init.rs:736-820` that fed `ContextMenuAction::AskAI(...)` were all gated on `IS_ANY_AI_ENABLED` (never set), making the entire downstream pipeline unreachable. Removed: the 5 bindings, `ContextMenuAction::AskAI` variant + dispatch arm, `AskAISource` enum, `TerminalView::ask_ai` (~95 lines), `TerminalView::ask_blocklist_ai` (~80 lines), `TerminalView::Event::AskAIAssistant`, the re-emit in `terminal_pane.rs`, `pane_group::Event::AskAIAssistant` + handler, `Workspace::ask_ai_assistant`, `AskAIType` enum + `From<&AskAIType> for OpenedWarpAISource` impl, `AIAssistantPanelView::ask_ai` (~130 lines of FromTextSelection/FromBlock/FromAICommandSearch formatting + truncation), `format_as_code_block`, `ASK_AI_BLOCK_INPUT_LIMIT`, `CustomAction::AttachSelectionAsAgentModeContext` + its `ctrl-shift-space` keystroke, `AgentModeEntrypoint::ContextMenu` variant, `AgentModeEntrypointSelectionType` enum + its public re-export. `AIAssistantPanelView` itself stays — it's still a registered view with non-`ask_ai` entry points (cleanup-67: -547 net lines)
 
-**Total stripped: ~38700+ lines of dead code, 50 files entirely deleted, 18 dead feature flags removed.**
+**Total stripped: ~39250+ lines of dead code, 50 files entirely deleted, 18 dead feature flags removed.**
 
 ### Pending follow-ups
 - `HistoryInputSuggestion::AIQuery` variant + 6 match arms in `input_suggestions.rs` can be removed. Blocked on cleaning up test files (`input_suggestions_test.rs`, `input_test.rs`) that still construct the variant. Per the existing convention test files are out of scope, but here removing the variant breaks `cargo test`, so this needs deliberate test surgery.
@@ -211,7 +212,7 @@ grep -rn "is_any_ai_enabled" app/src --include="*.rs" | grep -vE "/ai/|_test\.rs
 5. Pick a target from "What's left to strip" above.
 6. Follow the workflow loop.
 
-If you want a single concrete next step: all the unreachable settings pages are gone. After cleanups 55-66 the easy `if false`/`&& false` and `!false` dead branches in `app/src/` are exhausted (only the comment-marker in `workspace/view.rs:2828` remains), the agent-mode setup banner subsystem is fully gone, the orphan AI/agent enum variants and their dispatch arms have been swept, and the orphan banner + block-toolbelt telemetry have been trimmed. Remaining iso targets are tougher:
+If you want a single concrete next step: all the unreachable settings pages are gone. After cleanups 55-67 the easy dead branches in `app/src/` are exhausted, the agent-mode setup banner subsystem is fully gone, the entire AskAI/AskAIAssistant chain across terminal/pane-group/workspace/ai_assistant has been removed, and the orphan banner + block-toolbelt telemetry have been trimmed. Remaining iso targets are tougher:
 - The reachable pages still in the sidebar (`features_page.rs` ~7000 lines, `appearance_page.rs` 5186 lines, `code_page.rs` 2462 lines, `keybindings.rs`) can only be chipped at by removing AI-only widgets one at a time.
 - `environments_page.rs` is still here (3500 lines via `update_environment_form.rs`) but reachable via `EnvironmentManagementPane`, used by app_state persistence schema, agent_input_footer, and root_view — Tier-4 territory.
 - The dead-on-arrival `app/src/ai/`, `app/src/notebooks/`, `app/src/drive/` subtrees still won't converge as a Tier-4 strip.
@@ -220,9 +221,10 @@ If you want a single concrete next step: all the unreachable settings pages are 
 Smaller wins still available:
 - Look for `#[allow(dead_code)]` annotations and verify they're still needed (149 in `app/src` per last count).
 - Search `is_any_ai_enabled()` callsites outside `/ai/` for any new orphans created by recent strips.
-- The remaining `ask_ai` chain in `TerminalView` (`AskAISource`, `AskAIType`, `Event::AskAIAssistant`, the `ContextMenu(ContextMenuAction::AskAI(...))` dispatch and the 5 EditableBindings in `terminal/view/init.rs:744-818`). The bindings are gated on `IS_ANY_AI_ENABLED` which is never set, so the actions are unreachable. Removing them lets `ask_ai`, the `Event::AskAIAssistant` chain across `terminal_pane.rs` → `pane_group/mod.rs` → `Workspace::ask_ai_assistant` (and from there `ai_assistant/panel.rs::ask_ai`), `set_ai_input_mode_with_query`, and a meaningful pile of helpers all come out together. This is the next big iso target.
 - The `submit_ai_query` chain in `Input` (kept by cleanup-58 because of one live caller in `handle_inline_completion_acceptance`) — the inline-completion AI suggestion path may itself be dead, in which case `submit_ai_query` could go too.
 - Wider orphan-telemetry sweep across `events.rs` — grep for `TelemetryEvent::` and verify each variant has a live emitter outside the file. Recent cleanups have nibbled at this but a systematic pass would find more.
+- The 3 sibling `OpenedWarpAISource` variants (`FromAICommandSearch`, `HelpWithBlock`, `HelpWithTextSelection`) were left intact in cleanup-67 since trimming a serialized telemetry enum is a separate concern. The `From<&AskAIType>` impl that produced them is gone, so they're orphan and can be dropped if you're comfortable shrinking the enum's wire format.
+- `set_ai_input_mode_with_query` in `TerminalView` was kept by cleanup-67 — verify whether its remaining callers (`workspace/view.rs:14820,14837` from the post-cleanup-64 fallback paths) are reachable or also dead.
 
 If those feel too risky: there's plenty of small dead-code cleanup left around the codebase. Run `cargo check --workspace 2>&1 | grep "warning"` and fix what comes up. Or grep for `// strip(neuter):` and `let _ = ` and tidy the suppressions.
 
