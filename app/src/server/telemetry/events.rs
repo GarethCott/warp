@@ -743,14 +743,6 @@ pub enum AgentModeEntrypoint {
     #[serde(rename = "tab_bar")]
     TabBar,
 
-    /// This corresponds to _both_ triggering from the command palette and via keybinding.
-    ///
-    /// Unfortunately due to the way the command palette automatically surfaces any editable
-    /// keybinding as an action, we don't have enough information to discern if the binding was
-    /// triggered by the palette or keyboard.
-    #[serde(rename = "new_pane_binding")]
-    NewPaneBinding,
-
     /// The "Ask Agent Mode" option from AI command search.
     #[serde(rename = "ai_command_search")]
     AICommandSearch,
@@ -1708,10 +1700,6 @@ pub enum TelemetryEvent {
     WarpDriveOpened {
         source: WarpDriveSource,
         is_code_mode_v2: bool,
-    },
-    // Toggled the legacy Warp AI side panel.
-    ToggleWarpAI {
-        opened: bool,
     },
     ToggleSecretRedaction {
         enabled: bool,
@@ -3260,7 +3248,6 @@ impl TelemetryEvent {
             } => Some(
                 json!({ "ui_location": ui_location, "open_in_active_window": open_in_active_window }),
             ),
-            TelemetryEvent::ToggleWarpAI { opened } => Some(json!({ "opened": opened })),
             TelemetryEvent::ToggleSecretRedaction { enabled } => {
                 Some(json!({ "enabled": enabled }))
             }
@@ -4743,7 +4730,6 @@ impl TelemetryEvent {
             | TelemetryEvent::AnonymousUserHitCloudObjectLimit
             | TelemetryEvent::NeedsReauth
             | TelemetryEvent::WarpDriveOpened { .. }
-            | TelemetryEvent::ToggleWarpAI { .. }
             | TelemetryEvent::ToggleSecretRedaction { .. }
             | TelemetryEvent::CustomSecretRegexAdded
             | TelemetryEvent::ToggleObfuscateSecret { .. }
@@ -5289,7 +5275,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::InitiateReauth => EnablementState::Always,
             Self::NeedsReauth => EnablementState::Always,
             Self::WarpDriveOpened => EnablementState::Always,
-            Self::ToggleWarpAI => EnablementState::Always,
             Self::ToggleSecretRedaction => EnablementState::Always,
             Self::CustomSecretRegexAdded => EnablementState::Always,
             Self::ToggleObfuscateSecret => EnablementState::Always,
@@ -5785,7 +5770,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::InitiateReauth => "Initiate Reauth",
             Self::NeedsReauth => "Needs Reauth",
             Self::WarpDriveOpened => "Warp Drive Opened",
-            Self::ToggleWarpAI => "Toggle Warp AI",
             Self::ToggleSecretRedaction => "Toggle Secret Redaction",
             Self::CustomSecretRegexAdded => "Custom Secret Regex Added",
             Self::ToggleObfuscateSecret => "Toggle Obfuscate Secret",
@@ -6504,9 +6488,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::InitiateReauth => "Started the flow to re-authenticate the client",
             Self::NeedsReauth => "User needs to re-authenticate",
             Self::WarpDriveOpened => "Opened Warp Drive panel",
-            Self::ToggleWarpAI => {
-                "Toggled Warp AI--an AI assistant to help you debug errors, look up forgotten commands and more"
-            }
             Self::ToggleSecretRedaction => {
                 "Toggled on/off the setting for Secret Redaction - attempts to redact secrets and sensitive information"
             }
