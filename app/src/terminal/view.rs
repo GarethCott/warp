@@ -3039,16 +3039,6 @@ impl TerminalView {
                                         | AgentViewEntryOrigin::ThirdPartyCloudAgent
                                 );
                             if should_insert_zero_state_block {
-                                let mut should_show_init_callout = false;
-                                if let Some(directory) = me.current_repo_path.as_ref() {
-                                    should_show_init_callout = me
-                                        .should_show_agent_mode_setup_for_directory(directory, ctx);
-                                    if should_show_init_callout {
-                                        me.mark_agent_init_callout_as_shown_for_directory(
-                                            directory, ctx,
-                                        );
-                                    }
-                                }
                                 let agent_view_zero_state = ctx.add_typed_action_view(|ctx| {
                                     AgentViewZeroStateBlock::new(
                                         *conversation_id,
@@ -3058,7 +3048,7 @@ impl TerminalView {
                                         me.ambient_agent_view_model.as_ref(),
                                         me.model.clone(),
                                         &me.model_events_handle,
-                                        should_show_init_callout,
+                                        /* should_show_init_callout */ false,
                                         ctx,
                                     )
                                 });
@@ -9222,35 +9212,6 @@ impl TerminalView {
     }
 
     #[cfg(feature = "local_fs")]
-    fn insert_agent_mode_setup_speedbump_banner(
-        &mut self,
-        repo_path: PathBuf,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        // Create new inline banner
-        let banner_id = self.inline_banners_state.next_banner_id();
-        let banner_state = AgentModeSetupSpeedbumpBannerState::new(banner_id, repo_path.clone());
-
-        // Insert the banner into the block list
-        self.model
-            .lock()
-            .block_list_mut()
-            .append_inline_banner_with_custom_height(
-                InlineBannerItem::new(banner_id, InlineBannerType::AgentModeSetup),
-                4.0,
-            );
-
-        // Store the banner state
-        self.inline_banners_state.agent_setup_speedbump_banner = Some(banner_state);
-
-        // Track that this banner has been shown for this repo
-        // so it won't be shown again
-        self.mark_agent_init_callout_as_shown_for_directory(&repo_path, ctx);
-
-        ctx.notify();
-    }
-
-    #[cfg(feature = "local_fs")]
     fn insert_codebase_index_speedbump_banner(
         &mut self,
         repo_path: PathBuf,
@@ -12810,70 +12771,13 @@ impl TerminalView {
     #[cfg(feature = "local_fs")]
     fn update_agent_mode_setup_speedbump_banner(
         &mut self,
-        directory: PathBuf,
+        _directory: PathBuf,
         ctx: &mut ViewContext<Self>,
     ) {
-        let should_insert_banner = self.should_show_agent_mode_setup_for_directory(&directory, ctx)
-            && !FeatureFlag::AgentView.is_enabled();
-
-        if !should_insert_banner {
-            self.remove_agent_setup_speedbump_banner(ctx);
-            return;
-        }
-
-        if let Some(banner_state) = &self.inline_banners_state.agent_setup_speedbump_banner {
-            if banner_state.repo_path != directory {
-                // If the banner is showing for a different repo, remove it, and insert it for the new repo.
-                self.remove_agent_setup_speedbump_banner(ctx);
-                self.insert_agent_mode_setup_speedbump_banner(directory, ctx);
-            }
-        } else {
-            // If no banner exists, insert it.
-            self.insert_agent_mode_setup_speedbump_banner(directory, ctx);
-        }
-    }
-
-    #[cfg(feature = "local_fs")]
-    fn should_show_agent_mode_setup_for_directory(
-        &self,
-        directory: &Path,
-        ctx: &AppContext,
-    ) -> bool {
-        let already_shown = AISettings::as_ref(ctx)
-            .agent_mode_setup_banner_shown_for_repo_paths
-            .value()
-            .iter()
-            .any(|shown_path| shown_path == directory);
-        let is_repo = DetectedRepositories::as_ref(ctx)
-            .get_root_for_path(directory)
-            .is_some();
-        let is_any_ai_enabled =
-            FeatureFlag::AgentMode.is_enabled() && false;
-        // Check if the current session is remote - don't show setup in remote sessions.
-        let is_remote_session = !self.active_session_is_local(ctx).unwrap_or(false);
-
-        // Condition for showing setup:
-        // 1) Has not already shown
-        // 2) AI is enabled
-        // 3) Directory is in an active repo
-        // 4) There is no in-progress AI conversation (we don't want setup to show up mid conversation flow)
-        // 5) Session is not remote
-        // 6) There are available steps to show
-        !already_shown
-            && is_any_ai_enabled
-            && is_repo
-            && self.active_ai_block(ctx).is_none()
-            && !is_remote_session
-            && InitProjectModel::should_have_available_steps(directory, ctx)
-    }
-
-    #[cfg(not(feature = "local_fs"))]
-    fn should_show_agent_mode_setup_for_directory(
-        &self,
-        _directory: &Path,
-        _ctx: &AppContext,
-    ) -> bool {
-        false
+        // The "set up agent mode" banner is permanently disabled in this fork
+        // (`should_show_agent_mode_setup_for_directory` always returns false).
+        // Defensively remove any stale banner state.
+        self.remove_agent_setup_speedbump_banner(ctx);
     }
 
     fn mark_agent_init_callout_as_shown_for_directory(
