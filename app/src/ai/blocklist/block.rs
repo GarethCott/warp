@@ -1,11 +1,9 @@
 //! Implementation of "AI blocks" used to render AI queries and outputs in the blocklist.
 pub mod cli;
 pub mod cli_controller;
-pub mod compact_agent_input;
 pub(super) mod find;
 pub mod keyboard_navigable_buttons;
 pub mod model;
-pub mod number_shortcut_buttons;
 pub mod numbered_button;
 pub mod pending_user_query_block;
 pub mod secret_redaction;
