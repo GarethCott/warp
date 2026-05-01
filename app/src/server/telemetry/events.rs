@@ -613,27 +613,6 @@ pub enum PtySpawnMode {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum OpenedWarpAISource {
-    GlobalEntryButton,
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum WarpAIRequestResult {
-    Succeeded { latency_ms: i64, truncated: bool },
-    OutOfRequests,
-    Failed,
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum WarpAIActionType {
-    CopyTranscript,
-    Restart,
-    CopyAnswer,
-    CopyCode,
-    InsertIntoInput,
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum SaveAsWorkflowModalSource {
     Block,
     Input,
@@ -1556,25 +1535,9 @@ pub enum TelemetryEvent {
     InitialWorkingDirectoryConfigurationChanged {
         advanced_mode_enabled: bool,
     },
-    /// Opened legacy Warp AI.
-    OpenedWarpAI {
-        source: OpenedWarpAISource,
-    },
-    /// Issued legacy Warp AI request.
-    WarpAIRequestIssued {
-        result: WarpAIRequestResult,
-    },
-    WarpAIAction {
-        action_type: WarpAIActionType,
-    },
-    /// This is purely for static prompts! Do not send user-written prompts with this event.
-    UsedWarpAIPreparedPrompt {
-        prompt: &'static str,
-    },
     ToggleFocusPaneOnHover {
         enabled: bool,
     },
-    WarpAICharacterLimitExceeded,
     OpenInputContextMenu,
     InputCutSelectedText,
     InputCopySelectedText,
@@ -3108,11 +3071,6 @@ impl TelemetryEvent {
             TelemetryEvent::InitialWorkingDirectoryConfigurationChanged {
                 advanced_mode_enabled,
             } => Some(json!({ "advanced_mode_enabled": advanced_mode_enabled })),
-            TelemetryEvent::OpenedWarpAI { source } => Some(json!({ "source": source })),
-            TelemetryEvent::WarpAIRequestIssued { result } => Some(json!({ "result": result })),
-            TelemetryEvent::WarpAIAction { action_type } => {
-                Some(json!({ "action_type": action_type }))
-            }
             TelemetryEvent::MCPServerCollectionPaneOpened { entrypoint } => {
                 Some(json!({ "entrypoint": entrypoint }))
             }
@@ -3193,9 +3151,6 @@ impl TelemetryEvent {
             }
             TelemetryEvent::AISuggestedRuleContentChanged { rule_id, is_saved } => {
                 Some(json!({ "rule_id": rule_id, "is_saved": is_saved }))
-            }
-            TelemetryEvent::UsedWarpAIPreparedPrompt { prompt } => {
-                Some(json!({ "prompt": prompt }))
             }
             TelemetryEvent::ExperimentTriggered {
                 experiment,
@@ -3992,7 +3947,6 @@ impl TelemetryEvent {
             | TelemetryEvent::QuitModalDisabled
             | TelemetryEvent::UserInitiatedLogOut
             | TelemetryEvent::LogOutModalShown
-            | TelemetryEvent::WarpAICharacterLimitExceeded
             | TelemetryEvent::OpenInputContextMenu
             | TelemetryEvent::InputCutSelectedText
             | TelemetryEvent::InputCopySelectedText
@@ -4652,12 +4606,7 @@ impl TelemetryEvent {
             | TelemetryEvent::InputModeChanged { .. }
             | TelemetryEvent::PtySpawned { .. }
             | TelemetryEvent::InitialWorkingDirectoryConfigurationChanged { .. }
-            | TelemetryEvent::OpenedWarpAI { .. }
-            | TelemetryEvent::WarpAIRequestIssued { .. }
-            | TelemetryEvent::WarpAIAction { .. }
-            | TelemetryEvent::UsedWarpAIPreparedPrompt { .. }
             | TelemetryEvent::ToggleFocusPaneOnHover { .. }
-            | TelemetryEvent::WarpAICharacterLimitExceeded
             | TelemetryEvent::OpenInputContextMenu
             | TelemetryEvent::InputCutSelectedText
             | TelemetryEvent::InputCopySelectedText
@@ -5197,11 +5146,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::InputModeChanged => EnablementState::Always,
             Self::PtySpawned => EnablementState::Always,
             Self::InitialWorkingDirectoryConfigurationChanged => EnablementState::Always,
-            Self::OpenedWarpAI => EnablementState::Always,
-            Self::WarpAIRequestIssued => EnablementState::Always,
-            Self::WarpAIAction => EnablementState::Always,
-            Self::UsedWarpAIPreparedPrompt => EnablementState::Always,
-            Self::WarpAICharacterLimitExceeded => EnablementState::Always,
             Self::OpenInputContextMenu => EnablementState::Always,
             Self::InputCutSelectedText => EnablementState::Always,
             Self::InputCopySelectedText => EnablementState::Always,
@@ -5692,11 +5636,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
                 "InitialWorkingDirectoryConfigurationChanged"
             }
             Self::InputModeChanged => "Input Mode Changed",
-            Self::OpenedWarpAI => "Opened Warp AI",
-            Self::WarpAIRequestIssued => "Warp AI Request Issued",
-            Self::WarpAIAction => "Warp AI Action",
-            Self::UsedWarpAIPreparedPrompt => "Used Warp AI Prepared Prompt",
-            Self::WarpAICharacterLimitExceeded => "Warp AI Character Limit Exceeded",
             Self::OpenInputContextMenu => "OpenInputBoxContextMenu",
             Self::InputCutSelectedText => "InputBoxCutSelectedText",
             Self::InputCopySelectedText => "InputBoxCutSelectedText",
@@ -6327,15 +6266,6 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             }
             Self::InitialWorkingDirectoryConfigurationChanged => {
                 "Replaced the default working directory with a different path"
-            }
-            Self::OpenedWarpAI => "Activated Warp AI",
-            Self::WarpAIRequestIssued => "Issued a question to Warp AI",
-            Self::WarpAIAction => "Executed a Warp AI action: Restart, Copy, Insert into terminal",
-            Self::UsedWarpAIPreparedPrompt => {
-                "Used one of the Warp-provided prompts, like \"Show examples\""
-            }
-            Self::WarpAICharacterLimitExceeded => {
-                "Attempted to ask a question longer than 1k chars to Warp AI"
             }
             Self::OpenInputContextMenu => "Opened the Input Editor's context menu",
             Self::InputCutSelectedText => {
