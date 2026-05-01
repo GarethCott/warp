@@ -196,24 +196,11 @@ impl BlocklistAIContextModel {
         ctx.subscribe_to_model(model_event_dispatcher, move |me, event, ctx| match event {
             ModelEvent::BlockCompleted(BlockCompletedEvent {
                 block_type: BlockType::User(user_block_completed),
-                block_id,
                 ..
             }) => {
-                // If AgentViewBlockContext is enabled and we're in agent view, track user-executed
-                // blocks for auto-attachment as context.
-                if FeatureFlag::AgentViewBlockContext.is_enabled()
-                    && me.agent_view_controller.as_ref(ctx).is_fullscreen()
-                    && !user_block_completed.was_part_of_agent_interaction
-                {
-                    me.auto_attached_agent_view_user_block_ids
-                        .push(block_id.clone());
-                }
-
                 // If the block that finished was part of an agent interaction (i.e. LRC finishing),
                 // we should preserve input context.
-                if !FeatureFlag::AgentViewBlockContext.is_enabled()
-                    && !user_block_completed.was_part_of_agent_interaction
-                {
+                if !user_block_completed.was_part_of_agent_interaction {
                     me.reset_context_to_default(ctx);
                 }
             }
@@ -457,19 +444,6 @@ impl BlocklistAIContextModel {
             for block_id in &self.pending_context_block_ids {
                 if let Some(block_context) = self.transform_block_to_context(block_id, false) {
                     context.push(block_context);
-                }
-            }
-
-            // Add auto-attached user-executed blocks (when AgentViewBlockContext is enabled)
-            if FeatureFlag::AgentViewBlockContext.is_enabled() {
-                for block_id in &self.auto_attached_agent_view_user_block_ids {
-                    // Skip if already in pending_context_block_ids to avoid duplicates
-                    if !self.pending_context_block_ids.contains(block_id) {
-                        if let Some(block_context) = self.transform_block_to_context(block_id, true)
-                        {
-                            context.push(block_context);
-                        }
-                    }
                 }
             }
 
