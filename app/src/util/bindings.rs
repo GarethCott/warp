@@ -122,8 +122,6 @@ pub enum CustomAction {
     WindowsCopy,
     /// Also applies to legacy Warp AI (toggles the panel)
     NewAgentModePane,
-    /// Also applies to legacy Warp AI (attaches the selection to the panel editor)
-    AttachSelectionAsAgentModeContext,
     OpenAIFactCollection,
     ToggleProjectExplorer,
     NewPersonalAIPrompt,
@@ -398,9 +396,6 @@ pub fn custom_tag_to_keystroke(custom: CustomTag) -> Option<Keystroke> {
         CustomAction::CloseCurrentSession => Keystroke::parse(cmd_or_ctrl_shift("w")).ok(),
         CustomAction::ViewChangelog => Keystroke::parse(cmd_or_ctrl_shift("alt-o")).ok(),
         CustomAction::NewAgentModePane => Keystroke::parse("ctrl-space").ok(),
-        CustomAction::AttachSelectionAsAgentModeContext => {
-            Keystroke::parse("ctrl-shift-space").ok()
-        }
         CustomAction::ToggleProjectExplorer => {
             if OperatingSystem::get().is_mac() {
                 Keystroke::parse("ctrl-2").ok()
