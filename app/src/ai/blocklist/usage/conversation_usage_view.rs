@@ -21,6 +21,7 @@ use warpui::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DisplayMode {
+    #[allow(dead_code)]
     Settings,
     Footer,
 }

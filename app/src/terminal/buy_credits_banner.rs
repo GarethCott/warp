@@ -30,8 +30,7 @@ use crate::pricing::{PricingInfoModel, PricingInfoModelEvent};
 use crate::send_telemetry_from_ctx;
 use crate::server::ids::ServerId;
 use crate::server::telemetry::{OutOfCreditsBannerAction, TelemetryEvent};
-use crate::settings_view::create_discount_badge;
-use crate::view_components::Dropdown;
+use crate::view_components::{create_discount_badge, Dropdown};
 use crate::workspaces::user_workspaces::{UserWorkspaces, UserWorkspacesEvent};
 use warp_graphql::error::BudgetExceededError;
 

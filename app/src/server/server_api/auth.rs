@@ -164,6 +164,7 @@ pub trait AuthClient: 'static + Send + Sync {
     /// Returns conversation usage history for the current user over the past n days.
     /// If last_updated_end_timestamp is provided, only conversations with
     /// lastUpdated earlier than this timestamp are returned.
+    #[allow(dead_code)]
     async fn get_conversation_usage_history(
         &self,
         days: Option<i32>,

@@ -459,6 +459,7 @@ impl AIRequestUsageModel {
         self.request_limit_info.is_unlimited
     }
 
+    #[allow(dead_code)]
     pub fn refresh_duration_to_string(&self) -> String {
         match self.request_limit_info.request_limit_refresh_duration {
             RequestLimitRefreshDuration::Weekly => "weekly".to_string(),
