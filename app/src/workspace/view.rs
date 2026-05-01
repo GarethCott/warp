@@ -362,7 +362,7 @@ use crate::workspace::toast_stack::{
 use crate::{
     ai_assistant::{
         panel::{AIAssistantPanelEvent, AIAssistantPanelView},
-        AskAIType, AI_ASSISTANT_FEATURE_NAME,
+        AI_ASSISTANT_FEATURE_NAME,
     },
     settings,
 };
@@ -12932,7 +12932,6 @@ impl Workspace {
             pane_group::Event::OpenPluginInstructionsPane(agent, kind) => {
                 self.open_plugin_instructions_pane(*agent, *kind, ctx);
             }
-            pane_group::Event::AskAIAssistant(ask_type) => self.ask_ai_assistant(ask_type, ctx),
             pane_group::Event::SyncInput(input_type) => {
                 self.process_sync_event_for_all_synced_pane_groups(input_type, ctx);
             }
@@ -15990,20 +15989,6 @@ impl Workspace {
         ctx.notify();
 
         true
-    }
-
-    fn ask_ai_assistant(&mut self, ask_type: &AskAIType, ctx: &mut ViewContext<Self>) {
-        if !self.current_workspace_state.is_ai_assistant_panel_open {
-            self.toggle_ai_assistant_panel(ctx);
-        }
-
-        ctx.focus(&self.ai_assistant_panel);
-
-        self.ai_assistant_panel.update(ctx, |ai_assistant, ctx| {
-            ai_assistant.ask_ai(ask_type, ctx);
-        });
-
-        ctx.notify();
     }
 
     /// Determines if the changelog is currently being shown or if the changelog request is

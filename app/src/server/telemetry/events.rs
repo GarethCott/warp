@@ -748,15 +748,6 @@ pub enum MCPServerCollectionPaneEntrypoint {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum AgentModeEntrypointSelectionType {
-    /// User entered Agent Mode by taking action on a blocklist text selection.
-    Text,
-
-    /// User entered Agent Mode by taking action on a block selection.
-    Block,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum AgentModeEntrypoint {
     /// The stars icon button in the tab bar.
     #[serde(rename = "tab_bar")]
@@ -773,12 +764,6 @@ pub enum AgentModeEntrypoint {
     /// The "Ask Agent Mode" option from AI command search.
     #[serde(rename = "ai_command_search")]
     AICommandSearch,
-
-    /// Context menu item(s) that attach a blocklist selection as context to an Agent Mode query.
-    #[serde(rename = "context_menu")]
-    ContextMenu {
-        selection_type: AgentModeEntrypointSelectionType,
-    },
 
     /// The Agent Mode chip in the prompt.
     #[serde(rename = "prompt_chip")]

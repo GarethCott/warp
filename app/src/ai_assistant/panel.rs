@@ -51,7 +51,7 @@ use super::requests::{Event as RequestsEvent, RequestStatus, Requests};
 use super::transcript::{Transcript, TranscriptEvent};
 use super::utils::{render_prepared_response_button, render_request_limit_info, TranscriptPart};
 use super::{
-    AskAIType, AI_ASSISTANT_FEATURE_NAME, AI_ASSISTANT_LOGO_COLOR, AI_ASSISTANT_SVG_PATH,
+    AI_ASSISTANT_FEATURE_NAME, AI_ASSISTANT_LOGO_COLOR, AI_ASSISTANT_SVG_PATH,
     ASK_AI_ASSISTANT_TEXT, PROMPT_CHARACTER_LIMIT,
 };
 
@@ -84,8 +84,6 @@ const FILES_ZERO_STATE_PROMPT: &str = "How do I find all files containing specif
 const INIT_PLACEHOLDER_TEXT: &str = " Ask a question...";
 const FOLLOWUP_PLACEHOLDER_TEXT: &str = " Type a response or click one above...";
 const RESTART_BUTTON_TEXT: &str = "Restart";
-
-const ASK_AI_BLOCK_INPUT_LIMIT: usize = 100;
 
 #[derive(Default)]
 struct MouseStateHandles {
@@ -286,148 +284,6 @@ impl AIAssistantPanelView {
                 ctx.notify();
                 view.tick(ctx);
             },
-        );
-    }
-
-    fn format_as_code_block(&self, content: &str) -> String {
-        // Intentionally choose a language that won't be interpreted as a shell language
-        // i.e. (*sh)
-        format!("```warp\n{}\n```", content.trim())
-    }
-
-    // TODO: reconsider if we should be doing all the formatting in here as opposed
-    // to doing the formatting at source and passing down the prompt to render as is.
-    pub fn ask_ai(&mut self, ask_type: &AskAIType, ctx: &mut ViewContext<Self>) {
-        match ask_type {
-            AskAIType::FromTextSelection {
-                text,
-                populate_input_box,
-            } => {
-                if *populate_input_box {
-                    let prefix = "Explain the following:\n";
-                    let code_block_formatting_len = self.format_as_code_block("").len();
-                    let truncated =
-                        if text.chars().count() + prefix.len() + code_block_formatting_len
-                            > PROMPT_CHARACTER_LIMIT
-                        {
-                            // Take the first k characters of the text selection, where k is the
-                            // remaining length after we limit the prompt and add formatting to it.
-                            let truncated: String = text
-                                .chars()
-                                // Take 3 for the ellipsis
-                                .take(
-                                    PROMPT_CHARACTER_LIMIT
-                                        - prefix.len()
-                                        - code_block_formatting_len
-                                        - 3,
-                                )
-                                .collect();
-                            format!("{truncated}...")
-                        } else {
-                            text.to_string()
-                        };
-
-                    self.editor.update(ctx, |editor, ctx| {
-                        editor.set_buffer_text(
-                            &format!(
-                                "{}{}",
-                                prefix,
-                                self.format_as_code_block(truncated.as_str())
-                            ),
-                            ctx,
-                        );
-                    });
-                    ctx.notify();
-                }
-            }
-            AskAIType::FromBlock {
-                input,
-                output,
-                exit_code,
-                ..
-            } => {
-                let block_successful = exit_code.was_successful();
-
-                // Formatting strings.
-                let question = if block_successful {
-                    "\nWhat should I do next?"
-                } else {
-                    "\nHow do I fix this?"
-                };
-                let prefix = "I ran the command: `";
-                let suffix = "` and got the following output:\n";
-                let code_block_formatting_len = self.format_as_code_block("").len();
-                let non_input_output_len =
-                    prefix.len() + suffix.len() + question.len() + code_block_formatting_len;
-
-                let input_len = input.chars().count();
-                let output_len = output.chars().count();
-
-                // If the input and output are longer than can be and the input is particularly large, try to
-                // shave the input down to a fixed number of chars.
-                let truncated_input = if input_len + output_len + non_input_output_len
-                    > PROMPT_CHARACTER_LIMIT
-                    && input_len > ASK_AI_BLOCK_INPUT_LIMIT
-                {
-                    let truncated: String = input.chars().take(ASK_AI_BLOCK_INPUT_LIMIT).collect();
-                    format!("{truncated}...")
-                } else {
-                    input.to_string()
-                };
-                let truncated_input_len = truncated_input.chars().count();
-
-                // If the truncated input and raw output are still longer than
-                // the allowed size, trim down the output.
-                let truncated_output = if truncated_input_len + output_len + non_input_output_len
-                    > PROMPT_CHARACTER_LIMIT
-                {
-                    // Take the last k characters of the block's output, where k is the
-                    // remaining length after we limit the prompt and add formatting to it.
-                    // + 3 for the ellipsis.
-                    let output_starting_index =
-                        output_len + truncated_input_len + non_input_output_len + 3
-                            - PROMPT_CHARACTER_LIMIT;
-                    let truncated: String = output.chars().skip(output_starting_index).collect();
-                    format!("...{truncated}")
-                } else {
-                    output.to_string()
-                };
-
-                // Insert the truncated strings (with the formatting around them) into the editor.
-                self.editor.update(ctx, |editor, ctx| {
-                    editor.set_buffer_text(
-                        &format!(
-                            "{prefix}{}{suffix}{}{question}",
-                            truncated_input,
-                            self.format_as_code_block(truncated_output.as_str())
-                        ),
-                        ctx,
-                    );
-                });
-                ctx.notify();
-            }
-            AskAIType::FromAICommandSearch { query } => {
-                let truncated = if query.chars().count() > PROMPT_CHARACTER_LIMIT {
-                    // Reserve 3 for the ellpisis
-                    let truncated: String =
-                        query.chars().take(PROMPT_CHARACTER_LIMIT - 3).collect();
-                    format!("{truncated}...")
-                } else {
-                    query.to_string()
-                };
-                self.editor.update(ctx, |editor, ctx| {
-                    editor.set_buffer_text(truncated.as_str(), ctx);
-                });
-            }
-            // Not supported by the AI Assistant. Only supported by blocklist AI.
-            AskAIType::FromBlocks { .. } => (),
-        }
-
-        send_telemetry_from_ctx!(
-            TelemetryEvent::OpenedWarpAI {
-                source: ask_type.into()
-            },
-            ctx
         );
     }
 
