@@ -14210,7 +14210,6 @@ impl View for Input {
 
     fn keymap_context(&self, app: &AppContext) -> warpui::keymap::Context {
         let mut ctx = Self::default_keymap_context();
-        let ai_settings = AISettings::as_ref(app);
 
         if self.is_voltron_open {
             ctx.set.insert("VoltronActive");
@@ -14250,23 +14249,11 @@ impl View for Input {
             ctx.set.insert(flags::EMPTY_INPUT_BUFFER);
         }
 
-        if false {
-            ctx.set.insert(flags::IS_ANY_AI_ENABLED);
-        }
-
         if *InputSettings::as_ref(app)
             .enable_slash_commands_in_terminal
             .value()
         {
             ctx.set.insert(flags::SLASH_COMMANDS_IN_TERMINAL_FLAG);
-        }
-
-        if ai_settings.is_ai_autodetection_enabled(app) {
-            ctx.set.insert(flags::AI_INPUT_AUTODETECTION_FLAG);
-        }
-
-        if ai_settings.is_code_suggestions_enabled(app) {
-            ctx.set.insert(flags::CODE_SUGGESTIONS_FLAG);
         }
 
         if let Some(workflow) = self.workflows_state.selected_workflow_state.clone() {
