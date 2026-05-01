@@ -79,10 +79,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Option<Box<dyn Element>>
         }
     }
 
-    // When AgentViewBlockContext is enabled, blocks are auto-attached so we don't
-    // show the attached context chip for blocks.
-    let show_attached_blocks_chip =
-        props.num_attached_context_blocks > 0 && !FeatureFlag::AgentViewBlockContext.is_enabled();
+    let show_attached_blocks_chip = props.num_attached_context_blocks > 0;
 
     if show_attached_blocks_chip || props.has_attached_context_selected_text {
         let chip_display_text = match (

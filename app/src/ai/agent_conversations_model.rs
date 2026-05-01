@@ -7,7 +7,7 @@ use crate::ai::artifacts::Artifact;
 use crate::ai::blocklist::{format_credits, BlocklistAIHistoryEvent, BlocklistAIHistoryModel};
 use crate::ai::cloud_environments::CloudAmbientAgentEnvironment;
 use crate::ai::conversation_navigation::ConversationNavigationData;
-use crate::auth::auth_manager::{AuthManager, AuthManagerEvent};
+use crate::auth::auth_manager::AuthManagerEvent;
 use crate::auth::{AuthStateProvider, UserUid};
 use crate::network::{NetworkStatus, NetworkStatusEvent, NetworkStatusKind};
 use crate::server::ids::{ServerId, SyncId};
@@ -864,6 +864,7 @@ pub struct AgentConversationsModel {
     task_fetch_state: HashMap<AmbientAgentTaskId, TaskFetchState>,
 }
 
+#[allow(dead_code)]
 pub enum AgentConversationsModelEvent {
     /// Initial load of tasks completed.
     ConversationsLoaded,
@@ -884,65 +885,25 @@ impl Entity for AgentConversationsModel {
 impl SingletonEntity for AgentConversationsModel {}
 
 impl AgentConversationsModel {
-    pub fn new(ctx: &mut ModelContext<Self>) -> Self {
-        // If FF not enabled, return an empty model and don't sync any tasks.
-        if !FeatureFlag::AgentManagementView.is_enabled() {
-            return Self {
-                tasks: HashMap::new(),
-                conversations: HashMap::new(),
-                in_flight_poll_abort_handle: None,
-                next_poll_abort_handle: None,
-                active_data_consumers_per_window: HashMap::new(),
-                has_finished_initial_load: true,
-                task_fetch_state: HashMap::new(),
-            };
-        }
-
-        // Subscribe to network status and window manager to inform whether we should poll for new task data
-        let network_status = NetworkStatus::handle(ctx);
-        ctx.subscribe_to_model(&network_status, Self::handle_network_status_changed);
-        let window_manager = WindowManager::handle(ctx);
-        ctx.subscribe_to_model(&window_manager, Self::handle_window_state_changed);
-
-        // Subscribe to auth events to retry initial sync when user becomes available
-        let auth_manager = AuthManager::handle(ctx);
-        ctx.subscribe_to_model(&auth_manager, Self::handle_auth_manager_event);
-
-        let history_model = BlocklistAIHistoryModel::handle(ctx);
-        ctx.subscribe_to_model(&history_model, move |me, event, ctx| {
-            me.handle_history_event(event, ctx);
-        });
-
-        let active_views_model = ActiveAgentViewsModel::handle(ctx);
-        ctx.subscribe_to_model(&active_views_model, |me, _event, ctx| {
-            me.sync_conversations(ctx);
-        });
-
-        let mut model = Self {
+    pub fn new(_ctx: &mut ModelContext<Self>) -> Self {
+        // strip(neuter): AgentManagementView is gated off in this fork, so
+        // the model returns empty and never syncs any tasks.
+        Self {
             tasks: HashMap::new(),
             conversations: HashMap::new(),
             in_flight_poll_abort_handle: None,
             next_poll_abort_handle: None,
             active_data_consumers_per_window: HashMap::new(),
-            has_finished_initial_load: false,
+            has_finished_initial_load: true,
             task_fetch_state: HashMap::new(),
-        };
-
-        // Only sync local conversations if we're not in CLI mode. Server-side data
-        // (tasks and cloud conversation metadata) is fetched on AuthComplete instead of
-        // here to avoid duplicate requests at startup.
-        if AppExecutionMode::as_ref(ctx).can_fetch_agent_runs_for_management() {
-            model.sync_conversations(ctx);
-        } else {
-            model.has_finished_initial_load = true;
         }
-        model
     }
 
     pub fn is_loading(&self) -> bool {
         !self.has_finished_initial_load
     }
 
+    #[allow(dead_code)]
     fn handle_network_status_changed(
         &mut self,
         event: &NetworkStatusEvent,
@@ -960,6 +921,7 @@ impl AgentConversationsModel {
         }
     }
 
+    #[allow(dead_code)]
     fn handle_window_state_changed(&mut self, event: &StateEvent, ctx: &mut ModelContext<Self>) {
         match event {
             StateEvent::ValueChanged { current, previous } => {
@@ -971,6 +933,7 @@ impl AgentConversationsModel {
         }
     }
 
+    #[allow(dead_code)]
     fn handle_auth_manager_event(
         &mut self,
         event: &AuthManagerEvent,
@@ -1009,6 +972,7 @@ impl AgentConversationsModel {
 
     /// Fetches tasks and cloud conversation metadata async. Cloud conversation metadata is merged with
     /// metadata stored in local db in the BlocklistAIHistoryModel
+    #[allow(dead_code)]
     fn fetch_ambient_agent_tasks_and_cloud_convo_metadata(&mut self, ctx: &mut ModelContext<Self>) {
         let Some(creator_uid) = AuthStateProvider::as_ref(ctx)
             .get()
@@ -1337,6 +1301,7 @@ impl AgentConversationsModel {
             .collect()
     }
 
+    #[allow(dead_code)]
     fn handle_history_event(
         &mut self,
         event: &BlocklistAIHistoryEvent,
