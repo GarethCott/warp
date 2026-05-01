@@ -23,9 +23,9 @@ use string_offset::CharOffset;
 use crate::util::color::coloru_with_opacity;
 use crate::workflows::WorkflowType;
 use crate::{
-    ai::blocklist::ai_brand_color, server::ids::SyncId, settings::InputModeSettings,
-    terminal::block_list_viewport::InputMode, ui_components::icons,
-    view_components::FilterableDropdownOrientation, workspace::WorkspaceAction,
+    server::ids::SyncId, settings::InputModeSettings, terminal::block_list_viewport::InputMode,
+    ui_components::icons, view_components::FilterableDropdownOrientation,
+    workspace::WorkspaceAction,
 };
 use crate::{
     appearance::Appearance,
@@ -913,20 +913,10 @@ impl WorkflowsMoreInfoView {
         match &self.workflow {
             WorkflowType::AIGenerated {
                 workflow,
-                origin: source,
+                origin: AIWorkflowOrigin::AgentMode,
             } => {
                 let icon = if FeatureFlag::AgentMode.is_enabled() {
-                    match source {
-                        AIWorkflowOrigin::AgentMode => {
-                            Icon::new(icons::Icon::Prompt.into(), appearance.theme().accent())
-                                .finish()
-                        }
-                        _ => Icon::new(
-                            icons::Icon::Prompt.into(),
-                            ai_brand_color(appearance.theme()),
-                        )
-                        .finish(),
-                    }
+                    Icon::new(icons::Icon::Prompt.into(), appearance.theme().accent()).finish()
                 } else {
                     Icon::new(
                         icons::Icon::AiAssistant.into(),
