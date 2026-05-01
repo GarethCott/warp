@@ -84,7 +84,7 @@ use warpui::{
     AssetProvider, Event, SingletonEntity, UpdateView, ViewHandle,
 };
 
-use warp::{terminal::find::TerminalFindModel, util::bindings::CustomAction, AgentModeEntrypoint};
+use warp::{terminal::find::TerminalFindModel, util::bindings::CustomAction};
 
 use sysinfo::{Pid, ProcessesToUpdate, System};
 use version_compare::Cmp;
@@ -176,7 +176,6 @@ use warp::{
         pane_group::assert_focused_pane_index,
         settings::set_window_custom_size,
         terminal::assert_terminal_bootstrapping,
-        view_getters::pane_group_view,
         window::add_and_save_window,
     },
 };
@@ -200,30 +199,21 @@ use warp::{
     integration_testing::{assertions::join_a_workspace, view_getters::single_terminal_view},
     terminal::view::TerminalAction,
 };
-use warp::{
-    integration_testing::{
-        command_palette::{
-            close_command_palette, open_command_palette, open_command_palette_and_run_action,
-            TestStepsExt,
-        },
-        view_getters::single_terminal_pane_view_for_tab,
+use warp::integration_testing::{
+    command_palette::{
+        close_command_palette, open_command_palette, open_command_palette_and_run_action,
+        TestStepsExt,
     },
-    pane_group::AGENT_MODE_PANE_DEFAULT_MINIMUM_WIDTH,
+    view_getters::single_terminal_pane_view_for_tab,
 };
 use warp::{
     integration_testing::{terminal::util::ExactLine, workspace::assert_tab_count},
     terminal::available_shells::AvailableShells,
 };
-use warp::{
-    integration_testing::{
-        terminal::{
-            assert_active_block_output, assert_alt_grid_active, assert_alt_screen_output,
-            assert_long_running_block_executing, assert_terminal_bootstrapped,
-            execute_long_running_command_for_pane,
-        },
-        view_getters::workspace_view,
-    },
-    workspace::WorkspaceAction,
+use warp::integration_testing::terminal::{
+    assert_active_block_output, assert_alt_grid_active, assert_alt_screen_output,
+    assert_long_running_block_executing, assert_terminal_bootstrapped,
+    execute_long_running_command_for_pane,
 };
 use warp::{settings_view::SettingsAction, terminal::block_list_viewport::ScrollLines};
 use warp::{
@@ -6609,56 +6599,6 @@ pub fn test_agent_mode_pane_minimum_size() -> Builder {
         .with_step(
             new_step_with_default_assertions("Create a new empty pane")
                 .with_keystrokes(&[cmd_or_ctrl_shift("d")]),
-        )
-        .with_step(
-            new_step_with_default_assertions("Create an Agent Mode pane and check its width")
-                .with_action(move |app, _, step_data_map| {
-                    let window_id = step_data_map
-                        .get(WINDOW_ID_KEY)
-                        .expect("Window ID for new window should exist");
-
-                    let workspace_view_id = workspace_view(app, *window_id).id();
-
-                    app.dispatch_typed_action(
-                        *window_id,
-                        &[workspace_view_id],
-                        &WorkspaceAction::NewPaneInAgentMode {
-                            entrypoint: AgentModeEntrypoint::TabBar,
-                            zero_state_prompt_suggestion_type: None,
-                        },
-                    );
-                })
-                .add_named_assertion_with_data_from_prior_step(
-                    "Check Agent Mode pane width",
-                    |app, _, step_data_map| {
-                        let window_id = step_data_map
-                            .get(WINDOW_ID_KEY)
-                            .expect("Window ID for new window should exist");
-
-                        let pane_group = pane_group_view(app, *window_id, 0);
-                        pane_group.read(app, |view, app| {
-                            let Some(agent_mode_pane) = view.terminal_view_at_pane_index(2, app)
-                            else {
-                                return AssertionOutcome::failure(
-                                    "no terminal pane at pane_index 2".to_owned(),
-                                );
-                            };
-
-                            let pane_width =
-                                agent_mode_pane.as_ref(app).size_info().pane_size_px().x();
-
-                            // Approx equality to handle pane borders, etc.
-                            assert_approx_eq!(
-                                f32,
-                                pane_width - AGENT_MODE_PANE_DEFAULT_MINIMUM_WIDTH,
-                                0.,
-                                epsilon = 4.
-                            );
-
-                            AssertionOutcome::Success
-                        })
-                    },
-                ),
         )
 }
 

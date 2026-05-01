@@ -221,7 +221,6 @@ pub enum WorkspaceAction {
     DispatchToSettingsTab(SettingsTabAction),
     ToggleResourceCenter,
     ToggleUserMenu,
-    ToggleAIAssistant,
     ClickedAIAssistantIcon,
     ToggleKeybindingsPage,
     ShowCommandSearch(CommandSearchOptions),
@@ -379,13 +378,6 @@ pub enum WorkspaceAction {
     },
     /// Open a new tab with its input in AI mode.
     NewTabInAgentMode {
-        /// The entrypoint that triggered this action.
-        entrypoint: AgentModeEntrypoint,
-        /// The type of zero state prompt suggestion to start with (optional).
-        zero_state_prompt_suggestion_type: Option<ZeroStatePromptSuggestionType>,
-    },
-    /// Open a new pane with its input in AI mode.
-    NewPaneInAgentMode {
         /// The entrypoint that triggered this action.
         entrypoint: AgentModeEntrypoint,
         /// The type of zero state prompt suggestion to start with (optional).
@@ -742,7 +734,6 @@ impl WorkspaceAction {
             | CloseWindow
             | ScrollToSettingsWidget { .. }
             | NewTabInAgentMode { .. }
-            | NewPaneInAgentMode { .. }
             | FixInAgentMode { .. }
             | OpenNotebook { .. }
             | RunWorkflow { .. }
@@ -800,7 +791,6 @@ impl WorkspaceAction {
             | ToggleResourceCenter
             | ToggleUserMenu
             | ClickedAIAssistantIcon
-            | ToggleAIAssistant
             | OpenCloudAgentSetupGuide
             | ToggleKeybindingsPage
             | ShowCommandSearch(_)
