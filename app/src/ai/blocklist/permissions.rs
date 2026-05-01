@@ -142,7 +142,6 @@ pub struct BlocklistAIPermissions {
     temporary_file_permissions: HashMap<AIConversationId, HashSet<PathBuf>>,
 }
 
-#[allow(dead_code)]
 impl BlocklistAIPermissions {
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
         // Migrate the old `AgentModeAutoReadFiles` setting to the new [`AgentModeCodingPermissionsType`].
@@ -211,16 +210,6 @@ impl BlocklistAIPermissions {
             autosync_plans_to_warp_drive: profile_data.autosync_plans_to_warp_drive,
             web_search_enabled: profile_data.web_search_enabled,
         }
-    }
-
-    pub fn active_permissions_profile(
-        &self,
-        ctx: &AppContext,
-        terminal_view_id: Option<EntityId>,
-    ) -> AIExecutionProfile {
-        let active_profile =
-            AIExecutionProfilesModel::as_ref(ctx).active_profile(terminal_view_id, ctx);
-        self.permissions_profile_for_id(ctx, *active_profile.id())
     }
 
     /// Returns the applicable workspace autonomy settings based on execution mode.
@@ -933,81 +922,6 @@ impl BlocklistAIPermissions {
         }
     }
 
-    /// Allows Agent Mode to auto-execute commands that match `command`.
-    ///
-    /// The denylist (see [`Self::add_command_to_autoexecution_denylist`])
-    /// takes precedence over the allowlist.
-    pub fn add_command_to_autoexecution_allowlist(
-        &mut self,
-        command: AgentModeCommandExecutionPredicate,
-        ctx: &mut ModelContext<Self>,
-    ) -> Result<()> {
-        let mut allowlist = AISettings::as_ref(ctx)
-            .agent_mode_command_execution_allowlist
-            .clone();
-        allowlist.push(command);
-        AISettings::handle(ctx).update(ctx, |settings, ctx| {
-            settings
-                .agent_mode_command_execution_allowlist
-                .set_value(allowlist, ctx)
-        })
-    }
-
-    /// Removes `command` from the auto-execution allowlist.
-    ///
-    /// See [`Self::add_command_to_autoexecution_allowlist`] for more about the allowlist.
-    pub fn remove_command_from_autoexecution_allowlist(
-        &mut self,
-        command: &AgentModeCommandExecutionPredicate,
-        ctx: &mut ModelContext<Self>,
-    ) -> Result<()> {
-        let mut allowlist = AISettings::as_ref(ctx)
-            .agent_mode_command_execution_allowlist
-            .clone();
-        allowlist.retain(|c| c != command);
-        AISettings::handle(ctx).update(ctx, |settings, ctx| {
-            settings
-                .agent_mode_command_execution_allowlist
-                .set_value(allowlist, ctx)
-        })
-    }
-
-    /// Forces Agent Mode to ask for user consent before executing commands that match `command`.
-    pub fn add_command_to_autoexecution_denylist(
-        &mut self,
-        command: AgentModeCommandExecutionPredicate,
-        ctx: &mut ModelContext<Self>,
-    ) -> Result<()> {
-        let mut denylist = AISettings::as_ref(ctx)
-            .agent_mode_command_execution_denylist
-            .clone();
-        denylist.push(command);
-        AISettings::handle(ctx).update(ctx, |settings, ctx| {
-            settings
-                .agent_mode_command_execution_denylist
-                .set_value(denylist, ctx)
-        })
-    }
-
-    /// Removes `command` from the auto-execution denylist.
-    ///
-    /// See [`Self::add_command_to_autoexecution_denylist`] for more about the denylist.
-    pub fn remove_command_from_denylist(
-        &mut self,
-        command: &AgentModeCommandExecutionPredicate,
-        ctx: &mut ModelContext<Self>,
-    ) -> Result<()> {
-        let mut denylist = AISettings::as_ref(ctx)
-            .agent_mode_command_execution_denylist
-            .clone();
-        denylist.retain(|c| c != command);
-        AISettings::handle(ctx).update(ctx, |settings, ctx| {
-            settings
-                .agent_mode_command_execution_denylist
-                .set_value(denylist, ctx)
-        })
-    }
-
     /// Sets whether or not readonly commands can be auto-executed by Agent Mode.
     pub fn set_should_autoexecute_readonly_commands(
         &mut self,
@@ -1106,23 +1020,6 @@ impl BlocklistAIPermissions {
             .agent_mode_coding_file_read_allowlist
             .clone();
         allowlist.push(filepath);
-        AISettings::handle(ctx).update(ctx, |settings, ctx| {
-            settings
-                .agent_mode_coding_file_read_allowlist
-                .set_value(allowlist, ctx)
-        })
-    }
-
-    /// Counterpart to [`Self::add_filepath_to_code_read_allowlist`].
-    pub fn remove_filepath_from_code_read_allowlist(
-        &mut self,
-        filepath: PathBuf,
-        ctx: &mut ModelContext<Self>,
-    ) -> Result<()> {
-        let mut allowlist = AISettings::as_ref(ctx)
-            .agent_mode_coding_file_read_allowlist
-            .clone();
-        allowlist.retain(|p| p != &filepath);
         AISettings::handle(ctx).update(ctx, |settings, ctx| {
             settings
                 .agent_mode_coding_file_read_allowlist
