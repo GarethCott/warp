@@ -4969,7 +4969,7 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::MCPTemplateCreated { .. }
             | Self::MCPTemplateInstalled { .. }
             | Self::MCPTemplateShared { .. } => EnablementState::Always,
-            Self::KnowledgePaneOpened { .. } => EnablementState::Flag(FeatureFlag::AIRules),
+            Self::KnowledgePaneOpened { .. } => EnablementState::Always,
             #[cfg(feature = "local_fs")]
             Self::CodePaneOpened { .. } => EnablementState::Always,
             #[cfg(feature = "local_fs")]
@@ -5325,7 +5325,7 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::AgentModeRatedResponse => {
                 EnablementState::Flag(FeatureFlag::GlobalAIAnalyticsBanner)
             }
-            Self::ExecutedWarpDrivePrompt => EnablementState::Flag(FeatureFlag::AgentModeWorkflows),
+            Self::ExecutedWarpDrivePrompt => EnablementState::Always,
             Self::ImageReceived => EnablementState::Always,
             Self::FileExceededContextLimit => EnablementState::Always,
             Self::AgentModeError => EnablementState::Always,

@@ -133,12 +133,6 @@ pub enum FeatureFlag {
     /// Enables receiving shared Warp Drive objects.
     SharedWithMe,
 
-    /// Enables workflows for use with Agent Mode.
-    AgentModeWorkflows,
-
-    /// Enables AI rules for use with Agent Mode.
-    AIRules,
-
     /// Routes SSH sessions through the tmux-backed SSH wrapper.
     SSHTmuxWrapper,
 
@@ -859,7 +853,6 @@ pub const DOGFOOD_FLAGS: &[FeatureFlag] = &[
     FeatureFlag::CreatingSharedSessions,
     FeatureFlag::RemoveAutosuggestionDuringTabCompletions,
     FeatureFlag::ResizeFix,
-    FeatureFlag::AgentModeWorkflows,
     #[cfg(not(windows))]
     FeatureFlag::SSHTmuxWrapper,
     FeatureFlag::AgentModeAnalytics,

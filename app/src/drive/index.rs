@@ -167,12 +167,10 @@ const OFFLINE_BANNER_PADDING_VERTICAL: f32 = 4.;
 const FOLDER_LABEL: &str = "Folder";
 const NOTEBOOK_LABEL: &str = "Notebook";
 const WORKFLOW_LABEL: &str = "Workflow";
-const AGENT_MODE_WORKFLOW_LABEL: &str = "Prompt";
 const ENV_VAR_COLLECTION_LABEL: &str = "Environment variables";
 const INDEX_FOLDER_LABEL: &str = "New folder";
 const INDEX_NOTEBOOK_LABEL: &str = "New notebook";
 const INDEX_WORKFLOW_LABEL: &str = "New workflow";
-const INDEX_AGENT_MODE_WORKFLOW_LABEL: &str = "New prompt";
 const INDEX_ENV_VAR_COLLECTION_LABEL: &str = "New environment variables";
 
 const IMPORT_LABEL: &str = "Import";
@@ -3716,19 +3714,6 @@ impl DriveIndex {
                     .into_item(),
             );
 
-            if FeatureFlag::AgentModeWorkflows.is_enabled() {
-                menu_items.push(
-                    MenuItemFields::new(AGENT_MODE_WORKFLOW_LABEL)
-                        .with_on_select_action(DriveIndexAction::create_object(
-                            DriveObjectType::AgentModeWorkflow,
-                            *space,
-                            None,
-                        ))
-                        .with_icon(Icon::Prompt)
-                        .into_item(),
-                );
-            }
-
             menu_items.push(
                 MenuItemFields::new(NOTEBOOK_LABEL)
                     .with_on_select_action(DriveIndexAction::create_object(
@@ -4387,18 +4372,6 @@ impl DriveIndex {
                                 .into_item(),
                         );
 
-                        if FeatureFlag::AgentModeWorkflows.is_enabled() {
-                            menu_items.push(
-                                MenuItemFields::new(INDEX_AGENT_MODE_WORKFLOW_LABEL)
-                                    .with_on_select_action(DriveIndexAction::create_object(
-                                        DriveObjectType::AgentModeWorkflow,
-                                        *space,
-                                        Some(*folder_id),
-                                    ))
-                                    .with_icon(Icon::Prompt)
-                                    .into_item(),
-                            );
-                        }
 
                         menu_items.push(
                             MenuItemFields::new(INDEX_NOTEBOOK_LABEL)
