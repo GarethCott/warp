@@ -83,12 +83,6 @@ pub enum FeatureFlag {
     /// Warp Agent Mode.
     AgentMode,
 
-    /// Whether the user is part of the Warp Alpha Program (AI Trusted Testers).
-    /// This is enabled automatically for local and dev builds.
-    /// Collect conversation and input autodetection data for agent mode.
-    /// Also collects block data for Next Command, if enabled.
-    AgentModeAnalytics,
-
     /// A setting to enable a traditional completions experience.
     ClassicCompletions,
 
@@ -295,9 +289,6 @@ pub enum FeatureFlag {
     /// Persist codebase indices to disk.
     CodebaseIndexPersistence,
 
-    /// Enables the AI context menu, or at-menu.
-    AIContextMenuEnabled,
-
     /// Enables the AI context menu outside of AI input mode.
     AtMenuOutsideOfAIMode,
 
@@ -325,14 +316,8 @@ pub enum FeatureFlag {
     /// Enables file search functionality in command palette
     CommandPaletteFileSearch,
 
-    /// Enables the AI context menu nesting and commands
-    AIContextMenuCommands,
-
     /// Enables sending stderr warnings in FileGlobV2 results.
     FileGlobV2Warnings,
-
-    /// Enables code symbols in AI context menu
-    AIContextMenuCode,
 
     /// Enables Warp Drive objects (like workflows) as context in AI context menu
     DriveObjectsAsContext,
@@ -855,7 +840,6 @@ pub const DOGFOOD_FLAGS: &[FeatureFlag] = &[
     FeatureFlag::ResizeFix,
     #[cfg(not(windows))]
     FeatureFlag::SSHTmuxWrapper,
-    FeatureFlag::AgentModeAnalytics,
     FeatureFlag::LazySceneBuilding,
     FeatureFlag::SshDragAndDrop,
     FeatureFlag::MultiWorkspace,

@@ -35,7 +35,6 @@ use crate::search::search_bar::{SearchBar, SearchBarEvent, SearchBarState, Searc
 use crate::settings::InputSettings;
 use async_channel::Sender;
 use itertools::Itertools;
-use settings::Setting as _;
 use std::collections::HashSet;
 use std::ops::Range;
 use std::time::Duration;
@@ -424,15 +423,6 @@ impl AIContextMenu {
                     categories.push(AIContextMenuCategory::CurrentFolderFiles);
                 }
             }
-            if FeatureFlag::AIContextMenuCode.is_enabled()
-                && *InputSettings::as_ref(app)
-                    .outline_codebase_symbols_for_at_context_menu
-                    .value()
-                && is_active_dir_in_git_repo
-                && !is_shared_session_viewer
-            {
-                categories.push(AIContextMenuCategory::Code);
-            }
             return categories;
         }
 
@@ -462,19 +452,7 @@ impl AIContextMenu {
                 }
             }
 
-            if FeatureFlag::AIContextMenuCommands.is_enabled() {
-                categories.push(AIContextMenuCategory::Commands);
-            }
             categories.push(AIContextMenuCategory::Blocks);
-            if FeatureFlag::AIContextMenuCode.is_enabled()
-                && *InputSettings::as_ref(app)
-                    .outline_codebase_symbols_for_at_context_menu
-                    .value()
-                && is_active_dir_in_git_repo
-                && !is_shared_session_viewer
-            {
-                categories.push(AIContextMenuCategory::Code);
-            }
             if show_warp_drive && FeatureFlag::DriveObjectsAsContext.is_enabled() {
                 categories.push(AIContextMenuCategory::Workflows);
                 categories.push(AIContextMenuCategory::Notebooks);
@@ -495,24 +473,12 @@ impl AIContextMenu {
             categories.push(AIContextMenuCategory::Skills);
             categories
         } else if !is_shared_session_viewer {
-            // Terminal mode: show Files and Code categories (when enabled)
-            let mut categories = if is_active_dir_in_git_repo {
+            // Terminal mode: show Files category.
+            if is_active_dir_in_git_repo {
                 vec![AIContextMenuCategory::RepoFiles]
             } else {
                 vec![AIContextMenuCategory::CurrentFolderFiles]
-            };
-
-            // Also show Code category in terminal mode when enabled
-            if FeatureFlag::AIContextMenuCode.is_enabled()
-                && *InputSettings::as_ref(app)
-                    .outline_codebase_symbols_for_at_context_menu
-                    .value()
-                && is_active_dir_in_git_repo
-            {
-                categories.push(AIContextMenuCategory::Code);
             }
-
-            categories
         } else {
             // File searching is not available in shared session viewers
             vec![]

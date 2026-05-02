@@ -4928,12 +4928,8 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             | Self::ShowedSuggestedAgentModeWorkflowModal => {
                 EnablementState::Flag(FeatureFlag::SuggestedAgentModeWorkflows)
             }
-            Self::RepoOutlineConstructionSuccess { .. } => {
-                EnablementState::Flag(FeatureFlag::AgentModeAnalytics)
-            }
-            Self::RepoOutlineConstructionFailed { .. } => {
-                EnablementState::Flag(FeatureFlag::AgentModeAnalytics)
-            }
+            Self::RepoOutlineConstructionSuccess { .. } => EnablementState::Always,
+            Self::RepoOutlineConstructionFailed { .. } => EnablementState::Always,
             Self::FullEmbedCodebaseContextSearchFailed { .. }
             | Self::FullEmbedCodebaseContextSearchSuccess { .. } => {
                 EnablementState::Flag(FeatureFlag::FullSourceCodeEmbedding)
