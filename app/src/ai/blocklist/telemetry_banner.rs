@@ -200,11 +200,10 @@ pub fn should_collect_ai_ugc_telemetry(app: &AppContext, is_telemetry_enabled: b
         UgcCollectionEnablementSetting::Disable => false,
         UgcCollectionEnablementSetting::Enable => true,
         UgcCollectionEnablementSetting::RespectUserSetting => {
-            (FeatureFlag::GlobalAIAnalyticsCollection.is_enabled()
+            FeatureFlag::GlobalAIAnalyticsCollection.is_enabled()
                 // Do NOT remove this check. Unlike the send telemetry macro,
                 // UploadBlock endpoint does not automatically check user's telemetry setting.
-                && is_telemetry_enabled)
-                || FeatureFlag::AgentModeAnalytics.is_enabled()
+                && is_telemetry_enabled
         }
     }
 }

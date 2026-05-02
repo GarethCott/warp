@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use regex::Regex;
-use warp_core::features::FeatureFlag;
 use warp_core::report_if_error;
 use warpui::{AppContext, Entity, ModelContext, SingletonEntity, UpdateModel};
 
@@ -200,10 +199,7 @@ impl PrivacySettingsSnapshot {
     }
 
     pub fn should_disable_telemetry(&self) -> bool {
-        // If a user has opted in to the agent mode analytics experiment, telemetry must be enabled.
-        !self.is_telemetry_enabled
-            && !self.is_telemetry_force_enabled
-            && !FeatureFlag::AgentModeAnalytics.is_enabled()
+        !self.is_telemetry_enabled && !self.is_telemetry_force_enabled
     }
 
     pub fn should_collect_ai_ugc_telemetry(&self) -> bool {

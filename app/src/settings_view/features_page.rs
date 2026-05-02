@@ -50,7 +50,7 @@ use crate::settings::{
     DefaultSessionMode, EnableSlashCommandsInTerminal, EnableSshWrapper, ErrorUnderliningEnabled,
     ExtraMetaKeys, GPUSettings, GlobalHotkeyMode, InputSettings, InputSettingsChangedEvent,
     LinuxSelectionClipboard, MiddleClickPasteEnabled, MouseScrollMultiplier,
-    OutlineCodebaseSymbolsForAtContextMenu, PreferLowPowerGPU, PreferredGraphicsBackend,
+    PreferLowPowerGPU, PreferredGraphicsBackend,
     QuakeModeSettings, ScrollSettings, SelectionSettings, ShowAutosuggestionIgnoreButton,
     SshSettings, SyntaxHighlighting, TabBehavior, VimModeEnabled, VimStatusBar,
     VimUnnamedSystemClipboard, DEFAULT_QUAKE_MODE_SIZE_PERCENTAGES, QUAKE_WINDOW_AUTOHIDE_SUPPORTED,
@@ -2599,16 +2599,6 @@ impl FeaturesPageView {
                 .is_supported_on_current_platform()
         {
             editor_widgets.push(Box::new(SlashCommandsInTerminalModeWidget::default()));
-        }
-
-        if input_settings
-            .outline_codebase_symbols_for_at_context_menu
-            .is_supported_on_current_platform()
-            && FeatureFlag::AIContextMenuCode.is_enabled()
-        {
-            editor_widgets.push(Box::new(
-                OutlineCodebaseSymbolsForAtContextMenuWidget::default(),
-            ));
         }
 
         editor_widgets.push(Box::new(TabKeyBehaviorWidget::default()));
@@ -5949,58 +5939,6 @@ impl SettingsWidget for SlashCommandsInTerminalModeWidget {
                 .on_click(move |ctx, _, _| {
                     ctx.dispatch_typed_action(
                         FeaturesPageAction::ToggleSlashCommandsInTerminalMode,
-                    );
-                })
-                .finish(),
-            None,
-        )
-    }
-}
-
-#[derive(Default)]
-struct OutlineCodebaseSymbolsForAtContextMenuWidget {
-    switch_state: SwitchStateHandle,
-}
-
-impl SettingsWidget for OutlineCodebaseSymbolsForAtContextMenuWidget {
-    type View = FeaturesPageView;
-
-    fn search_terms(&self) -> &str {
-        "outline codebase symbols context menu code indexing"
-    }
-
-    fn render(
-        &self,
-        view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let ui_builder = appearance.ui_builder();
-        render_body_item::<FeaturesPageAction>(
-            "Outline codebase symbols for '@' context menu".into(),
-            None,
-            LocalOnlyIconState::for_setting(
-                OutlineCodebaseSymbolsForAtContextMenu::storage_key(),
-                OutlineCodebaseSymbolsForAtContextMenu::sync_to_cloud(),
-                &mut view
-                    .button_mouse_states
-                    .local_only_icon_tooltip_states
-                    .borrow_mut(),
-                app,
-            ),
-            ToggleState::Enabled,
-            appearance,
-            ui_builder
-                .switch(self.switch_state.clone())
-                .check(
-                    *InputSettings::as_ref(app)
-                        .outline_codebase_symbols_for_at_context_menu
-                        .value(),
-                )
-                .build()
-                .on_click(move |ctx, _, _| {
-                    ctx.dispatch_typed_action(
-                        FeaturesPageAction::ToggleOutlineCodebaseSymbolsForAtContextMenu,
                     );
                 })
                 .finish(),

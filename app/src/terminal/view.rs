@@ -10845,14 +10845,6 @@ impl TerminalView {
                                             input.update_repo_path(Some(repo_path.clone()), ctx);
                                         });
 
-                                        if FeatureFlag::AIContextMenuEnabled.is_enabled() {
-                                            me.input.update(ctx, |input, ctx| {
-                                                input.check_and_update_ai_context_menu_disabled_state(
-                                                    ctx,
-                                                );
-                                            });
-                                        }
-
                                         me.start_lsp_server_in_active_pwd(ctx);
                                     } else {
                                         me.clear_git_repo_status(ctx);
