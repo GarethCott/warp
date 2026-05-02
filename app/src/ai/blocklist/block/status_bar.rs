@@ -9,12 +9,9 @@ use super::{
         WarpingIndicatorProps, WarpingProps, LOAD_OUTPUT_MESSAGE, WAITING_FOR_USER_INPUT_MESSAGE,
     },
 };
-use crate::{
-    ai::agent_tips::AITipModel,
-    terminal::{
-        input::buffer_model::InputBufferUpdateEvent,
-        view::ambient_agent::is_cloud_agent_pre_first_exchange,
-    },
+use crate::terminal::{
+    input::buffer_model::InputBufferUpdateEvent,
+    view::ambient_agent::is_cloud_agent_pre_first_exchange,
 };
 use crate::{
     ai::blocklist::agent_view::{
@@ -49,10 +46,7 @@ use crate::{
             BlocklistAIInputEvent, BlocklistAIInputModel, ResponseStreamId,
         },
         llms::LLMPreferences,
-        AgentTip,
     },
-    send_telemetry_from_app_ctx,
-    server::telemetry::TelemetryEvent,
     settings::{InputModeSettings, InputSettings},
     settings_view::keybindings::KeybindingChangedNotifier,
     terminal::{
@@ -133,9 +127,6 @@ pub struct BlocklistAIStatusBar {
     last_read_refresh_handle: Option<SpawnedFutureHandle>,
 
     latest_response_stream_id: Option<ResponseStreamId>,
-
-    /// Agent tip to display below the warping indicator.
-    current_tip: Option<AgentTip>,
 
     ephemeral_message_model: ModelHandle<EphemeralMessageModel>,
     agent_message_bar: ViewHandle<AgentMessageBar>,
@@ -357,10 +348,9 @@ impl BlocklistAIStatusBar {
             ChildAgentStatusCard::new(agent_view_controller.clone(), ctx)
         });
         if let Some(ambient_agent_view_model) = ambient_agent_view_model.as_ref() {
-            ctx.subscribe_to_model(ambient_agent_view_model, |me, _, event, ctx| match event {
+            ctx.subscribe_to_model(ambient_agent_view_model, |_me, _, event, ctx| match event {
                 AmbientAgentViewModelEvent::DispatchedAgent
                 | AmbientAgentViewModelEvent::ProgressUpdated => {
-                    me.update_agent_tip(ctx);
                     ctx.notify();
                 }
                 AmbientAgentViewModelEvent::SessionReady { .. }
@@ -396,7 +386,6 @@ impl BlocklistAIStatusBar {
             summarization_start_time: None,
             last_read_refresh_handle: None,
             ambient_agent_view_model,
-            current_tip: None,
             ephemeral_message_model,
             agent_message_bar,
             child_agent_status_card,
@@ -488,9 +477,6 @@ impl BlocklistAIStatusBar {
             self.is_summarization_cancel_dialog_open = false;
             self.stop_summarization_timer();
 
-            if FeatureFlag::AgentTips.is_enabled() {
-                self.update_agent_tip(ctx);
-            }
         }
     }
 
@@ -710,45 +696,8 @@ impl BlocklistAIStatusBar {
         }
     }
 
-    fn update_agent_tip(&mut self, ctx: &mut ViewContext<Self>) {
-        if FeatureFlag::AgentTips.is_enabled() && *InputSettings::as_ref(ctx).show_agent_tips {
-            let current_working_directory = self
-                .terminal_model
-                .lock()
-                .active_block_metadata()
-                .current_working_directory()
-                .map(|cwd| cwd.to_string());
-
-            // Update the tip using the model's cooldown-based API
-            let tip_model = AITipModel::<AgentTip>::handle(ctx);
-            tip_model.update(ctx, |model, model_ctx| {
-                model.maybe_refresh_tip(current_working_directory.as_deref(), model_ctx);
-            });
-
-            // Get the current tip from the model
-            self.current_tip = tip_model.as_ref(ctx).current_tip().cloned();
-
-            if let Some(tip) = self.current_tip.as_ref() {
-                send_telemetry_from_app_ctx!(
-                    TelemetryEvent::AgentTipShown {
-                        tip: tip.description.clone()
-                    },
-                    ctx
-                );
-            }
-        } else {
-            self.current_tip = None;
-        }
-    }
-
-    fn render_tip(&self, app: &AppContext) -> Option<Box<dyn Element>> {
-        if FeatureFlag::AgentTips.is_enabled() && *InputSettings::as_ref(app).show_agent_tips {
-            self.current_tip
-                .as_ref()
-                .map(|tip| render_agent_tip(tip, app))
-        } else {
-            None
-        }
+    fn render_tip(&self, _app: &AppContext) -> Option<Box<dyn Element>> {
+        None
     }
 
     fn render_warping_indicator_for_latest_exchange(
@@ -993,73 +942,6 @@ fn latest_model_used_before_exchange<V: View>(
                 is_fallback: model_info.is_fallback,
             })
         })
-}
-
-fn render_agent_tip(tip: &AgentTip, app: &AppContext) -> Box<dyn Element> {
-    use crate::ai::agent_tips::AITip;
-    use markdown_parser::{FormattedTextFragment, FormattedTextLine};
-    use warpui::text_layout::ClipConfig;
-
-    let appearance = Appearance::as_ref(app);
-    let theme = appearance.theme();
-
-    let tip_description = tip.description.clone();
-    let action_text = tip.action.clone().and_then(|action| action.display_text());
-
-    let mut fragments = tip.to_formatted_text(app);
-
-    if let (Some(action), Some(text)) = (tip.action.clone(), action_text.clone()) {
-        fragments.push(FormattedTextFragment::plain_text(" "));
-        fragments.push(FormattedTextFragment::hyperlink_action(text, action));
-    } else if let Some(link_target) = tip.link.clone() {
-        fragments.push(FormattedTextFragment::plain_text(" "));
-        fragments.push(FormattedTextFragment::hyperlink("Learn more", link_target));
-    }
-
-    let formatted_text =
-        markdown_parser::FormattedText::new(vec![FormattedTextLine::Line(fragments)]);
-    warpui::elements::FormattedTextElement::new(
-        formatted_text,
-        appearance.monospace_font_size() - 3.,
-        appearance.ui_font_family(),
-        appearance.monospace_font_family(),
-        theme.disabled_ui_text_color().into_solid(),
-        Default::default(),
-    )
-    .with_hyperlink_font_color(theme.accent().into())
-    .set_selectable(true)
-    .with_clip(ClipConfig::ellipsis())
-    .register_default_click_handlers_with_action_support(move |link, evt, app| {
-        use warpui::elements::HyperlinkLens;
-        match link {
-            HyperlinkLens::Url(url) => {
-                send_telemetry_from_app_ctx!(
-                    TelemetryEvent::AgentTipClicked {
-                        tip: tip_description.clone(),
-                        click_target: url.to_string(),
-                    },
-                    app
-                );
-                app.open_url(url);
-            }
-            HyperlinkLens::Action(action_ref) => {
-                if let Some(action) = action_ref
-                    .as_any()
-                    .downcast_ref::<crate::workspace::WorkspaceAction>()
-                {
-                    send_telemetry_from_app_ctx!(
-                        TelemetryEvent::AgentTipClicked {
-                            tip: tip_description.clone(),
-                            click_target: action_text.clone().unwrap_or_default(),
-                        },
-                        app
-                    );
-                    evt.dispatch_typed_action(action.clone());
-                }
-            }
-        }
-    })
-    .finish()
 }
 
 fn render_fallback_explanation<V: View>(

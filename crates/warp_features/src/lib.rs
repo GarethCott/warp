@@ -245,12 +245,6 @@ pub enum FeatureFlag {
     /// Enables auto-generated AI memories.
     AIMemories,
 
-    /// Enables the XML output system prompt for the primary (terminal) agent in Agent Mode.
-    AgentModePrimaryXML,
-
-    /// Enables the XML output system prompt for the pre-plan agent in Agent Mode.
-    AgentModePrePlanXML,
-
     /// Enables Agent Mode onboarding.
     AgentOnboarding,
 
@@ -315,9 +309,6 @@ pub enum FeatureFlag {
 
     /// Enables the resume button for cancelled AI conversations.
     AIResumeButton,
-
-    /// Enables the agent to decide whether to execute a command.
-    AgentDecidesCommandExecution,
 
     /// Show speed bump when enabling codebase indexing.
     CodebaseIndexSpeedbump,
@@ -589,9 +580,6 @@ pub enum FeatureFlag {
 
     /// Enables loading conversations in the Agent Management View.
     InteractiveConversationManagementView,
-
-    /// Enables agent tips displayed below the warping indicator in Agent Mode.
-    AgentTips,
 
     /// Allows agent mode to use computer use tools.
     AgentModeComputerUse,
