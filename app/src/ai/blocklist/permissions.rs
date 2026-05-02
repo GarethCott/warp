@@ -25,7 +25,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use warp_completer::parsers::simple::decompose_command;
 use warp_core::user_preferences::GetUserPreferences;
-use warp_core::{features::FeatureFlag, settings::Setting};
+use warp_core::settings::Setting;
 use warp_util::path::EscapeChar;
 use warpui::{AppContext, Entity, EntityId, ModelContext, SingletonEntity};
 
@@ -826,7 +826,7 @@ impl BlocklistAIPermissions {
         command: &str,
         escape_char: EscapeChar,
         is_read_only: bool,
-        is_risky: Option<bool>,
+        _is_risky: Option<bool>,
         terminal_view_id: Option<EntityId>,
         ctx: &AppContext,
     ) -> CommandExecutionPermission {
@@ -863,13 +863,6 @@ impl BlocklistAIPermissions {
 
         match self.get_execute_commands_setting(ctx, terminal_view_id) {
             ActionPermission::AgentDecides | ActionPermission::Unknown => {
-                if FeatureFlag::AgentDecidesCommandExecution.is_enabled() && is_risky == Some(false)
-                {
-                    return CommandExecutionPermission::Allowed(
-                        CommandExecutionPermissionAllowedReason::AgentDecided,
-                    );
-                }
-
                 if contains_redirection {
                     return CommandExecutionPermission::Denied(
                         CommandExecutionPermissionDeniedReason::ContainsRedirection,
