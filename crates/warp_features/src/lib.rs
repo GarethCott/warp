@@ -233,9 +233,6 @@ pub enum FeatureFlag {
     /// Enables auto-generated AI memories.
     AIMemories,
 
-    /// Enables Agent Mode onboarding.
-    AgentOnboarding,
-
     /// Enables suggested rules.
     SuggestedRules,
 
