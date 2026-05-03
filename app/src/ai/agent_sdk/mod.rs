@@ -245,7 +245,7 @@ fn run_agent(
             if args.environment.is_some() && !FeatureFlag::CloudEnvironments.is_enabled() {
                 return Err(anyhow::anyhow!("unexpected argument '--environment' found"));
             }
-            if args.conversation.is_some() && !FeatureFlag::CloudConversations.is_enabled() {
+            if args.conversation.is_some() {
                 return Err(anyhow::anyhow!(
                     "unexpected argument '--conversation' found"
                 ));
@@ -292,7 +292,7 @@ fn run_agent(
             {
                 return Err(anyhow::anyhow!("unexpected argument '--environment' found"));
             }
-            if args.conversation.is_some() && !FeatureFlag::CloudConversations.is_enabled() {
+            if args.conversation.is_some() {
                 return Err(anyhow::anyhow!(
                     "unexpected argument '--conversation' found"
                 ));

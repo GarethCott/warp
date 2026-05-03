@@ -6,7 +6,6 @@ use chrono::{DateTime, Local, NaiveDateTime};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use warp_core::features::FeatureFlag;
 use warp_multi_agent_api::response_event::stream_finished::ConversationUsageMetadata;
 use warp_multi_agent_api::{
     client_action::{Action, StartNewConversation},
@@ -32,7 +31,6 @@ use crate::ai::document::ai_document_model::AIDocumentModel;
 use crate::input_suggestions::HistoryOrder;
 use crate::persistence::model::AgentConversationData;
 use crate::persistence::ModelEvent;
-use crate::server::server_api::ServerApiProvider;
 use crate::terminal::model::block::BlockId;
 use crate::terminal::view::blocklist_filter;
 use crate::GlobalResourceHandlesProvider;
@@ -1357,48 +1355,8 @@ impl BlocklistAIHistoryModel {
             log::warn!("Failed to mark exchange as completed: {e}");
         }
 
-        // If this conversation doesn't have server metadata yet, and it has a server conversation token,
-        // fetch the metadata from the server.
-        let should_fetch_metadata = FeatureFlag::CloudConversations.is_enabled()
-            && conversation.server_metadata().is_none()
-            && conversation.server_conversation_token().is_some();
-
-        if should_fetch_metadata {
-            let server_token = conversation
-                .server_conversation_token()
-                .unwrap()
-                .as_str()
-                .to_string();
-
-            let server_api = ServerApiProvider::as_ref(ctx).get_ai_client();
-            ctx.spawn(
-                async move {
-                    server_api
-                        .list_ai_conversation_metadata(Some(vec![server_token]))
-                        .await
-                },
-                move |model, result, ctx| match result {
-                    Ok(mut metadata_list) if !metadata_list.is_empty() => {
-                        if let Some(metadata) = metadata_list.pop() {
-                            model.set_server_metadata_for_conversation(
-                                conversation_id,
-                                metadata,
-                                ctx,
-                            );
-                        }
-                    }
-                    Ok(_) => {
-                        log::warn!("No metadata returned for conversation {}", conversation_id);
-                    }
-                    Err(e) => {
-                        log::warn!(
-                            "Failed to fetch metadata for conversation {}: {e:#}",
-                            conversation_id
-                        );
-                    }
-                },
-            );
-        }
+        // strip(neuter): CloudConversations is gated off in this fork, so we no
+        // longer fetch server-side conversation metadata.
     }
 
     pub fn set_exchange_time_to_first_token(
