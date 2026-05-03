@@ -1,5 +1,6 @@
-// We don't directly run agent harnesses on WASM, so this code is unused.
-#![cfg_attr(target_family = "wasm", expect(dead_code))]
+// strip(neuter): AgentHarness is gated off in this fork, so this module is
+// dead on all targets.
+#![allow(dead_code)]
 
 use std::collections::HashMap;
 

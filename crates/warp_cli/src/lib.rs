@@ -321,10 +321,9 @@ impl Args {
             command = command.mut_subcommand("federate", |c| c.hide(true));
         }
 
-        // Hide the harness-support subcommand from help text.
-        if !FeatureFlag::AgentHarness.is_enabled() {
-            command = command.mut_subcommand("harness-support", |c| c.hide(true));
-        }
+        // strip(neuter): AgentHarness is gated off in this fork; always hide
+        // the harness-support subcommand from help text.
+        command = command.mut_subcommand("harness-support", |c| c.hide(true));
 
         // Hide the conversation subcommand and --conversation flag from help text.
         if !FeatureFlag::ConversationApi.is_enabled() {

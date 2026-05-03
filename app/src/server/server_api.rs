@@ -742,6 +742,7 @@ impl ServerApi {
     }
 
     /// Sends a POST request to a public API endpoint that returns no response body.
+    #[allow(dead_code)]
     async fn post_public_api_unit<B>(&self, path: &str, body: &B) -> Result<()>
     where
         B: Serialize,

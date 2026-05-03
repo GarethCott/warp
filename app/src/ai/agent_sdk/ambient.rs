@@ -49,6 +49,7 @@ pub fn list_ambient_agent_tasks(
 }
 
 /// Print a table of ambient agent tasks.
+#[allow(dead_code)]
 pub(super) fn print_tasks(tasks: &[AmbientAgentTask]) {
     AmbientAgentRunner::print_tasks_table(tasks);
 }

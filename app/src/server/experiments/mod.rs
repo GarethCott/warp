@@ -146,12 +146,8 @@ impl ServerExperiment {
             Self::FreeUserNoAiExperiment => {
                 FeatureFlag::FreeUserNoAi.set_enabled(true);
             }
-            Self::OzMultiHarnessControl => {
-                FeatureFlag::AgentHarness.set_enabled(false);
-            }
-            Self::OzMultiHarnessExperiment => {
-                FeatureFlag::AgentHarness.set_enabled(true);
-            }
+            Self::OzMultiHarnessControl => {}
+            Self::OzMultiHarnessExperiment => {}
             Self::SshRemoteServerControl => {
                 FeatureFlag::SshRemoteServer.set_enabled(true);
                 // Override the default install mode to NeverInstall for users

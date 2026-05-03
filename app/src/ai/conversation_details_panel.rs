@@ -9,7 +9,6 @@ use pathfinder_color::ColorU;
 use warp_cli::agent::Harness;
 use warp_cli::skill::SkillSpec;
 use warp_core::channel::ChannelState;
-use warp_core::features::FeatureFlag;
 use warp_core::ui::color::coloru_with_opacity;
 use warpui::{
     clipboard::ClipboardContent,
@@ -40,7 +39,6 @@ use crate::ai::ambient_agents::{cancel_task_with_toast, AmbientAgentTaskId};
 use crate::ai::artifacts::{Artifact, ArtifactButtonsRow, ArtifactButtonsRowEvent};
 use crate::ai::blocklist::BlocklistAIHistoryModel;
 use crate::ai::cloud_environments::{AmbientAgentEnvironment, CloudAmbientAgentEnvironment};
-use crate::ai::harness_display;
 use crate::appearance::Appearance;
 #[cfg(target_family = "wasm")]
 use crate::auth::UserUid;
@@ -975,61 +973,9 @@ impl ConversationDetailsPanel {
         )
     }
 
-    fn render_harness_section(&self, appearance: &Appearance) -> Option<Box<dyn Element>> {
-        if !FeatureFlag::AgentHarness.is_enabled() {
-            return None;
-        }
-        let harness = self.data.harness?;
-        let theme = appearance.theme();
-        let ui_font_size = appearance.ui_font_size();
-
-        let label_text = Text::new(
-            "Harness".to_string(),
-            appearance.ui_font_family(),
-            ui_font_size,
-        )
-        .with_color(blended_colors::text_sub(theme, theme.surface_1()))
-        .finish();
-
-        let icon_tint = harness_display::brand_color(harness)
-            .map(Into::into)
-            .unwrap_or_else(|| theme.foreground());
-
-        let icon = ConstrainedBox::new(
-            harness_display::icon_for(harness)
-                .to_warpui_icon(icon_tint)
-                .finish(),
-        )
-        .with_width(16.)
-        .with_height(16.)
-        .finish();
-
-        let name = Text::new(
-            harness_display::display_name(harness).to_string(),
-            appearance.ui_font_family(),
-            ui_font_size,
-        )
-        .with_color(theme.foreground().into())
-        .with_selectable(true)
-        .finish();
-
-        let value_row = Flex::row()
-            .with_cross_axis_alignment(CrossAxisAlignment::Center)
-            .with_child(Container::new(icon).with_margin_right(4.).finish())
-            .with_child(name)
-            .finish();
-
-        Some(
-            Flex::column()
-                .with_cross_axis_alignment(CrossAxisAlignment::Start)
-                .with_child(
-                    Container::new(label_text)
-                        .with_margin_bottom(LABEL_VALUE_GAP)
-                        .finish(),
-                )
-                .with_child(value_row)
-                .finish(),
-        )
+    fn render_harness_section(&self, _appearance: &Appearance) -> Option<Box<dyn Element>> {
+        // strip(neuter): AgentHarness is gated off in this fork.
+        None
     }
 
     /// Renders the primary skill that this conversation ran.

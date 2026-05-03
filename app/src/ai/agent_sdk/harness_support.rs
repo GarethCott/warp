@@ -3,6 +3,11 @@
 //! Subcommands:
 //! - [`ping`] — fetches the current run by task ID and prints its info.
 //! - [`report_artifact`] — reports an artifact (e.g. a PR) back to the Oz platform.
+//!
+//! strip(neuter): The whole module is dead in this fork — `run` is the only
+//! public entry point and it returns an error immediately when AgentHarness is
+//! gated off. The rest stays for binary-surface stability.
+#![allow(dead_code, unused_imports)]
 use anyhow::Result;
 use warp_cli::agent::OutputFormat;
 use warp_cli::harness_support::{
@@ -20,30 +25,12 @@ use crate::server::server_api::ServerApiProvider;
 
 /// Run harness-support commands.
 pub fn run(
-    ctx: &mut AppContext,
-    global_options: GlobalOptions,
-    args: HarnessSupportArgs,
+    _ctx: &mut AppContext,
+    _global_options: GlobalOptions,
+    _args: HarnessSupportArgs,
 ) -> Result<()> {
-    if !FeatureFlag::AgentHarness.is_enabled() {
-        return Err(anyhow::anyhow!("This feature is not enabled"));
-    }
-
-    // Store the run ID so that it's included on all server requests, along with a workload token.
-    let task_id = set_ambient_task_context_from_run_id(ctx, &args.run_id)?;
-    let runner = ctx.add_singleton_model(|_| HarnessSupportRunner);
-
-    match args.command {
-        HarnessSupportCommand::Ping => ping(ctx, runner, task_id, global_options.output_format),
-        HarnessSupportCommand::ReportArtifact(report_args) => {
-            report_artifact(ctx, runner, report_args, global_options.output_format)
-        }
-        HarnessSupportCommand::NotifyUser(notify_args) => {
-            notify_user(ctx, runner, notify_args, global_options.output_format)
-        }
-        HarnessSupportCommand::FinishTask(finish_args) => {
-            finish_task(ctx, runner, finish_args, global_options.output_format)
-        }
-    }
+    // strip(neuter): AgentHarness is gated off in this fork.
+    Err(anyhow::anyhow!("This feature is not enabled"))
 }
 
 /// Fetch the current run by ID and print its info.
