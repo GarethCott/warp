@@ -2495,8 +2495,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::GlobalAIAnalyticsCollection,
         #[cfg(feature = "default_adeberry_theme")]
         FeatureFlag::DefaultAdeberryTheme,
-        #[cfg(feature = "agent_onboarding")]
-        FeatureFlag::AgentOnboarding,
         #[cfg(feature = "agent_shared_sessions")]
         FeatureFlag::AgentSharedSessions,
         #[cfg(feature = "suggested_rules")]

@@ -238,6 +238,6 @@ impl Workspace {
     }
 
     pub(crate) fn should_show_agent_onboarding(&self, _ctx: &mut ViewContext<Self>) -> bool {
-        FeatureFlag::AgentOnboarding.is_enabled()
+        false
     }
 }

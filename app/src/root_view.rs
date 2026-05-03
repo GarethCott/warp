@@ -473,9 +473,7 @@ pub fn init(app: &mut AppContext) {
         .with_group(bindings::BindingGroup::Settings.as_str())
         .with_context_predicate(id!("RootView"))
         .with_key_binding("shift-f12")
-        .with_enabled(|| {
-            FeatureFlag::AgentOnboarding.is_enabled() && ChannelState::enable_debug_features()
-        }),
+        .with_enabled(|| false),
     ])
 }
 
@@ -1680,11 +1678,7 @@ impl RootView {
                 } else {
                     // When OpenWarpNewSettingsModes is enabled, show onboarding before login for
                     // users who haven't completed it yet (tracked via a local UserPreferences key).
-                    let has_completed_local_onboarding = FeatureFlag::OpenWarpNewSettingsModes.is_enabled()
-                        && has_completed_local_onboarding(ctx);
-                    let should_show_pre_login_onboarding = FeatureFlag::OpenWarpNewSettingsModes.is_enabled()
-                        && FeatureFlag::AgentOnboarding.is_enabled()
-                        && !has_completed_local_onboarding;
+                    let should_show_pre_login_onboarding = false;
                     if FeatureFlag::ForceLogin.is_enabled() {
                         // ForceLogin is true for Preview
                         AuthOnboardingState::Auth(workspace_args.into())
@@ -2050,22 +2044,9 @@ impl RootView {
     }
 
     /// Debug method to enter the onboarding state.
-    fn debug_enter_onboarding_state(&mut self, _: &(), ctx: &mut ViewContext<Self>) -> bool {
-        if !ChannelState::enable_debug_features() {
-            log::warn!("Attempted to enter onboarding state in release build");
-            return false;
-        }
-
-        if !FeatureFlag::AgentOnboarding.is_enabled() {
-            log::warn!("Attempted to enter onboarding state without AgentOnboarding enabled");
-            return false;
-        }
-
-        self.auth_onboarding_state.try_open_onboarding_slides(ctx);
-
-        ctx.emit(RootViewEvent::AuthOnboardingStateChanged);
-        ctx.notify();
-        true
+    fn debug_enter_onboarding_state(&mut self, _: &(), _ctx: &mut ViewContext<Self>) -> bool {
+        // strip(neuter): AgentOnboarding is gated off in this fork.
+        false
     }
 
     fn onboarding_theme_kind(theme_name: &str) -> Option<ThemeKind> {
@@ -3315,25 +3296,10 @@ impl WorkspaceArgs {
 
 impl AuthOnboardingState {
     fn complete_auth_and_create_workspace(&mut self, ctx: &mut ViewContext<RootView>) {
-        // Check if we should show onboarding (only for users who are not yet onboarded).
-        // The server-side `is_onboarded` flag is synced separately by
-        // `RootView::sync_local_onboarding_to_server`, which runs on every `AuthComplete`
-        // before we get here.
-        let auth_state = AuthStateProvider::as_ref(ctx).get();
-        let is_onboarded = auth_state.is_onboarded().unwrap_or(true);
-        let is_anonymous = auth_state.is_user_anonymous().unwrap_or(false);
+        // strip(neuter): AgentOnboarding is gated off in this fork — onboarding
+        // slides never open.
 
-        let has_completed_local_onboarding = has_completed_local_onboarding(ctx);
-
-        if !is_onboarded
-            && !is_anonymous
-            && !has_completed_local_onboarding
-            && FeatureFlag::AgentOnboarding.is_enabled()
-        {
-            self.try_open_onboarding_slides(ctx);
-        }
-
-        // If we didn't transition to Onboarding, set the Terminal state.
+        // Set the Terminal state.
         match self {
             AuthOnboardingState::Auth(ref args)
             | AuthOnboardingState::ConfirmIncomingAuth(ref args) => {
@@ -3349,6 +3315,7 @@ impl AuthOnboardingState {
         ctx.emit(RootViewEvent::AuthOnboardingStateChanged);
     }
 
+    #[allow(dead_code)]
     fn try_open_onboarding_slides(&mut self, ctx: &mut ViewContext<RootView>) {
         let target = match self {
             AuthOnboardingState::Auth(args) | AuthOnboardingState::ConfirmIncomingAuth(args) => {
