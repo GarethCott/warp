@@ -1,4 +1,4 @@
-use warp_core::{features::FeatureFlag, send_telemetry_from_ctx, ui::appearance::Appearance};
+use warp_core::{send_telemetry_from_ctx, ui::appearance::Appearance};
 use warpui::{keymap::Keystroke, EntityId, SingletonEntity, ViewContext};
 
 use crate::{
@@ -127,33 +127,24 @@ impl TerminalView {
                 };
                 // For Oz conversations, restore data and then re-enter agent view (the
                 // conversation will be in memory after restoration).
-                // For CLI agent conversations, restore the block snapshot only. Because we
-                // don't update the in-memory model in this case, attempting to re-enter agent
-                // view will trigger an infinite loop of fetching and loading conversation data
-                // from the server.
-                #[allow(clippy::type_complexity)]
-                let on_restored: Box<
-                    dyn FnOnce(&mut Self, &mut ViewContext<Self>),
-                > = if matches!(&conversation, CloudConversationData::Oz(_)) {
-                    Box::new(move |me, ctx| {
-                        me.enter_agent_view_for_conversation(
-                            initial_prompt,
-                            origin,
-                            conversation_id,
-                            ctx,
-                        );
-                    })
-                } else {
-                    if !FeatureFlag::AgentHarness.is_enabled() {
-                        log::warn!("AgentHarness flag is disabled; ignoring CLI agent conversation {conversation_id}");
-                        return;
-                    }
-                    Box::new(|_, _| {})
+                // strip(neuter): CLI agent conversations are gated off
+                // (AgentHarness flag is disabled in this fork) — we only handle Oz.
+                if !matches!(&conversation, CloudConversationData::Oz(_)) {
+                    log::warn!("AgentHarness flag is disabled; ignoring CLI agent conversation {conversation_id}");
+                    return;
+                }
+                let on_restored = move |me: &mut Self, ctx: &mut ViewContext<Self>| {
+                    me.enter_agent_view_for_conversation(
+                        initial_prompt,
+                        origin,
+                        conversation_id,
+                        ctx,
+                    );
                 };
                 me.restore_conversation_and_directory_context(
                     conversation,
                     false,
-                    on_restored,
+                    Box::new(on_restored),
                     ctx,
                 );
             });

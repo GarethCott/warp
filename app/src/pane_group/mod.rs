@@ -1,6 +1,6 @@
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
 use crate::ai::agent::api::ServerConversationToken;
-use crate::ai::agent::conversation::{AIAgentHarness, AIConversation, AIConversationId};
+use crate::ai::agent::conversation::{AIConversation, AIConversationId};
 use crate::ai::agent_conversations_model::{
     AgentConversationsModel, AgentConversationsModelEvent, ConversationOrTask,
 };
@@ -78,7 +78,6 @@ use tree::DEFAULT_FLEX_VALUE;
 use typed_path::TypedPath;
 use url::Url;
 use uuid::Uuid;
-use warp_cli::agent::Harness;
 use warp_core::command::ExitCode;
 use warp_core::context_flag::ContextFlag;
 use warp_core::HostId;
@@ -3729,50 +3728,10 @@ impl PaneGroup {
                     );
                 });
             }
-            CloudConversationData::CLIAgent(cli_conversation) => {
-                if !FeatureFlag::AgentHarness.is_enabled() {
-                    log::warn!("AgentHarness flag is disabled; ignoring CLI agent conversation");
-                    return;
-                }
-                let harness = match cli_conversation.metadata.harness {
-                    AIAgentHarness::ClaudeCode => Some(Harness::Claude),
-                    AIAgentHarness::Gemini => Some(Harness::Gemini),
-                    AIAgentHarness::Codex => Some(Harness::Codex),
-                    AIAgentHarness::Oz => None,
-                    AIAgentHarness::Unknown => Some(Harness::Unknown),
-                };
-                terminal_view.update(ctx, |view, ctx| {
-                    view.restore_conversation_and_directory_context(
-                        CloudConversationData::CLIAgent(cli_conversation),
-                        true,
-                        |_, _| {},
-                        ctx,
-                    );
-                    // Keep the viewer's AmbientAgentViewModel harness in sync with the loaded run.
-                    if let Some(harness) = harness {
-                        if let Some(ambient_agent_view_model) =
-                            view.ambient_agent_view_model().cloned()
-                        {
-                            ambient_agent_view_model.update(ctx, |model, ctx| {
-                                model.set_harness(harness, ctx);
-                            });
-                        }
-                    }
-                    // 3p runs have no materialized AIConversation, so enter agent view with a
-                    // fresh vehicle conversation and retag the restored snapshot block onto it so
-                    // it passes `should_hide_block`'s agent view filter.
-                    view.enter_agent_view_for_new_conversation(
-                        None,
-                        AgentViewEntryOrigin::ThirdPartyCloudAgent,
-                        ctx,
-                    );
-                    if let Some(vehicle_conversation_id) = view.active_conversation_id(ctx) {
-                        view.model
-                            .lock()
-                            .block_list_mut()
-                            .attach_non_startup_blocks_to_conversation(vehicle_conversation_id);
-                    }
-                });
+            CloudConversationData::CLIAgent(_cli_conversation) => {
+                // strip(neuter): AgentHarness is gated off in this fork.
+                log::warn!("AgentHarness flag is disabled; ignoring CLI agent conversation");
+                return;
             }
         };
 
@@ -5654,15 +5613,10 @@ impl PaneGroup {
                     ambient_agent_task_id: None,
                 }
             }
-            CloudConversationData::CLIAgent(cli_conversation) => {
-                if !FeatureFlag::AgentHarness.is_enabled() {
-                    log::warn!("AgentHarness flag is disabled; ignoring CLI agent conversation");
-                    return false;
-                }
-                ConversationRestorationInNewPaneType::HistoricalCLIAgent {
-                    conversation: *cli_conversation,
-                    should_use_live_appearance: true,
-                }
+            CloudConversationData::CLIAgent(_cli_conversation) => {
+                // strip(neuter): AgentHarness is gated off in this fork.
+                log::warn!("AgentHarness flag is disabled; ignoring CLI agent conversation");
+                return false;
             }
         };
 

@@ -276,14 +276,11 @@ impl TerminalView {
                             ctx,
                         );
                     }
-                    CloudConversationData::CLIAgent(cli_conversation) => {
-                        if FeatureFlag::AgentHarness.is_enabled() {
-                            me.restore_cli_agent_block_snapshot(cli_conversation.block);
-                        } else {
-                            log::warn!(
-                                "AgentHarness flag is disabled; ignoring CLI agent block snapshot"
-                            );
-                        }
+                    CloudConversationData::CLIAgent(_cli_conversation) => {
+                        // strip(neuter): AgentHarness is gated off in this fork.
+                        log::warn!(
+                            "AgentHarness flag is disabled; ignoring CLI agent block snapshot"
+                        );
                     }
                 }
 
@@ -321,6 +318,7 @@ impl TerminalView {
     /// CLI agent conversations are represented by a harness-specific transcript and
     /// a snapshot of the block contents. When restoring a CLI agent conversation, we
     /// display the block snapshot as if it were restored session contents.
+    #[allow(dead_code)]
     fn restore_cli_agent_block_snapshot(&mut self, block: SerializedBlock) {
         self.model
             .lock()
@@ -658,10 +656,8 @@ impl TerminalView {
             ConversationRestorationInNewPaneType::Forked { conversation, .. } => {
                 vec![RestoredAIConversation::new(conversation)]
             }
-            ConversationRestorationInNewPaneType::HistoricalCLIAgent { conversation, .. } => {
-                if FeatureFlag::AgentHarness.is_enabled() {
-                    self.restore_cli_agent_block_snapshot(conversation.block);
-                }
+            ConversationRestorationInNewPaneType::HistoricalCLIAgent { .. } => {
+                // strip(neuter): AgentHarness is gated off in this fork.
                 return;
             }
         };

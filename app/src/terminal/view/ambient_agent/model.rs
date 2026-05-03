@@ -240,10 +240,10 @@ impl AmbientAgentViewModel {
         ctx.emit(AmbientAgentViewModelEvent::HarnessSelected);
     }
 
-    /// True when the run is configured to use a non-Oz execution harness and the
-    /// required feature flags are enabled.
+    /// True when the run is configured to use a non-Oz execution harness.
+    /// strip(neuter): AgentHarness is gated off in this fork — always false.
     pub(super) fn is_third_party_harness(&self) -> bool {
-        FeatureFlag::AgentHarness.is_enabled() && self.harness != Harness::Oz
+        false
     }
 
     /// Whether the harness CLI has started running. Only meaningful for non-oz runs.

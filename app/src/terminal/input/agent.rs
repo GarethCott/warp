@@ -117,15 +117,8 @@ impl Input {
             }
         }
 
-        let show_harness_row = FeatureFlag::CloudMode.is_enabled()
-            && FeatureFlag::AgentHarness.is_enabled()
-            && self
-                .ambient_agent_view_model()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model
-                        .as_ref(app)
-                        .is_configuring_ambient_agent()
-                });
+        // strip(neuter): AgentHarness is gated off in this fork.
+        let show_harness_row = false;
         if show_harness_row {
             if let Some(harness_selector) = self.harness_selector() {
                 // Temporarily render the harness selector in the cloud mode UDI until we fully

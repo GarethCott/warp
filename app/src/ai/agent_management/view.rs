@@ -1801,15 +1801,6 @@ impl AgentManagementView {
             metadata_parts.push(format!("Source: {}", source.display_name()));
         }
 
-        if FeatureFlag::AgentHarness.is_enabled() {
-            if let Some(harness) = card_data.harness() {
-                metadata_parts.push(format!(
-                    "Harness: {}",
-                    harness_display::display_name(harness)
-                ));
-            }
-        }
-
         if let Some(run_time) = card_data.run_time() {
             metadata_parts.push(format!("Run time: {run_time}"));
         }
@@ -1936,10 +1927,6 @@ impl AgentManagementView {
                 .with_child(ChildView::new(&self.source_dropdown).finish())
                 .with_child(ChildView::new(&self.created_on_dropdown).finish())
                 .with_child(ChildView::new(&self.artifact_dropdown).finish());
-
-            if FeatureFlag::AgentHarness.is_enabled() {
-                filters_wrap.add_child(ChildView::new(&self.harness_dropdown).finish());
-            }
 
             filters_wrap.add_child(ChildView::new(&self.environment_dropdown).finish());
 
