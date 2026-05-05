@@ -1107,18 +1107,15 @@ impl View for AIBlock {
             app,
         ));
 
+        // strip(neuter): AgentView is gated off in this fork.
         let should_use_transparent_overlay = InputSettings::as_ref(app)
-            .is_universal_developer_input_enabled(app)
-            || FeatureFlag::AgentView.is_enabled();
+            .is_universal_developer_input_enabled(app);
 
         let theme = Appearance::as_ref(app).theme();
         // Even though forked blocks are technically "restored", this is an implementation detail
         // and should not be exposed to the user. Only truly restored blocks (i.e. blocks from a closed pane or session)
         // should have the restored theme applied.
-        let background_color = if self.model.is_restored()
-            && !self.model.is_forked()
-            && !FeatureFlag::AgentView.is_enabled()
-        {
+        let background_color = if self.model.is_restored() && !self.model.is_forked() {
             theme.restored_ai_blocks_overlay()
         } else if should_use_transparent_overlay {
             // Use a fully transparent background for universal developer input
@@ -1142,8 +1139,8 @@ impl View for AIBlock {
                 .input_mode
                 .value()
                 .is_inverted_blocklist();
-        let should_render_separator =
-            !FeatureFlag::AgentView.is_enabled() && contains_user_query_and_is_not_pin_to_top;
+        // strip(neuter): AgentView is gated off in this fork.
+        let should_render_separator = contains_user_query_and_is_not_pin_to_top;
         if should_render_separator {
             content = content.with_border(Border::top(1.).with_border_fill(theme.outline()));
         }

@@ -4,15 +4,11 @@ use warp_core::features::FeatureFlag;
 use warpui::{AppContext, ModelContext, SingletonEntity};
 
 use crate::{
-    ai::{
-        agent::{
-            conversation::AIConversationId, AIAgentContext, AIAgentInput, CloneRepositoryURL,
-            EntrypointType, RequestMetadata,
-        },
-        blocklist::agent_view::AgentViewEntryOrigin,
+    ai::agent::{
+        conversation::AIConversationId, AIAgentContext, AIAgentInput, CloneRepositoryURL,
+        EntrypointType, RequestMetadata,
     },
     search::slash_command_menu::static_commands::commands,
-    terminal::input::slash_commands::SlashCommandTrigger,
     BlocklistAIHistoryModel,
 };
 
@@ -91,28 +87,10 @@ impl SlashCommandRequest {
             return;
         }
 
-        // If no existing conversation, create a new one.
-        // When AgentView is enabled, enter agent view which creates the conversation
-        // and ensures AI blocks render correctly in the agent view.
-        let Some(conversation_id) = conversation_id.or_else(|| {
-            if FeatureFlag::AgentView.is_enabled() {
-                controller.context_model.update(ctx, |context_model, ctx| {
-                    context_model
-                        .try_enter_agent_view_for_new_conversation(
-                            AgentViewEntryOrigin::SlashCommand {
-                                trigger: SlashCommandTrigger::input(),
-                            },
-                            ctx,
-                        )
-                        .ok()
-                })
-            } else {
-                Some(controller.start_new_conversation_for_request(ctx).id())
-            }
-        }) else {
-            log::error!("Failed to get conversation ID for slash command request");
-            return;
-        };
+        // strip(neuter): AgentView is gated off in this fork; always start a
+        // new request conversation directly.
+        let conversation_id = conversation_id
+            .unwrap_or_else(|| controller.start_new_conversation_for_request(ctx).id());
 
         let Some(conversation) =
             BlocklistAIHistoryModel::as_ref(ctx).conversation(&conversation_id)

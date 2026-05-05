@@ -17,7 +17,6 @@ use warpui::{
     ui_components::components::UiComponent,
 };
 
-use warp_core::features::FeatureFlag;
 
 use crate::{
     ai::{
@@ -488,22 +487,21 @@ impl View for PlanAndTodoListView {
         let ai_document_id = self.ai_document_id(app);
 
         let mut row = Flex::row();
-        // Only show plan chip when AgentView is not enabled
-        if !FeatureFlag::AgentView.is_enabled() {
-            if let Some(ai_document_id) = ai_document_id {
-                row.add_child(self.render_plan_button(
-                    ai_document_id,
-                    todo_list.is_some(),
-                    icon_size,
-                    appearance,
-                    app,
-                ));
-            }
+        // strip(neuter): AgentView is gated off in this fork; always show
+        // plan chip when ai_document_id is present.
+        if let Some(ai_document_id) = ai_document_id {
+            row.add_child(self.render_plan_button(
+                ai_document_id,
+                todo_list.is_some(),
+                icon_size,
+                appearance,
+                app,
+            ));
         }
         if let Some(todo_list) = todo_list {
             row.add_child(self.render_todo_button(
                 &todo_list,
-                ai_document_id.is_some() && !FeatureFlag::AgentView.is_enabled(),
+                ai_document_id.is_some(),
                 icon_size,
                 appearance,
                 app,

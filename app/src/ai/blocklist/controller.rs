@@ -1397,9 +1397,8 @@ impl BlocklistAIController {
             history.set_active_conversation_id(conversation_id, self.terminal_view_id, ctx);
         });
 
-        if !FeatureFlag::AgentView.is_enabled() && trigger == FollowUpTrigger::Auto {
-            // If `AgentView` is enabled, the conversation is guaranteed to be active while the
-            // conversation is in-progress and thus while actions are executing/finishing.
+        // strip(neuter): AgentView is gated off in this fork.
+        if trigger == FollowUpTrigger::Auto {
             self.context_model.update(ctx, |context_model, ctx| {
                 context_model.set_pending_query_state_for_existing_conversation(
                     conversation_id,
@@ -2114,9 +2113,8 @@ impl BlocklistAIController {
             ctx.dispatch_global_action("workspace:save_app", ());
         }
 
-        // If `AgentView` is enabled, the agent view is guaranteed to be active when the agent
-        // input is sent, so logic to ensure follow-ups is redundant.
-        if !FeatureFlag::AgentView.is_enabled() && default_to_follow_up_on_success {
+        // strip(neuter): AgentView is gated off in this fork.
+        if default_to_follow_up_on_success {
             // Set the input mode to AI but allow autodetection to run
             self.input_model.update(ctx, |input_model, ctx| {
                 input_model.set_input_config_for_classic_mode(

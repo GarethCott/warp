@@ -178,17 +178,11 @@ impl SlashCommandDataSource {
 
         let mut session_context = Availability::empty();
 
-        let is_agent_view_active = self.agent_view_controller.as_ref(ctx).is_active();
-        if !FeatureFlag::AgentView.is_enabled() {
-            // When the AgentView feature flag is disabled, set both view bits so that
-            // either view requirement is satisfied (but other requirements like
-            // REPOSITORY and LOCAL still apply).
-            session_context |= Availability::AGENT_VIEW | Availability::TERMINAL_VIEW;
-        } else if is_agent_view_active {
-            session_context |= Availability::AGENT_VIEW;
-        } else {
-            session_context |= Availability::TERMINAL_VIEW;
-        }
+        // strip(neuter): AgentView is gated off in this fork; both view bits set
+        // so view requirements are satisfied (other requirements like REPOSITORY
+        // and LOCAL still apply).
+        let is_agent_view_active = false;
+        session_context |= Availability::AGENT_VIEW | Availability::TERMINAL_VIEW;
 
         if self.active_repo_root.is_some() {
             session_context |= Availability::REPOSITORY;

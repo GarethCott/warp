@@ -48,35 +48,32 @@ pub(super) fn render(props: Props, app: &AppContext) -> Option<Box<dyn Element>>
     let appearance = Appearance::as_ref(app);
     let theme = appearance.theme();
 
-    let mut did_render_child = false;
     let mut left_row = Flex::row().with_cross_axis_alignment(CrossAxisAlignment::Center);
 
     let font_size = prompt_font_size(appearance);
-    if !FeatureFlag::AgentView.is_enabled() {
-        if let Some(pwd) = &props.directory_context.pwd {
-            let current_directory =
-                user_friendly_path(pwd.as_str(), props.directory_context.home_dir.as_deref())
-                    .to_string();
-            left_row.add_child(
-                Container::new(
-                    Text::new_inline(
-                        current_directory,
-                        appearance.monospace_font_family(),
-                        font_size,
-                    )
-                    .with_color(blended_colors::text_sub(theme, theme.surface_1()))
-                    .with_selection_color(if props.is_selected_text_attached_as_context {
-                        theme.text_selection_as_context_color().into_solid()
-                    } else {
-                        theme.text_selection_color().into_solid()
-                    })
-                    .finish(),
+    // strip(neuter): AgentView is gated off in this fork; always show pwd.
+    if let Some(pwd) = &props.directory_context.pwd {
+        let current_directory =
+            user_friendly_path(pwd.as_str(), props.directory_context.home_dir.as_deref())
+                .to_string();
+        left_row.add_child(
+            Container::new(
+                Text::new_inline(
+                    current_directory,
+                    appearance.monospace_font_family(),
+                    font_size,
                 )
-                .with_margin_right(8.)
+                .with_color(blended_colors::text_sub(theme, theme.surface_1()))
+                .with_selection_color(if props.is_selected_text_attached_as_context {
+                    theme.text_selection_as_context_color().into_solid()
+                } else {
+                    theme.text_selection_color().into_solid()
+                })
                 .finish(),
-            );
-            did_render_child |= true;
-        }
+            )
+            .with_margin_right(8.)
+            .finish(),
+        );
     }
 
     let show_attached_blocks_chip = props.num_attached_context_blocks > 0;
@@ -99,12 +96,9 @@ pub(super) fn render(props: Props, app: &AppContext) -> Option<Box<dyn Element>>
             *props.conversation_id,
             app,
         ));
-        did_render_child |= true;
     }
 
-    if FeatureFlag::AgentView.is_enabled() && !did_render_child {
-        return None;
-    }
+    // strip(neuter): AgentView is gated off in this fork.
 
     let mut right_row = Flex::row().with_cross_axis_alignment(CrossAxisAlignment::Center);
 

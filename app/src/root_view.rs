@@ -1928,7 +1928,7 @@ impl RootView {
                 models,
                 default_model_id,
                 workspace_enforces_autonomy,
-                FeatureFlag::AgentView.is_enabled(),
+                false, // strip(neuter): AgentView is gated off in this fork.
                 is_free_user_no_ai_experiment_active(ctx),
                 agent_price_cents,
                 auth_state,

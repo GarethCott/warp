@@ -51,8 +51,8 @@ impl From<SelectedSettings> for OnboardingTutorial {
                     initialize_projects_automatically,
                 } => {
                     let path = PathBuf::from(selected_local_folder);
-                    // When AgentView is enabled, /init comes at the end of the tutorial.
-                    if !FeatureFlag::AgentView.is_enabled() && initialize_projects_automatically {
+                    // strip(neuter): AgentView is gated off in this fork.
+                    if initialize_projects_automatically {
                         OnboardingTutorial::InitProject {
                             path,
                             intention: OnboardingIntention::AgentDrivenDevelopment,
@@ -183,14 +183,10 @@ impl Workspace {
         intention: OnboardingIntention,
         ctx: &mut ViewContext<Self>,
     ) {
-        let version = OnboardingVersion::Agent(if FeatureFlag::AgentView.is_enabled() {
-            AgentOnboardingVersion::AgentModality {
-                has_project,
-                intention,
-            }
-        } else {
-            AgentOnboardingVersion::UniversalInput { has_project }
-        });
+        // strip(neuter): AgentView is gated off in this fork.
+        let _ = intention;
+        let version =
+            OnboardingVersion::Agent(AgentOnboardingVersion::UniversalInput { has_project });
         self.dispatch_onboarding(TerminalAction::OnboardingFlow(version), ctx);
     }
 
