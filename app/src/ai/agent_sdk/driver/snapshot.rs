@@ -1,5 +1,9 @@
 //! End-of-run snapshot upload pipeline invoked from `AgentDriver::run_snapshot_upload`.
 //!
+//! strip(neuter): OzHandoff is gated off in this fork — the upload pipeline
+//! never runs.
+#![allow(dead_code)]
+//!
 //! Reads a JSONL declarations file listing repos and files, gathers git-diff patches or file
 //! contents for each, and uploads them (plus a `snapshot_state.json` manifest) to presigned GCS
 //! URLs. Transient upload failures retry through the shared [`with_bounded_retry`] helper.

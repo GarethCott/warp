@@ -63,9 +63,7 @@ use driver::AgentDriverError;
 use warp_graphql::object_permissions::OwnerType;
 
 use crate::ai::attachment_utils::attachments_download_dir;
-use crate::ai::skills::{
-    clone_repo_for_skill, resolve_skill_spec, ResolveSkillError, ResolvedSkill,
-};
+use crate::ai::skills::{ResolveSkillError, ResolvedSkill};
 
 pub(crate) use driver::harness::{
     task_env_vars, validate_cli_installed, ClaudeHarness, ThirdPartyHarness,
@@ -139,11 +137,9 @@ fn dispatch_command(
 ) -> anyhow::Result<()> {
     match command {
         CliCommand::Agent(agent_cmd) => run_agent(ctx, global_options, agent_cmd),
-        CliCommand::Environment(environment_cmd) => {
-            if !FeatureFlag::CloudEnvironments.is_enabled() {
-                return Err(anyhow::anyhow!("invalid value 'environment'"));
-            }
-            environment::run(ctx, global_options, environment_cmd)
+        CliCommand::Environment(_environment_cmd) => {
+            // strip(neuter): CloudEnvironments is gated off in this fork.
+            Err(anyhow::anyhow!("invalid value 'environment'"))
         }
         CliCommand::MCP(mcp_cmd) => mcp::run(ctx, global_options, mcp_cmd),
         CliCommand::Run(task_cmd) => run_task(ctx, global_options, task_cmd),
@@ -199,6 +195,7 @@ fn dispatch_command(
     }
 }
 
+#[allow(dead_code)]
 fn format_skill_resolution_error(err: ResolveSkillError) -> String {
     match err {
         ResolveSkillError::NotFound { skill } => {
@@ -240,7 +237,7 @@ fn run_agent(
 ) -> anyhow::Result<()> {
     match command {
         AgentCommand::Run(args) => {
-            if args.environment.is_some() && !FeatureFlag::CloudEnvironments.is_enabled() {
+            if args.environment.is_some() {
                 return Err(anyhow::anyhow!("unexpected argument '--environment' found"));
             }
             if args.conversation.is_some() {
@@ -248,7 +245,7 @@ fn run_agent(
                     "unexpected argument '--conversation' found"
                 ));
             }
-            if args.skill.is_some() && !FeatureFlag::OzPlatformSkills.is_enabled() {
+            if args.skill.is_some() {
                 return Err(anyhow::anyhow!("unexpected argument '--skill' found"));
             }
             if args.harness != Harness::Oz {
@@ -285,9 +282,7 @@ fn run_agent(
             Ok(())
         }
         AgentCommand::RunCloud(args) => {
-            if args.environment.environment.is_some()
-                && !FeatureFlag::CloudEnvironments.is_enabled()
-            {
+            if args.environment.environment.is_some() {
                 return Err(anyhow::anyhow!("unexpected argument '--environment' found"));
             }
             if args.conversation.is_some() {
@@ -700,43 +695,13 @@ impl AgentDriverRunner {
     /// cloned first since it may not exist locally. Otherwise we resolve directly
     /// against the local filesystem.
     async fn resolve_skill(
-        foreground: &ModelSpawner<Self>,
-        args: &RunAgentArgs,
-        working_dir: &Path,
+        _foreground: &ModelSpawner<Self>,
+        _args: &RunAgentArgs,
+        _working_dir: &Path,
     ) -> Result<Option<ResolvedSkill>, AgentDriverError> {
-        if !FeatureFlag::OzPlatformSkills.is_enabled() {
-            return Ok(None);
-        }
-        let Some(skill_spec) = args.skill.clone() else {
-            return Ok(None);
-        };
-
-        // In sandboxed mode with a fully-qualified spec, clone the repo first.
-        let needs_clone = args.sandboxed && skill_spec.org.is_some() && skill_spec.repo.is_some();
-        if needs_clone {
-            let org = skill_spec.org.as_ref().expect("org checked above");
-            let repo_name = skill_spec.repo.as_ref().expect("repo checked above");
-            log::info!("Cloning {org}/{repo_name} for skill resolution in sandboxed mode");
-            clone_repo_for_skill(org, repo_name, working_dir)
-                .await
-                .map_err(|err| {
-                    AgentDriverError::SkillResolutionFailed(format_skill_resolution_error(err))
-                })?;
-        }
-
-        let working_dir_buf = working_dir.to_path_buf();
-        let skill = foreground
-            .spawn(move |_, ctx| resolve_skill_spec(&skill_spec, &working_dir_buf, ctx))
-            .await?
-            .map_err(|err| {
-                AgentDriverError::SkillResolutionFailed(format_skill_resolution_error(err))
-            })?;
-        log::debug!(
-            "Resolved skill '{}' from {}",
-            skill.name,
-            skill.skill_path.display()
-        );
-        Ok(Some(skill))
+        // strip(neuter): OzPlatformSkills is gated off in this fork; the
+        // --skill arg is rejected upstream so this branch never has work.
+        Ok(None)
     }
 
     /// Build the AgentDriverOptions and Task, handling task creation or existing task setup.
@@ -955,19 +920,14 @@ impl AgentDriverRunner {
         let handoff_snapshot_server_api = server_api.clone();
         let handoff_snapshot_download_dir = attachments_download_dir.clone();
         let handoff_snapshot = async move {
-            if !FeatureFlag::OzHandoff.is_enabled() {
-                return Ok(None);
-            }
-            let Some(task_id_parsed) = parsed_task_id else {
-                return Ok(None);
-            };
-            driver::attachments::fetch_and_download_handoff_snapshot_attachments(
+            // strip(neuter): OzHandoff is gated off in this fork.
+            let _ = (
                 handoff_snapshot_ai_client,
-                handoff_snapshot_server_api.http_client(),
-                task_id_parsed,
+                handoff_snapshot_server_api,
                 handoff_snapshot_download_dir,
-            )
-            .await
+                parsed_task_id,
+            );
+            Ok::<Option<String>, anyhow::Error>(None)
         };
         let (secrets_result, attachments_result, task_metadata_result, handoff_snapshot_result) =
             futures::future::join4(

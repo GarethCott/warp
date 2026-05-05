@@ -316,9 +316,6 @@ pub enum FeatureFlag {
     /// Enables sending stderr warnings in FileGlobV2 results.
     FileGlobV2Warnings,
 
-    /// Enables Warp Drive objects (like workflows) as context in AI context menu
-    DriveObjectsAsContext,
-
     /// Expands code diff edits to replace the current pane instead of opening in a new tab.
     ExpandEditToPane,
     /// Enables fallback model load output messaging in the warping indicator.
@@ -452,9 +449,6 @@ pub enum FeatureFlag {
 
     /// Enables inline code review functionality
     InlineCodeReview,
-
-    /// Enables cloud environments management via CLI.
-    CloudEnvironments,
 
     /// Enables the /create-environment slash command for setting up Warp Environments
     CreateEnvironmentSlashCommand,
@@ -613,11 +607,6 @@ pub enum FeatureFlag {
     /// Enables auto-syncing ambient plans to Warp Drive.
     SyncAmbientPlans,
 
-    /// Enables platform skills support (--skill flag) for agent runs.
-    ///
-    /// Skills are loaded from `.agents/skills/`, `.warp/skills/`, `.claude/skills/`, and `.codex/skills/`
-    /// directories to provide base prompts for agent runs.
-    OzPlatformSkills,
     /// Enables Oz identity federation commands.
     OzIdentityFederation,
 
@@ -670,12 +659,6 @@ pub enum FeatureFlag {
     /// Enables orchestration mode (multi-agent parallel execution).
     Orchestration,
 
-    /// Enables server-side durable messaging for orchestration (v2).
-    /// When enabled, messages and events are stored in Postgres and the client
-    /// opens a persistent SSE connection to the server to receive events in
-    /// real time.
-    OrchestrationV2,
-
     /// Renders a horizontal pill bar in the agent view pane header showing the
     /// orchestrator agent and all of its child agents, with click-to-switch
     /// behavior between siblings.
@@ -717,16 +700,6 @@ pub enum FeatureFlag {
     /// Enables attaching code review comments, diff hunk, and attach as context
     /// from code review + code editor for House Of Agents work
     HoaCodeReview,
-
-    /// Enables workspace- and block-snapshot handoff between cloud agent runs
-    /// and the local Warp client.
-    /// When enabled:
-    /// - The `AgentDriver` uploads a workspace snapshot (repo diffs + files) at the end of every
-    ///   cloud agent run, regardless of harness.
-    /// - Subsequent executions download the prior execution's handoff snapshot attachments.
-    /// - Third-party harness conversations hydrate their terminal output inline by fetching a
-    ///   block snapshot from the server.
-    OzHandoff,
 
     /// Enables the upgraded CLI agent session tracking and notifications infrastructure.
     HOANotifications,
@@ -847,7 +820,6 @@ pub const DOGFOOD_FLAGS: &[FeatureFlag] = &[
     FeatureFlag::FileGlobV2Warnings,
     FeatureFlag::SummarizationViaMessageReplacement,
     FeatureFlag::LocalComputerUse,
-    FeatureFlag::OzPlatformSkills,
     FeatureFlag::AgentViewBlockContext,
     FeatureFlag::OzLaunchModal,
     FeatureFlag::OzChangelogUpdates,
@@ -864,11 +836,9 @@ pub const DOGFOOD_FLAGS: &[FeatureFlag] = &[
     FeatureFlag::EditableMarkdownMermaid,
     FeatureFlag::CodeReviewScrollPreservation,
     FeatureFlag::OzIdentityFederation,
-    FeatureFlag::OzHandoff,
     FeatureFlag::ConversationApi,
     FeatureFlag::RememberFastForwardState,
     FeatureFlag::HOANotifications,
-    FeatureFlag::OrchestrationV2,
     FeatureFlag::GeminiNotifications,
     FeatureFlag::LocalDockerSandbox,
     FeatureFlag::VerticalTabsSummaryMode,
@@ -973,7 +943,6 @@ impl FeatureFlag {
             BlocklistMarkdownImages => {
                 Some("Enables rendering markdown images inline in AI block list responses.")
             }
-            CloudEnvironments => Some("Enables creating and managing Warp Environments via the CLI."),
             CreateEnvironmentSlashCommand => Some("Enables the /create environment slash command for setting up Warp Environments with custom configurations."),
             GlobalSearch => Some("Enables global search in the left panel"),
             BlocklistMarkdownTableRendering => {

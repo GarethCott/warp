@@ -275,8 +275,11 @@ pub struct AgentDriver {
     environment: Option<AmbientAgentEnvironment>,
 
     // End-of-run snapshot upload controls.
+    #[allow(dead_code)]
     snapshot_disabled: bool,
+    #[allow(dead_code)]
     snapshot_upload_timeout: Duration,
+    #[allow(dead_code)]
     snapshot_script_timeout: Duration,
 
     /// If set, a third-party-harness conversation to resume. Consumed by `prepare_harness`
@@ -391,6 +394,7 @@ pub enum AgentDriverError {
     ConversationBlocked { blocked_action: String },
     #[error("Timed out refreshing team metadata")]
     TeamMetadataRefreshTimeout,
+    #[allow(dead_code)]
     #[error("{0}")]
     SkillResolutionFailed(String),
     #[error("Failed to build agent configuration")]
@@ -2192,59 +2196,8 @@ impl AgentDriver {
     /// Invoke the end-of-run snapshot upload pipeline if the feature flag is enabled and this
     /// driver is associated with a cloud task. Errors are logged internally; this helper always
     /// returns so cleanup can proceed.
-    async fn run_snapshot_upload(spawner: &ModelSpawner<Self>) {
-        if !FeatureFlag::OzHandoff.is_enabled() {
-            return;
-        }
-
-        // Snapshot upload is only meaningful for cloud task runs, so short-circuit before
-        // pulling the rest of the context onto this task.
-        let Ok((Some(task_id), snapshot_disabled, upload_timeout, script_timeout)) = spawner
-            .spawn(|me, _| {
-                (
-                    me.task_id,
-                    me.snapshot_disabled,
-                    me.snapshot_upload_timeout,
-                    me.snapshot_script_timeout,
-                )
-            })
-            .await
-        else {
-            return;
-        };
-        if snapshot_disabled {
-            log::info!("Skipping snapshot upload because --no-snapshot was specified");
-            return;
-        }
-
-        let Ok((working_dir, client)) = spawner
-            .spawn(|me, ctx| {
-                let client = ServerApiProvider::as_ref(ctx).get_harness_support_client();
-                (me.working_dir.clone(), client)
-            })
-            .await
-        else {
-            log::error!("Unable to retrieve snapshot upload context for cleanup (task {task_id})");
-            return;
-        };
-
-        // Regenerate the declarations file so the upload pipeline sees the latest workspace
-        // state. The helper swallows its own errors at ERROR level; we just proceed.
-        snapshot::run_declarations_script(&working_dir, &task_id, script_timeout).await;
-
-        // Cap the upload so a pathological slow upload cannot wedge cleanup.
-        // On timeout we surface via report_error! so Sentry captures the incident and on-call
-        // alerting can fire, then let cloud-provider teardown continue.
-        if let Err(TimeoutError) = snapshot::upload_snapshot_from_declarations(client, &task_id)
-            .with_timeout(upload_timeout)
-            .await
-        {
-            report_error!(anyhow!(
-                "Snapshot upload timed out after {:?}; continuing with cleanup (task {task_id})",
-                upload_timeout
-            ));
-        }
-    }
+    /// strip(neuter): OzHandoff is gated off in this fork.
+    async fn run_snapshot_upload(_spawner: &ModelSpawner<Self>) {}
 }
 
 impl Entity for AgentDriver {
