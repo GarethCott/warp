@@ -7,7 +7,7 @@ use warpui::{EntityId, ViewContext};
 
 use super::blocklist_filter::exchanges_for_blocklist;
 use crate::ai::blocklist::agent_view::{
-    AgentViewEntryBlockParams, AgentViewEntryOrigin, DismissalStrategy, EphemeralMessage,
+    AgentViewEntryOrigin, DismissalStrategy, EphemeralMessage,
 };
 use crate::ai::blocklist::block::cli_controller::CLISubagentController;
 use crate::ai::blocklist::history_model::{CLIAgentConversation, CloudConversationData};
@@ -56,10 +56,7 @@ use crate::{
             blocks::RichContentItem, session::active_session::ActiveSession,
             terminal_model::BlockIndex,
         },
-        view::{
-            AIBlockMetadata, Event, RichContent, RichContentInsertionPosition, RichContentMetadata,
-            TerminalView,
-        },
+        view::{AIBlockMetadata, Event, RichContent, RichContentMetadata, TerminalView},
     },
 };
 use warp_core::channel::ChannelState;
@@ -152,7 +149,7 @@ impl ConversationRestorationInNewPaneType {
             | Self::HistoricalCLIAgent {
                 should_use_live_appearance,
                 ..
-            } => FeatureFlag::AgentView.is_enabled() || *should_use_live_appearance,
+            } => *should_use_live_appearance,
             Self::Startup { .. } => false,
         }
     }
@@ -483,11 +480,9 @@ impl TerminalView {
             }
         });
 
-        // If `AgentView` is enabled and we're restoring conversations on startup (as opposed to
-        // loading a conversation due to selection from the command palette), then we don't eagerly
-        // set the pending query state (which is equivalent to _entering_ the agent view when the
-        // FeatureFlag is enabled).
-        if !FeatureFlag::AgentView.is_enabled() || !is_restoring_on_startup {
+        // strip(neuter): AgentView is gated off in this fork.
+        let _ = is_restoring_on_startup;
+        {
             // Set agent pending state for follow-up if we have an active conversation
             if let Some(conversation_id) = active_conversation_id {
                 let origin = AgentViewEntryOrigin::RestoreExistingConversation;
@@ -501,45 +496,13 @@ impl TerminalView {
             }
         }
 
-        // Track which conversations have had their agent view blocks inserted
-        let mut conversations_with_agent_view_block = std::collections::HashSet::new();
-
+        // strip(neuter): AgentView is gated off in this fork.
         // Create AI blocks. Note this must happen after restoring action results in the action model,
         // because AI block creation relies on the action result for an action existing in order to determine
         // what the state should be.
         let blocks_created = ai_block_params.len();
         for params in ai_block_params {
-            let conversation_id = params.conversation_id;
-            let command_block_index = params.command_block_index;
-
-            if FeatureFlag::AgentView.is_enabled()
-                && params.is_restoring_on_startup
-                && !conversations_with_agent_view_block.contains(&conversation_id)
-            {
-                // Insert an agent view block before the first AI block of each conversation.
-                // Use the same insertion position as the AI block (based on command_block_index)
-                // so they stay together.
-                conversations_with_agent_view_block.insert(conversation_id);
-
-                let position = match command_block_index {
-                    Some(idx) => RichContentInsertionPosition::BeforeBlockIndex(idx),
-                    None => RichContentInsertionPosition::Append {
-                        insert_below_long_running_block: false,
-                    },
-                };
-                self.insert_agent_view_entry_block(
-                    AgentViewEntryBlockParams {
-                        conversation_id,
-                        is_new: false,
-                        is_restored: true,
-                        origin: AgentViewEntryOrigin::RestoreExistingConversation,
-                        agent_view_controller: self.agent_view_controller.clone(),
-                    },
-                    position,
-                    ctx,
-                );
-            }
-
+            // strip(neuter): AgentView is gated off in this fork.
             self.create_and_insert_ai_block(params, ctx);
         }
 
@@ -766,30 +729,8 @@ impl TerminalView {
             "Successfully restored {blocks_created} AI blocks on view creation for conversations: {conversation_ids:?}"
         );
 
-        // If agent view was open before the session was saved, restore it
-        if FeatureFlag::AgentView.is_enabled() {
-            if let Some(conversation_id) = active_conversation_id_to_restore {
-                // Check if the conversation was successfully restored
-                let conversation_exists = BlocklistAIHistoryModel::handle(ctx)
-                    .as_ref(ctx)
-                    .conversation(&conversation_id)
-                    .is_some();
-
-                if conversation_exists {
-                    log::info!("Restoring agent view for conversation: {conversation_id}");
-                    self.enter_agent_view_for_conversation(
-                        None,
-                        AgentViewEntryOrigin::RestoreExistingConversation,
-                        conversation_id,
-                        ctx,
-                    );
-                } else {
-                    log::warn!(
-                        "Cannot restore agent view: conversation {conversation_id} not found"
-                    );
-                }
-            }
-        }
+        // strip(neuter): AgentView is gated off in this fork.
+        let _ = active_conversation_id_to_restore;
     }
 
     /// When we fork a conversation, we copy all of the ai and terminal blocks that were part of the original conversation.
@@ -1076,19 +1017,13 @@ impl TerminalView {
         });
 
         // Insert into block list if command_block_index is provided
+        // strip(neuter): AgentView is gated off in this fork.
+        let _ = conversation_id;
         let item = RichContentItem::new(
             Some(RichContentType::AIBlock),
             restored_block_view_handle.id(),
-            FeatureFlag::AgentView
-                .is_enabled()
-                .then_some(conversation_id),
-            FeatureFlag::AgentView.is_enabled()
-                && self
-                    .agent_view_controller
-                    .as_ref(ctx)
-                    .agent_view_state()
-                    .active_conversation_id()
-                    .is_some_and(|id| id == conversation_id),
+            None,
+            false,
         );
         if let Some(cmd_block_index) = command_block_index {
             self.model

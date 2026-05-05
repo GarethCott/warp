@@ -6,7 +6,6 @@ use session_sharing_protocol::common::{
     CLIAgentSessionState, InputMode, InputType as ProtocolInputType, SelectedAgentModel,
     SelectedConversation, ServerConversationToken, UniversalDeveloperInputContextUpdate,
 };
-use warp_core::features::FeatureFlag;
 use warpui::{AppContext, ModelHandle, SingletonEntity, WeakViewHandle};
 
 use crate::ai::blocklist::agent_view::{AgentViewController, AgentViewEntryOrigin};
@@ -69,14 +68,7 @@ pub(crate) fn apply_input_mode_update(
         return;
     };
 
-    // When AgentView is enabled, we only apply input mode updates when in an active agent view.
-    // Outside of agent view, input mode changes are not relevant.
-    if FeatureFlag::AgentView.is_enabled() {
-        let agent_view_controller = view.as_ref(ctx).agent_view_controller().clone();
-        if !agent_view_controller.as_ref(ctx).is_active() {
-            return;
-        }
-    }
+    // strip(neuter): AgentView is gated off in this fork.
 
     let client_input_type = match input_mode.input_type {
         ProtocolInputType::Shell => InputType::Shell,
@@ -152,18 +144,12 @@ pub(crate) fn apply_selected_conversation_update(
             SelectedConversation::NewConversation | SelectedConversation::NoConversation
         )
     {
-        let active_conversation_id = if FeatureFlag::AgentView.is_enabled() {
-            view.as_ref(ctx)
-                .agent_view_controller()
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id()
-        } else {
-            view.as_ref(ctx)
-                .ai_context_model()
-                .as_ref(ctx)
-                .selected_conversation_id(ctx)
-        };
+        // strip(neuter): AgentView is gated off in this fork.
+        let active_conversation_id = view
+            .as_ref(ctx)
+            .ai_context_model()
+            .as_ref(ctx)
+            .selected_conversation_id(ctx);
 
         let history_model = BlocklistAIHistoryModel::handle(ctx);
         let has_empty_active_conversation = active_conversation_id
@@ -204,29 +190,12 @@ pub(crate) fn apply_selected_conversation_update(
             }
         }
         SelectedConversation::NewConversation => {
-            // Start new conversation in agent view
-            let agent_view_controller = view.as_ref(ctx).agent_view_controller().clone();
+            // strip(neuter): AgentView is gated off in this fork.
             view.update(ctx, |view, ctx| {
                 view.ai_context_model().update(ctx, |context_model, ctx| {
-                    if FeatureFlag::AgentView.is_enabled() {
-                        // Check if we're already in an empty agent view to avoid feedback loop.
-                        let agent_view_state = agent_view_controller.as_ref(ctx).agent_view_state();
-                        if let Some(conversation_id) = agent_view_state.active_conversation_id() {
-                            let history_model = BlocklistAIHistoryModel::handle(ctx);
-                            let is_empty = history_model
-                                .as_ref(ctx)
-                                .conversation(&conversation_id)
-                                .is_none_or(|c| c.exchange_count() == 0);
-                            if is_empty {
-                                // Already in an empty agent view - no need to start another new one
-                                return;
-                            }
-                        }
-                    } else {
-                        // Check if state is already None to avoid feedback loop
-                        if context_model.selected_conversation_id(ctx).is_none() {
-                            return;
-                        }
+                    // Check if state is already None to avoid feedback loop
+                    if context_model.selected_conversation_id(ctx).is_none() {
+                        return;
                     }
                     context_model.set_pending_query_state_for_new_conversation(
                         AgentViewEntryOrigin::SharedSessionSelection,
@@ -236,24 +205,15 @@ pub(crate) fn apply_selected_conversation_update(
             });
         }
         SelectedConversation::NoConversation => {
-            let agent_view_controller = view.as_ref(ctx).agent_view_controller().clone();
+            // strip(neuter): AgentView is gated off in this fork; NoConversation
+            // is treated the same as a new conversation.
             view.update(ctx, |view, ctx| {
                 view.ai_context_model().update(ctx, |context_model, ctx| {
-                    if FeatureFlag::AgentView.is_enabled() {
-                        // Only exit if currently in agent view to avoid feedback loop
-                        if agent_view_controller.as_ref(ctx).is_active() {
-                            agent_view_controller.update(ctx, |controller, ctx| {
-                                controller.exit_agent_view(ctx);
-                            });
-                        }
-                    } else {
-                        // For non-agent view users, we treat NoConversation the same as new conversation.
-                        if context_model.selected_conversation_id(ctx).is_some() {
-                            context_model.set_pending_query_state_for_new_conversation(
-                                AgentViewEntryOrigin::SharedSessionSelection,
-                                ctx,
-                            );
-                        }
+                    if context_model.selected_conversation_id(ctx).is_some() {
+                        context_model.set_pending_query_state_for_new_conversation(
+                            AgentViewEntryOrigin::SharedSessionSelection,
+                            ctx,
+                        );
                     }
                 });
             });
@@ -265,23 +225,16 @@ pub(crate) fn apply_selected_conversation_update(
 /// Routes to the appropriate implementation based on whether AgentView is enabled.
 /// Returns None if the update should not be sent (e.g., selected conversation has no server token yet).
 pub(crate) fn build_selected_conversation_update(
-    agent_view_controller: &ModelHandle<AgentViewController>,
+    _agent_view_controller: &ModelHandle<AgentViewController>,
     context_model: &ModelHandle<BlocklistAIContextModel>,
     ctx: &mut AppContext,
 ) -> Option<UniversalDeveloperInputContextUpdate> {
-    if FeatureFlag::AgentView.is_enabled() {
-        build_selected_conversation_update_agent_view_enabled(
-            agent_view_controller,
-            &BlocklistAIHistoryModel::handle(ctx),
-            ctx,
-        )
-    } else {
-        build_selected_conversation_update_agent_view_disabled(
-            context_model,
-            &BlocklistAIHistoryModel::handle(ctx),
-            ctx,
-        )
-    }
+    // strip(neuter): AgentView is gated off in this fork.
+    build_selected_conversation_update_agent_view_disabled(
+        context_model,
+        &BlocklistAIHistoryModel::handle(ctx),
+        ctx,
+    )
 }
 
 fn build_selected_conversation_update_agent_view_disabled(
@@ -311,6 +264,7 @@ fn build_selected_conversation_update_agent_view_disabled(
     })
 }
 
+#[allow(dead_code)]
 fn build_selected_conversation_update_agent_view_enabled(
     agent_view_controller: &ModelHandle<AgentViewController>,
     history_model: &ModelHandle<BlocklistAIHistoryModel>,

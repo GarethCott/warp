@@ -40,10 +40,6 @@ use crate::{
     },
     appearance::Appearance,
     cloud_object::model::generic_string_model::StringModel,
-    context_chips::{
-        display_chip::{udi_font_size, udi_icon_size},
-        spacing,
-    },
     menu::{Event as MenuEvent, Menu, MenuItem, MenuItemFields},
     settings_view::SettingsSection,
     terminal::view::ambient_agent::AmbientAgentViewModel,
@@ -83,11 +79,8 @@ const MAX_PROFILE_NAME_WIDTH_SCALE_FACTOR: f32 = 10.0;
 const PROFILE_SELECTOR_POSITION_ID: &str = "profile_selector";
 
 pub fn calculate_scaled_font_size(appearance: &warp_core::ui::appearance::Appearance) -> f32 {
-    if FeatureFlag::AgentView.is_enabled() {
-        udi_font_size(appearance)
-    } else {
-        BASE_FONT_SIZE * appearance.monospace_ui_scalar()
-    }
+    // strip(neuter): AgentView is gated off in this fork.
+    BASE_FONT_SIZE * appearance.monospace_ui_scalar()
 }
 
 /// Calculate the maximum width for profile name text (we will clip to this width)
@@ -1132,16 +1125,10 @@ impl ProfileModelSelector {
     }
 
     fn get_padding_values(&self, scaled_font_size: f32) -> (f32, f32) {
-        if FeatureFlag::AgentView.is_enabled() {
-            (
-                spacing::UDI_CHIP_VERTICAL_PADDING,
-                spacing::UDI_CHIP_HORIZONTAL_PADDING,
-            )
-        } else {
-            let horizontal_padding =
-                (scaled_font_size * HORIZONTAL_PADDING_SCALE).max(MIN_HORIZONTAL_PADDING);
-            (VERTICAL_PADDING, horizontal_padding)
-        }
+        // strip(neuter): AgentView is gated off in this fork.
+        let horizontal_padding =
+            (scaled_font_size * HORIZONTAL_PADDING_SCALE).max(MIN_HORIZONTAL_PADDING);
+        (VERTICAL_PADDING, horizontal_padding)
     }
 
     fn get_menu_positioning(&self, app: &AppContext, is_profile: bool) -> OffsetPositioning {
@@ -1225,9 +1212,8 @@ impl ProfileModelSelector {
     }
 
     fn should_render_model_sidecar_left(&self, position_id: &str, app: &AppContext) -> bool {
-        // When AgentView is enabled, the model picker is right-aligned, so we default to
-        // showing the sidecar on the left side to avoid overlap.
-        let default_to_left = FeatureFlag::AgentView.is_enabled();
+        // strip(neuter): AgentView is gated off in this fork.
+        let default_to_left = false;
 
         let window_id = self.model_dropdown.window_id(app);
         let Some(window) = app.windows().platform_window(window_id) else {
@@ -1278,11 +1264,8 @@ impl ProfileModelSelector {
 
         let scaled_font_size = calculate_scaled_font_size(appearance);
         // Use the same icon size as the compact UDI button to ensure consistent height
-        let icon_size = if FeatureFlag::AgentView.is_enabled() {
-            udi_icon_size(appearance, app)
-        } else {
-            appearance.monospace_font_size() - 1.0
-        };
+        // strip(neuter): AgentView is gated off in this fork.
+        let icon_size = appearance.monospace_font_size() - 1.0;
         let (vertical_padding, horizontal_padding) = self.get_padding_values(scaled_font_size);
 
         let profile_icon = Icon::Psychology
@@ -1402,11 +1385,8 @@ impl ProfileModelSelector {
         };
 
         let scaled_font_size = calculate_scaled_font_size(appearance);
-        let icon_size = if FeatureFlag::AgentView.is_enabled() {
-            udi_icon_size(appearance, app)
-        } else {
-            appearance.monospace_font_size() - 1.0
-        };
+        // strip(neuter): AgentView is gated off in this fork.
+        let icon_size = appearance.monospace_font_size() - 1.0;
         let (vertical_padding, horizontal_padding) = self.get_padding_values(scaled_font_size);
 
         let model_text = Text::new_inline(
