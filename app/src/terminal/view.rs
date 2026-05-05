@@ -53,7 +53,7 @@ use crate::ai::blocklist::agent_view::{
     agent_view_bg_fill, AgentViewController, AgentViewControllerEvent, AgentViewDisplayMode,
     AgentViewEntryBlockParams, AgentViewEntryOrigin, AgentViewHeaderDisabledTheme,
     AgentViewHeaderTheme, AgentViewZeroStateBlock, AgentViewZeroStateEvent, EphemeralMessageModel,
-    ExitAgentViewError, ExitConfirmationTrigger, InlineAgentViewHeader, OrchestrationPillBar,
+    ExitAgentViewError, InlineAgentViewHeader, OrchestrationPillBar,
     ENTER_OR_EXIT_CONFIRMATION_WINDOW,
 };
 use crate::ai::conversation_utils;
@@ -276,7 +276,7 @@ use crate::terminal::event::RemoteServerSetupState;
 use crate::terminal::general_settings::GeneralSettings;
 use crate::terminal::grid_size_util::grid_cell_dimensions;
 use crate::terminal::input::decorations::InputBackgroundJobOptions;
-use crate::terminal::input::{CommandExecutionSource, InputAction, InputEmptyStateChangeReason};
+use crate::terminal::input::{CommandExecutionSource, InputAction};
 use crate::terminal::ligature_settings::{should_use_ligature_rendering, LigatureSettings};
 #[cfg(feature = "local_tty")]
 use crate::terminal::local_tty::get_shell_starter;
@@ -3508,11 +3508,7 @@ impl TerminalView {
             CLISubagentController::new(
                 &ai_controller,
                 &ai_action_model,
-                if FeatureFlag::AgentView.is_enabled() {
-                    Some(agent_view_controller.clone())
-                } else {
-                    None
-                },
+                None, // strip(neuter): AgentView is gated off in this fork.
                 model.clone(),
                 &model_events_handle,
                 terminal_view_id,
@@ -5206,17 +5202,7 @@ impl TerminalView {
                         });
                     }
 
-                    if FeatureFlag::AgentView.is_enabled() {
-                        ai_block_rich_content
-                            .update_agent_view_conversation_id(*new_conversation_id);
-                        self.model
-                            .lock()
-                            .block_list_mut()
-                            .update_agent_view_conversation_id_for_rich_content(
-                                ai_block_rich_content.view_id(),
-                                Some(*new_conversation_id),
-                            );
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
                 }
             }
             BlocklistAIHistoryEvent::StartedNewConversation {
@@ -5246,19 +5232,8 @@ impl TerminalView {
                 // is selected, update the title to reflect that change.
                 self.update_pane_configuration(ctx);
 
-                if FeatureFlag::AgentView.is_enabled() {
-                    let rich_content_ids = self
-                        .rich_content_views
-                        .extract_if(.., |rich_content| {
-                            rich_content.agent_view_conversation_id() == Some(*conversation_id)
-                        })
-                        .map(|rich_content| rich_content.view_id());
-                    let mut terminal_model = self.model.lock();
-                    for id in rich_content_ids {
-                        terminal_model.block_list_mut().remove_rich_content(id);
-                    }
-                    ctx.notify();
-                }
+                // strip(neuter): AgentView is gated off in this fork.
+                let _ = conversation_id;
             }
             BlocklistAIHistoryEvent::SplitConversation { .. } => {
                 // When the conversation state changes or a new conversation
@@ -5467,38 +5442,8 @@ impl TerminalView {
             } => {
                 self.cli_subagent_views.remove(block_id);
 
-                if FeatureFlag::AgentView.is_enabled() {
-                    let Some(conversation_id) = conversation_id else {
-                        return;
-                    };
-
-                    if self.has_existing_lrc_agent_view_block(*conversation_id)
-                        || self
-                            .agent_view_controller
-                            .as_ref(ctx)
-                            .agent_view_state()
-                            .is_active()
-                    {
-                        return;
-                    }
-
-                    // In the case that the user has taken control and already exited the agent view,
-                    // we insert the corresponding agent view block on command finish instead.
-                    self.insert_agent_view_entry_block(
-                        AgentViewEntryBlockParams {
-                            conversation_id: *conversation_id,
-                            is_new: true,
-                            is_restored: false,
-                            origin: AgentViewEntryOrigin::LongRunningCommand,
-                            agent_view_controller: self.agent_view_controller.clone(),
-                        },
-                        RichContentInsertionPosition::Append {
-                            insert_below_long_running_block: true,
-                        },
-                        ctx,
-                    );
-                    ctx.notify();
-                }
+                // strip(neuter): AgentView is gated off in this fork.
+                let _ = conversation_id;
             }
             CLISubagentEvent::ToggledHideResponses => {}
             CLISubagentEvent::UpdatedLastSnapshot => {}
@@ -5519,28 +5464,20 @@ impl TerminalView {
         conversation_id: &AIConversationId,
         ctx: &mut ViewContext<Self>,
     ) {
-        if FeatureFlag::AgentView.is_enabled() {
-            self.enter_agent_view_for_conversation(
-                None,
-                AgentViewEntryOrigin::ContinueConversationButton,
+        // strip(neuter): AgentView is gated off in this fork.
+        // Set pending query as follow-up in context model
+        self.ai_context_model.update(ctx, |context_model, ctx| {
+            context_model.set_pending_query_state_for_existing_conversation(
                 *conversation_id,
+                AgentViewEntryOrigin::ContinueConversationButton,
                 ctx,
             );
-        } else {
-            // Set pending query as follow-up in context model
-            self.ai_context_model.update(ctx, |context_model, ctx| {
-                context_model.set_pending_query_state_for_existing_conversation(
-                    *conversation_id,
-                    AgentViewEntryOrigin::ContinueConversationButton,
-                    ctx,
-                );
-            });
+        });
 
-            // Set input config to AI mode, preserving user's autodetect preference
-            self.ai_input_model.update(ctx, |input_model, ctx| {
-                input_model.set_input_type(InputType::AI, ctx);
-            });
-        }
+        // Set input config to AI mode, preserving user's autodetect preference
+        self.ai_input_model.update(ctx, |input_model, ctx| {
+            input_model.set_input_type(InputType::AI, ctx);
+        });
 
         // Send telemetry for follow-up toggle
         send_telemetry_from_ctx!(
@@ -5560,16 +5497,14 @@ impl TerminalView {
         ctx: &mut ViewContext<Self>,
     ) {
         // If `AgentView` is enabled, this button is only rendered when the agent view is already
-        // active for the selected conversation, so this call is redundant.
-        if !FeatureFlag::AgentView.is_enabled() {
-            self.ai_context_model.update(ctx, |context_model, ctx| {
-                context_model.set_pending_query_state_for_existing_conversation(
-                    *conversation_id,
-                    AgentViewEntryOrigin::ResumeConversationButton,
-                    ctx,
-                )
-            });
-        }
+        // strip(neuter): AgentView is gated off in this fork.
+        self.ai_context_model.update(ctx, |context_model, ctx| {
+            context_model.set_pending_query_state_for_existing_conversation(
+                *conversation_id,
+                AgentViewEntryOrigin::ResumeConversationButton,
+                ctx,
+            )
+        });
 
         self.ai_controller.update(ctx, |controller, ctx| {
             controller.resume_conversation(
@@ -6989,41 +6924,17 @@ impl TerminalView {
 
     fn handle_ctrl_c_input_event(
         &mut self,
-        cleared_buffer_len: usize,
+        _cleared_buffer_len: usize,
         ctx: &mut ViewContext<Self>,
     ) {
         let did_resolve_prompt_suggestion = self
             .resolve_passive_suggestion(PromptSuggestionResolution::Reject { ctrl_c: true }, ctx);
         if did_resolve_prompt_suggestion {
-            if FeatureFlag::AgentView.is_enabled()
-                && self.agent_view_controller.as_ref(ctx).is_active()
-            {
-                self.agent_view_controller.update(ctx, |controller, ctx| {
-                    controller.clear_pending_exit_confirmation(ctx);
-                });
-            }
+            // strip(neuter): AgentView is gated off in this fork.
             return;
         }
 
-        if FeatureFlag::AgentView.is_enabled() && self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            if cleared_buffer_len > 0 {
-                self.agent_view_controller.update(ctx, |controller, ctx| {
-                    controller.clear_pending_exit_confirmation(ctx);
-                });
-                return;
-            }
-
-            if self.should_ctrl_c_exit_agent_view(ctx) {
-                self.agent_view_controller.update(ctx, |controller, ctx| {
-                    controller.exit_agent_view_with_required_confirmation(
-                        ExitConfirmationTrigger::CtrlC,
-                        ctx,
-                    );
-                });
-                return;
-            }
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         self.ctrl_c(ctx);
     }
@@ -7159,11 +7070,13 @@ impl TerminalView {
     /// - Agent view is active and can be exited
     /// - No long-running command
     /// - Conversation is not in progress and not blocked
+    #[allow(dead_code)]
     fn should_ctrl_c_exit_agent_view(&self, app: &AppContext) -> bool {
-        if !FeatureFlag::AgentView.is_enabled() {
-            return false;
-        }
+        // strip(neuter): AgentView is gated off in this fork; always false.
+        let _ = app;
+        return false;
 
+        #[allow(unreachable_code)]
         if !self.agent_view_controller.as_ref(app).is_active() {
             return false;
         }
@@ -7472,9 +7385,8 @@ impl TerminalView {
             // When `FeatureFlag::AgentView` is enabled, blocks are attachable as AI context in
             // terminal mode. Selections are preserved so they can be attached to the query when
             // entering the agent view.
-            if !self.ai_render_context.borrow().is_ai_input_enabled
-                && !FeatureFlag::AgentView.is_enabled()
-            {
+            // strip(neuter): AgentView is gated off in this fork.
+            if !self.ai_render_context.borrow().is_ai_input_enabled {
                 self.clear_selected_blocks(ctx);
                 self.clear_selected_text(ctx);
             }
@@ -8715,13 +8627,9 @@ impl TerminalView {
     }
 
     /// Returns the view type for prompt suggestion telemetry based on whether agent view is active.
-    fn prompt_suggestion_view_type(&self, ctx: &ViewContext<Self>) -> PromptSuggestionViewType {
-        if FeatureFlag::AgentView.is_enabled() && self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            PromptSuggestionViewType::AgentView
-        } else {
-            PromptSuggestionViewType::TerminalView
-        }
+    fn prompt_suggestion_view_type(&self, _ctx: &ViewContext<Self>) -> PromptSuggestionViewType {
+        // strip(neuter): AgentView is gated off in this fork.
+        PromptSuggestionViewType::TerminalView
     }
 
     fn resolve_prompt_suggestion(
@@ -10332,13 +10240,7 @@ impl TerminalView {
                                             },
                                         )
                                     });
-                                    // Update agent view back button state when command becomes long-running
-                                    if FeatureFlag::AgentView.is_enabled()
-                                        && me.agent_view_controller.as_ref(ctx).is_fullscreen()
-                                    {
-                                        me.update_agent_view_back_button_state(ctx);
-                                        me.update_agent_view_pane_header(ctx);
-                                    }
+                                    // strip(neuter): AgentView is gated off in this fork.
                                 },
                             );
                         }
@@ -10551,12 +10453,7 @@ impl TerminalView {
                     self.set_current_state(terminal_view_state, ctx);
 
                     // Update agent view back button state when command completes
-                    if FeatureFlag::AgentView.is_enabled()
-                        && self.agent_view_controller.as_ref(ctx).is_fullscreen()
-                    {
-                        self.update_agent_view_back_button_state(ctx);
-                        self.update_agent_view_pane_header(ctx);
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
 
                     let exit_code_data =
                         &json!({"exit_code": block_completed.serialized_block.as_ref().exit_code})
@@ -10954,12 +10851,7 @@ impl TerminalView {
                     self.redetermine_global_focus(ctx);
                 }
 
-                // Update agent view back button state when alt screen becomes active/inactive
-                if FeatureFlag::AgentView.is_enabled()
-                    && self.agent_view_controller.as_ref(ctx).is_fullscreen()
-                {
-                    self.update_agent_view_back_button_state(ctx);
-                }
+                // strip(neuter): AgentView is gated off in this fork.
             }
             ModelEvent::TmuxControlModeReady { .. } => {
                 self.trigger_subshell_bootstrap(None, false, ctx);
@@ -12186,21 +12078,11 @@ impl TerminalView {
             .and_then(|session| session.path().clone());
 
         // Create new conversation for init flow (this ensures we enter the agent view)
-        let Some(conversation_id) = (if FeatureFlag::AgentView.is_enabled() {
-            self.enter_agent_view_for_new_conversation(None, AgentViewEntryOrigin::SlashInit, ctx);
-            self.agent_view_controller()
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id()
-        } else {
-            Some(
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history_model, ctx| {
-                    history_model.start_new_conversation(self.view_id, false, false, ctx)
-                }),
-            )
-        }) else {
-            return;
-        };
+        // strip(neuter): AgentView is gated off in this fork.
+        let conversation_id = BlocklistAIHistoryModel::handle(ctx)
+            .update(ctx, |history_model, ctx| {
+                history_model.start_new_conversation(self.view_id, false, false, ctx)
+            });
 
         // Set fallback title since /init may have no initial query
         BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, _ctx| {
@@ -12418,15 +12300,7 @@ impl TerminalView {
             return;
         }
 
-        // If already in ambient agent mode, skip the mode selector and go
-        // directly to the environment management pane
-        if FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(ctx).is_active()
-            && self.is_ambient_agent_session(ctx)
-        {
-            self.open_environment_management_pane(ctx);
-            return;
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         // No arguments provided and not in agent view - show the mode selector modal
         // Note: We don't call close_overlays here because this action may be dispatched
@@ -12441,15 +12315,7 @@ impl TerminalView {
     }
 
     fn setup_cloud_environment(&mut self, args: Vec<String>, ctx: &mut ViewContext<Self>) {
-        if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            self.enter_agent_view_for_new_conversation(
-                None,
-                AgentViewEntryOrigin::CreateEnvironment,
-                ctx,
-            );
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         let repos = args;
         let (button_label, use_current_dir) = if !repos.is_empty() {
@@ -12558,15 +12424,7 @@ impl TerminalView {
         args: Vec<String>,
         ctx: &mut ViewContext<Self>,
     ) {
-        if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            self.enter_agent_view_for_new_conversation(
-                None,
-                AgentViewEntryOrigin::CreateEnvironment,
-                ctx,
-            );
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         let repos = args;
 
@@ -12797,17 +12655,10 @@ impl TerminalView {
                 // We explicitly override any Shell lock so this always routes to AI.
                 let prompt = callout_view.as_ref(ctx).prompt_string(ctx);
 
-                if FeatureFlag::AgentView.is_enabled() {
-                    self.enter_agent_view_for_new_conversation(
-                        Some(prompt),
-                        AgentViewEntryOrigin::OnboardingCallout,
-                        ctx,
-                    )
-                } else {
-                    self.set_ai_input_mode_with_query(Some(&prompt), ctx);
-                    self.input()
-                        .update(ctx, |input, ctx| input.input_enter(ctx));
-                }
+                // strip(neuter): AgentView is gated off in this fork.
+                self.set_ai_input_mode_with_query(Some(&prompt), ctx);
+                self.input()
+                    .update(ctx, |input, ctx| input.input_enter(ctx));
 
                 self.onboarding_callout_view = None;
                 ctx.emit(Event::OnboardingTutorialCompleted);
@@ -17617,9 +17468,8 @@ impl TerminalView {
         // In Agent Mode, block selection is used to attach blocks as context. To allow users to
         // submit queries quickly, we don't want to divert the focus away from the input box. With
         // AgentView enabled, blocks can be attached as context in terminal mode too.
-        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
-            && !FeatureFlag::AgentView.is_enabled()
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled() {
             self.focus_terminal(ctx);
         }
 
@@ -17929,9 +17779,8 @@ impl TerminalView {
         // When `FeatureFlag::AgentView` is enabled, blocks are attachable as AI context in terminal
         // mode. Selections are preserved so they can be attached to the query when entering the
         // agent view.
-        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
-            && !FeatureFlag::AgentView.is_enabled()
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled() {
             self.clear_selected_blocks(ctx);
             self.clear_selected_text(ctx);
         }
@@ -17956,9 +17805,8 @@ impl TerminalView {
         // When `FeatureFlag::AgentView` is enabled, blocks are attachable as AI context in terminal
         // mode. Selections are preserved so they can be attached to the query when entering the
         // agent view.
-        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
-            && !FeatureFlag::AgentView.is_enabled()
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled() {
             self.clear_selected_blocks(ctx);
             self.clear_selected_text(ctx);
         }
@@ -17972,9 +17820,8 @@ impl TerminalView {
         // When `FeatureFlag::AgentView` is enabled, blocks are attachable as AI context in terminal
         // mode. Selections are preserved so they can be attached to the query when entering the
         // agent view.
-        if !self.ai_render_context.borrow().is_ai_input_enabled
-            && !FeatureFlag::AgentView.is_enabled()
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if !self.ai_render_context.borrow().is_ai_input_enabled {
             self.clear_selected_blocks(ctx);
         }
 
@@ -18428,22 +18275,11 @@ impl TerminalView {
     }
 
     /// Returns whether the last block in the currently visible conversation is an `InitStepBlock`.
-    fn is_last_block_init_step(&self, ctx: &AppContext) -> bool {
-        let last_visible_block = if FeatureFlag::AgentView.is_enabled() {
-            let visible_conversation_id = self
-                .agent_view_controller
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id();
-            self.rich_content_views
-                .iter()
-                .rev()
-                .find(|rc| rc.agent_view_conversation_id() == visible_conversation_id)
-        } else {
-            self.rich_content_views.last()
-        };
-
-        last_visible_block.is_some_and(|rc| rc.is_init_step())
+    fn is_last_block_init_step(&self, _ctx: &AppContext) -> bool {
+        // strip(neuter): AgentView is gated off in this fork.
+        self.rich_content_views
+            .last()
+            .is_some_and(|rc| rc.is_init_step())
     }
 
     /// Returns the last block's `InitEnvironmentBlock` if it is uncompleted, scoped to the
@@ -18452,19 +18288,8 @@ impl TerminalView {
         &self,
         ctx: &AppContext,
     ) -> Option<&ViewHandle<InitEnvironmentBlock>> {
-        let last_visible_block = if FeatureFlag::AgentView.is_enabled() {
-            let visible_conversation_id = self
-                .agent_view_controller
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id();
-            self.rich_content_views
-                .iter()
-                .rev()
-                .find(|rc| rc.agent_view_conversation_id() == visible_conversation_id)
-        } else {
-            self.rich_content_views.last()
-        }?;
+        // strip(neuter): AgentView is gated off in this fork.
+        let last_visible_block = self.rich_content_views.last()?;
 
         if let Some(RichContentMetadata::InitEnvironment { block_handle }) =
             last_visible_block.metadata()
@@ -18503,21 +18328,11 @@ impl TerminalView {
         &self,
         ctx: &AppContext,
     ) -> Option<&ViewHandle<EnvVarCollectionBlock>> {
-        if FeatureFlag::AgentView.is_enabled() {
-            let visible_conversation_id = self
-                .agent_view_controller
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id();
-            let last_visible_block = self
-                .rich_content_views
-                .iter()
-                .rev()
-                .find(|rc| rc.agent_view_conversation_id() == visible_conversation_id)?;
-
+        // strip(neuter): AgentView is gated off in this fork.
+        self.rich_content_views.iter().find_map(|rich_content| {
             if let Some(RichContentMetadata::EnvVarCollectionBlock {
                 env_var_collection_block_handle,
-            }) = last_visible_block.metadata()
+            }) = rich_content.metadata()
             {
                 return (!env_var_collection_block_handle
                     .as_ref(ctx)
@@ -18525,20 +18340,7 @@ impl TerminalView {
                 .then_some(env_var_collection_block_handle);
             }
             None
-        } else {
-            self.rich_content_views.iter().find_map(|rich_content| {
-                if let Some(RichContentMetadata::EnvVarCollectionBlock {
-                    env_var_collection_block_handle,
-                }) = rich_content.metadata()
-                {
-                    return (!env_var_collection_block_handle
-                        .as_ref(ctx)
-                        .is_block_completed())
-                    .then_some(env_var_collection_block_handle);
-                }
-                None
-            })
-        }
+        })
     }
 
     /// Examines the local state of the [`TerminalView`] and chooses where best to assign focus.
@@ -18602,9 +18404,9 @@ impl TerminalView {
             //
             // In the new modality, block selection always represents context attachment and the
             // input should remain focused.
-            let has_block_or_text_selection_in_shell_mode = is_shell_mode
-                && !FeatureFlag::AgentView.is_enabled()
-                && (are_blocks_selected || is_text_selected);
+            // strip(neuter): AgentView is gated off in this fork.
+            let has_block_or_text_selection_in_shell_mode =
+                is_shell_mode && (are_blocks_selected || is_text_selected);
 
             has_active_user_terminal_command || has_block_or_text_selection_in_shell_mode
         };
@@ -19176,41 +18978,7 @@ impl TerminalView {
                     self.close_cli_agent_rich_input_and_disable_auto_toggle(ctx);
                     return;
                 }
-                if FeatureFlag::AgentView.is_enabled()
-                    && self.agent_view_controller.as_ref(ctx).is_active()
-                {
-                    // Disable escape completely for ambient agents without a parent terminal.
-                    if self.can_exit_agent_view_for_terminal_view(ctx).is_err() {
-                        return;
-                    }
-
-                    let is_long_running = self
-                        .model
-                        .lock()
-                        .block_list()
-                        .active_block()
-                        .is_active_and_long_running();
-                    if is_long_running && self.can_pop_nested_cloud_agent_view(ctx) {
-                        self.exit_agent_view(ctx);
-                    } else if !is_long_running {
-                        // During first-time setup, always exit directly without confirmation
-                        // since the setup overlay would obscure any confirmation dialog.
-                        let is_in_setup = self
-                            .ambient_agent_view_model
-                            .as_ref()
-                            .is_some_and(|model| model.as_ref(ctx).is_in_setup());
-                        if !is_in_setup && !self.input.as_ref(ctx).buffer_text(ctx).is_empty() {
-                            self.agent_view_controller.update(ctx, |session, ctx| {
-                                session.exit_agent_view_with_required_confirmation(
-                                    ExitConfirmationTrigger::Escape,
-                                    ctx,
-                                );
-                            });
-                        } else {
-                            self.exit_agent_view(ctx);
-                        }
-                    }
-                }
+                // strip(neuter): AgentView is gated off in this fork.
 
                 // Ignore any passive blocks on escape.
                 self.clear_prompt_suggestions(ctx);
@@ -19224,13 +18992,7 @@ impl TerminalView {
                 {
                     self.tag_out_agent_for_user_long_running_command(ctx);
 
-                    if FeatureFlag::AgentView.is_enabled()
-                        && self.agent_view_controller.as_ref(ctx).is_inline()
-                    {
-                        self.agent_view_controller.update(ctx, |controller, ctx| {
-                            controller.exit_agent_view(ctx);
-                        });
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
                 }
 
                 ctx.emit(Event::Escape)
@@ -19247,31 +19009,8 @@ impl TerminalView {
                     button_bar.update_input_empty_state(*is_empty, ctx);
                 });
 
-                // When AgentView is enabled and the buffer is cleared, reset the input type
-                // based on whether there's an active agent view.
-                if FeatureFlag::AgentView.is_enabled()
-                    && *is_empty
-                    && self
-                        .ai_input_model
-                        .as_ref(ctx)
-                        .should_run_input_autodetection(ctx)
-                {
-                    let is_agent_view_active = self.agent_view_controller.as_ref(ctx).is_active();
-                    let input_type = match reason {
-                        InputEmptyStateChangeReason::UserCommandCompleted => InputType::Shell,
-                        InputEmptyStateChangeReason::Edited => {
-                            if is_agent_view_active {
-                                InputType::AI
-                            } else {
-                                InputType::Shell
-                            }
-                        }
-                    };
-
-                    self.ai_input_model.update(ctx, |model, ctx| {
-                        model.enable_autodetection(input_type, ctx);
-                    });
-                }
+                // strip(neuter): AgentView is gated off in this fork.
+                let _ = (is_empty, reason);
             }
             InputEvent::SyncInput(input) => {
                 if !SyncedInputState::as_ref(ctx).is_syncing_any_inputs(ctx.window_id()) {
@@ -19549,12 +19288,9 @@ impl TerminalView {
                     return false;
                 }
                 _ => {
-                    if FeatureFlag::AgentView.is_enabled() && is_hidden {
-                        cursor.prev();
-                        continue;
-                    } else {
-                        return false;
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
+                    let _ = is_hidden;
+                    return false;
                 }
             }
         }
@@ -20384,29 +20120,17 @@ impl TerminalView {
             review_comments,
         };
 
-        if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            self.enter_agent_view_for_new_conversation(
-                None,
-                AgentViewEntryOrigin::InlineCodeReview,
+        // strip(neuter): AgentView is gated off in this fork.
+        self.ai_input_model.update(ctx, |input_model, ctx| {
+            input_model.set_input_config(
+                input_model
+                    .input_config()
+                    .with_input_type(InputType::AI)
+                    .unlocked_if_autodetection_enabled(false, ctx),
+                true,
                 ctx,
             );
-        } else {
-            // In general, user has expressed intent to "enter agent mode" by sending the inline review.
-            // When NLD is on, this means unlocking any status locks similar to other agent mode queries.
-            // When NLD is off, we override the input mode to AI.
-            self.ai_input_model.update(ctx, |input_model, ctx| {
-                input_model.set_input_config(
-                    input_model
-                        .input_config()
-                        .with_input_type(InputType::AI)
-                        .unlocked_if_autodetection_enabled(false, ctx),
-                    true,
-                    ctx,
-                );
-            });
-        }
+        });
 
         self.ai_controller.update(ctx, |controller, ctx| {
             // Send the code review request to the AI controller and return the result
@@ -24146,21 +23870,7 @@ impl TypedActionView for TerminalView {
                     .active_block()
                     .is_eligible_to_tag_in_agent()
                 {
-                    if FeatureFlag::AgentView.is_enabled() {
-                        self.agent_view_controller.update(ctx, |controller, ctx| {
-                            if !controller.is_inline() {
-                                if let Err(e) = controller.try_enter_inline_agent_view(
-                                    None,
-                                    AgentViewEntryOrigin::LongRunningCommand,
-                                    ctx,
-                                ) {
-                                    log::error!(
-                                        "Failed to enter inline agent view for tag-in: {e}"
-                                    );
-                                }
-                            }
-                        });
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
                     self.tag_in_agent_for_user_long_running_command(ctx);
                 } else {
                     self.input.update(ctx, |input, ctx| {
@@ -24195,13 +23905,7 @@ impl TypedActionView for TerminalView {
                 {
                     self.tag_out_agent_for_user_long_running_command(ctx);
 
-                    if FeatureFlag::AgentView.is_enabled()
-                        && self.agent_view_controller.as_ref(ctx).is_inline()
-                    {
-                        self.agent_view_controller.update(ctx, |controller, ctx| {
-                            controller.exit_agent_view(ctx);
-                        });
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
                 } else {
                     self.input.update(ctx, |input, ctx| {
                         input.set_input_mode_terminal(true, ctx);
@@ -24308,30 +24012,17 @@ impl TypedActionView for TerminalView {
                 self.anonymous_user_ai_sign_up_banner_action(*action, ctx);
             }
             ResumeConversation => {
-                // With Agent View, we want to resume the conversation the user is currently viewing,
-                // not necessarily the most recently created one.
-                let conversation_id = if FeatureFlag::AgentView.is_enabled() {
-                    self.agent_view_controller
-                        .as_ref(ctx)
-                        .agent_view_state()
-                        .active_conversation_id()
-                } else {
-                    BlocklistAIHistoryModel::as_ref(ctx).last_conversation_id(self.id())
-                };
+                // strip(neuter): AgentView is gated off in this fork.
+                let conversation_id =
+                    BlocklistAIHistoryModel::as_ref(ctx).last_conversation_id(self.id());
                 if let Some(conversation_id) = conversation_id {
                     self.handle_resume_conversation(&conversation_id, ctx)
                 }
             }
             ForkConversationFromLastKnownGoodState => {
-                let active_conversation = if FeatureFlag::AgentView.is_enabled() {
-                    self.agent_view_controller
-                        .as_ref(ctx)
-                        .agent_view_state()
-                        .active_conversation_id()
-                        .and_then(|id| BlocklistAIHistoryModel::as_ref(ctx).conversation(&id))
-                } else {
-                    BlocklistAIHistoryModel::as_ref(ctx).active_conversation(self.id())
-                };
+                // strip(neuter): AgentView is gated off in this fork.
+                let active_conversation =
+                    BlocklistAIHistoryModel::as_ref(ctx).active_conversation(self.id());
                 if let Some(active_conversation) = active_conversation {
                     let conversation_id = active_conversation.id();
                     let exchange_id = {
@@ -24679,14 +24370,8 @@ impl View for TerminalView {
         let model = self.model.lock();
         let ambient_agent_task_id_for_details_panel =
             self.ambient_agent_task_id_for_details_panel_from_model(&model, app);
-        let input_mode = if FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_fullscreen()
-        {
-            // When in agent view, layout is always pin to bottom.
-            InputMode::PinnedToBottom
-        } else {
-            *InputModeSettings::as_ref(app).input_mode.value()
-        };
+        // strip(neuter): AgentView is gated off in this fork.
+        let input_mode = *InputModeSettings::as_ref(app).input_mode.value();
         let viewport = self.viewport_state(model.block_list(), input_mode, app);
         let is_alt_screen_active = { model.is_alt_screen_active() };
         // Compute callout positioning early while we have the model lock.
@@ -25081,8 +24766,6 @@ impl View for TerminalView {
                 .input
                 .as_ref(app)
                 .should_show_universal_developer_input(app)
-            && !(FeatureFlag::AgentView.is_enabled()
-                && self.agent_view_controller.as_ref(app).is_fullscreen())
         {
             let positioning = match input_mode {
                 InputMode::PinnedToBottom | InputMode::Waterfall => {
@@ -25151,13 +24834,8 @@ impl View for TerminalView {
             Container::new(element)
                 .with_foreground_overlay(appearance.theme().accent_overlay())
                 .finish()
-        } else if FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_fullscreen()
-        {
-            Container::new(element)
-                .with_foreground_overlay(agent_view_bg_fill(app))
-                .finish()
         } else {
+            // strip(neuter): AgentView is gated off in this fork.
             element
         };
 
@@ -25289,15 +24967,7 @@ impl View for TerminalView {
             }
         }
 
-        if FeatureFlag::AgentView.is_enabled() {
-            context.set.insert(flags::AGENT_VIEW_ENABLED);
-            let agent_view_state = self.agent_view_controller.as_ref(app).agent_view_state();
-            if agent_view_state.is_fullscreen() {
-                context.set.insert(flags::ACTIVE_AGENT_VIEW);
-            } else if agent_view_state.is_inline() {
-                context.set.insert(flags::ACTIVE_INLINE_AGENT_VIEW);
-            }
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         if self.is_ambient_agent_session(app) && !self.is_nested_cloud_mode(app) {
             context.set.insert(init::ROOT_CLOUD_MODE_PANE_KEY);
@@ -25355,15 +25025,9 @@ impl View for TerminalView {
             context.set.insert("InsideRepository");
         }
 
-        let active_conversation = if FeatureFlag::AgentView.is_enabled() {
-            self.agent_view_controller
-                .as_ref(app)
-                .agent_view_state()
-                .active_conversation_id()
-                .and_then(|id| BlocklistAIHistoryModel::as_ref(app).conversation(&id))
-        } else {
-            BlocklistAIHistoryModel::as_ref(app).active_conversation(self.id())
-        };
+        // strip(neuter): AgentView is gated off in this fork.
+        let active_conversation =
+            BlocklistAIHistoryModel::as_ref(app).active_conversation(self.id());
         // strip(neuter): AIResumeButton is gated off in this fork.
         if active_conversation
             .as_ref()
