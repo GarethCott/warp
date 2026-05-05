@@ -65,6 +65,7 @@ impl AgentViewDisplayMode {
 pub const ENTER_OR_EXIT_CONFIRMATION_WINDOW: Duration = Duration::from_secs(1);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub(crate) enum ExitConfirmationTrigger {
     Escape,
     CtrlC,
@@ -352,6 +353,7 @@ pub struct AgentViewController {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 enum ExitConfirmationRequirement {
     /// Unconditionally require confirmation.
     Required,
@@ -800,6 +802,7 @@ impl AgentViewController {
     ///
     /// If there is an active confirmation 'window', exits the view, else starts a confirmation
     /// 'window' for exit to be attempted again, in which case exit will occur.
+    #[allow(dead_code)]
     pub(crate) fn exit_agent_view_with_required_confirmation(
         &mut self,
         trigger: ExitConfirmationTrigger,
