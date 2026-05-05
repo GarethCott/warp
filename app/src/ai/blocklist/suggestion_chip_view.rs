@@ -107,6 +107,7 @@ impl ActionButtonTheme for SuggestionDismissButtonTheme {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum SuggestedChipViewEvent {
     ShowSuggestedRuleDialog {
         rule_and_id: SuggestedRuleAndId,
@@ -128,6 +129,7 @@ pub enum SuggestedViewAction {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 enum Suggestion {
     Rule {
         rule: SuggestedRule,
@@ -193,6 +195,7 @@ pub struct SuggestionChipView {
 }
 
 impl SuggestionChipView {
+    #[allow(dead_code)]
     pub fn new_rule_chip(rule: SuggestedRule, ctx: &mut ViewContext<Self>) -> Self {
         Self::listen_for_warp_drive_events(ctx);
 
@@ -248,6 +251,7 @@ impl SuggestionChipView {
         me
     }
 
+    #[allow(dead_code)]
     pub fn logging_id(&self) -> SuggestedLoggingId {
         match &self.suggestion {
             Suggestion::Rule { rule, .. } => rule.logging_id.clone(),
