@@ -16,7 +16,6 @@ use crate::ai::{
 use super::agent_view::{AgentViewController, AgentViewEntryOrigin, EnterAgentViewError};
 use ai::project_context::model::ProjectContextModel;
 use parking_lot::FairMutex;
-use warp_core::features::FeatureFlag;
 use warpui::{AppContext, Entity, EntityId, ModelContext, ModelHandle, SingletonEntity};
 
 use crate::ai::agent::conversation::{AIConversationAutoexecuteMode, ConversationStatus};
@@ -235,12 +234,8 @@ impl BlocklistAIContextModel {
 
             match event {
                 BlocklistAIHistoryEvent::ClearedConversationsInTerminalView { .. } => {
+                    // strip(neuter): AgentView is gated off in this fork.
                     me.set_pending_query_state(PendingQueryState::default(), ctx);
-                    if FeatureFlag::AgentView.is_enabled() {
-                        me.agent_view_controller.update(ctx, |controller, ctx| {
-                            controller.exit_agent_view(ctx);
-                        });
-                    }
                 }
                 BlocklistAIHistoryEvent::SplitConversation {
                     new_conversation_id,
@@ -665,32 +660,20 @@ impl BlocklistAIContextModel {
         origin: AgentViewEntryOrigin,
         ctx: &mut ModelContext<Self>,
     ) {
+        // strip(neuter): AgentView is gated off in this fork.
+        let _ = origin;
         self.set_pending_query_state(PendingQueryState::Existing { conversation_id }, ctx);
-        if FeatureFlag::AgentView.is_enabled() {
-            if let Err(e) = self.agent_view_controller.update(ctx, |controller, ctx| {
-                controller.try_enter_agent_view(Some(conversation_id), origin, ctx)
-            }) {
-                log::error!("Failed to enter agent view for existing conversation: {e}");
-            }
-        }
     }
 
     /// Sets the pending query state to the defaults for a *new* conversation (i.e. not a
     /// followup).
     pub fn set_pending_query_state_for_new_conversation(
         &mut self,
-        origin: AgentViewEntryOrigin,
+        _origin: AgentViewEntryOrigin,
         ctx: &mut ModelContext<Self>,
     ) {
+        // strip(neuter): AgentView is gated off in this fork.
         self.set_pending_query_state(PendingQueryState::default(), ctx);
-
-        if FeatureFlag::AgentView.is_enabled() {
-            if let Err(e) = self.agent_view_controller.update(ctx, |controller, ctx| {
-                controller.try_enter_agent_view(None, origin, ctx)
-            }) {
-                log::error!("Failed to enter agent view for new conversation: {e}");
-            }
-        }
     }
 
     /// Attempts to enter agent view for a new conversation and returns the conversation ID.
@@ -720,31 +703,18 @@ impl BlocklistAIContextModel {
 
     /// Returns `true` if a new conversation may be created.
     pub fn can_start_new_conversation(&self) -> bool {
+        // strip(neuter): AgentView is gated off in this fork.
         let terminal_model = self.terminal_model.lock();
-        if FeatureFlag::AgentView.is_enabled() {
-            !terminal_model
-                .block_list()
-                .active_block()
-                .is_active_and_long_running()
-        } else {
-            !terminal_model
-                .block_list()
-                .active_block()
-                .is_agent_in_control()
-        }
+        !terminal_model
+            .block_list()
+            .active_block()
+            .is_agent_in_control()
     }
 
     /// Returns the conversation ID the pending query is following up for, if any.
     /// None if the pending query should start a new conversation.
-    pub fn selected_conversation_id(&self, ctx: &AppContext) -> Option<AIConversationId> {
-        if FeatureFlag::AgentView.is_enabled() {
-            return self
-                .agent_view_controller
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id();
-        }
-
+    pub fn selected_conversation_id(&self, _ctx: &AppContext) -> Option<AIConversationId> {
+        // strip(neuter): AgentView is gated off in this fork.
         match self.pending_query_state {
             PendingQueryState::Existing {
                 conversation_id, ..
@@ -804,27 +774,7 @@ impl BlocklistAIContextModel {
     }
 
     pub fn toggle_pending_query_autoexecute(&mut self, ctx: &mut ModelContext<Self>) {
-        // When AgentView is enabled, the autoexecution toggle should apply to the active agent view
-        // conversation -- even when starting a new conversation, the agent view always has a conversation
-        // ID.
-        if FeatureFlag::AgentView.is_enabled() {
-            if let Some(conversation_id) = self
-                .agent_view_controller
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id()
-            {
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.toggle_autoexecute_override(
-                        &conversation_id,
-                        self.terminal_view_id,
-                        ctx,
-                    );
-                });
-            }
-            return;
-        }
-
+        // strip(neuter): AgentView is gated off in this fork.
         match &mut self.pending_query_state {
             PendingQueryState::New {
                 autoexecute_override,
