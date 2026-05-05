@@ -374,40 +374,12 @@ impl TerminalView {
             None
         };
 
-        let mut left_of_overflow = self.render_shared_session_header_content(app);
+        let left_of_overflow = self.render_shared_session_header_content(app);
 
         let mut icon_button_count: u32 = 0;
 
-        if FeatureFlag::CloudMode.is_enabled() {
-            let is_waiting_for_session = self
-                .ambient_agent_view_model
-                .as_ref()
-                .is_some_and(|model| model.as_ref(app).is_waiting_for_session());
-            let button_element = if is_waiting_for_session {
-                Some(self.render_ambient_agent_cancel_button(app))
-            } else if self.can_show_cloud_mode_details_ui(app) {
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    Some(self.render_cloud_mode_details_toggle_button(app))
-                }
-                #[cfg(target_arch = "wasm32")]
-                {
-                    None
-                }
-            } else {
-                None
-            };
-
-            if let Some(button) = button_element {
-                icon_button_count += 1;
-                if let Some(existing) = left_of_overflow {
-                    left_of_overflow =
-                        Some(Flex::row().with_child(existing).with_child(button).finish());
-                } else {
-                    left_of_overflow = Some(button);
-                }
-            }
-        }
+        // strip(neuter): CloudMode is gated off in this fork; cloud-mode
+        // pane header controls are unreachable.
 
         let mut right_row = Flex::row()
             .with_cross_axis_alignment(CrossAxisAlignment::Center)
@@ -703,6 +675,7 @@ impl BackingView for TerminalView {
 
 impl TerminalView {
     /// Render the cancel button for cancelling the ambient agent task while it's loading.
+    #[allow(dead_code)]
     fn render_ambient_agent_cancel_button(&self, app: &AppContext) -> Box<dyn Element> {
         let appearance = Appearance::as_ref(app);
         let theme = appearance.theme();
@@ -728,6 +701,7 @@ impl TerminalView {
     /// Render the info button for toggling the cloud mode details panel.
     /// Only available on non-WASM platforms (WASM uses a per-window button instead).
     #[cfg(not(target_arch = "wasm32"))]
+    #[allow(dead_code)]
     fn render_cloud_mode_details_toggle_button(&self, app: &AppContext) -> Box<dyn Element> {
         let appearance = Appearance::as_ref(app);
         let theme = appearance.theme();
@@ -953,12 +927,9 @@ impl TerminalView {
         ))
     }
 
-    pub fn is_ambient_agent_session(&self, ctx: &AppContext) -> bool {
-        FeatureFlag::CloudMode.is_enabled()
-            && self
-                .ambient_agent_view_model
-                .as_ref()
-                .is_some_and(|model| model.as_ref(ctx).is_ambient_agent())
+    pub fn is_ambient_agent_session(&self, _ctx: &AppContext) -> bool {
+        // strip(neuter): CloudMode is gated off in this fork.
+        false
     }
 
     fn selected_conversation_for_user_facing_chrome<'a>(

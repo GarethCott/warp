@@ -2,12 +2,12 @@ use crate::server::ids::ServerId;
 use serde::Serialize;
 use serde_json::{json, Value};
 use strum_macros::{EnumDiscriminants, EnumIter};
-use warp_core::features::FeatureFlag;
 use warp_core::telemetry::{EnablementState, TelemetryEvent, TelemetryEventDesc};
 
 /// The entry point through which Cloud Mode was entered.
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum CloudModeEntryPoint {
     /// User clicked "New Cloud Agent Tab" or similar action to create a dedicated Cloud Mode tab.
     NewTab,
@@ -174,7 +174,7 @@ impl TelemetryEventDesc for CloudAgentTelemetryEventDiscriminants {
     }
 
     fn enablement_state(&self) -> EnablementState {
-        EnablementState::Flag(FeatureFlag::CloudMode)
+        EnablementState::Always
     }
 }
 

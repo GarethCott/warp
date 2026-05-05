@@ -78,9 +78,7 @@ use super::CLIAgent;
 #[cfg(feature = "local_fs")]
 use crate::ai::agent::{CurrentHead, DiffBase};
 use crate::ai::agent_conversations_model::{AgentConversationsModel, AgentConversationsModelEvent};
-use crate::ai::ambient_agents::{
-    conversation_output_status_from_conversation, AmbientAgentTaskId, AmbientConversationStatus,
-};
+use crate::ai::ambient_agents::{conversation_output_status_from_conversation, AmbientAgentTaskId};
 use crate::ai::blocklist::block::cli::{CLISubagentView, CLISubagentViewEvent};
 use crate::ai::blocklist::block::cli_controller::{
     CLISubagentController, CLISubagentEvent, UserTakeOverReason,
@@ -2716,8 +2714,10 @@ pub struct TerminalView {
     /// Mouse state handle for the cloud mode details panel toggle button in the pane header.
     /// Only available on non-WASM platforms (WASM uses a per-window button instead).
     #[cfg(not(target_arch = "wasm32"))]
+    #[allow(dead_code)]
     cloud_mode_details_panel_toggle_mouse_state: warpui::elements::MouseStateHandle,
     /// Mouse state handle for the ambient agent cancel button in the pane header.
+    #[allow(dead_code)]
     ambient_agent_cancel_mouse_state: warpui::elements::MouseStateHandle,
 
     /// First-time cloud agent setup view (full-screen overlay for creating initial environment).
@@ -4396,6 +4396,7 @@ impl TerminalView {
         self.block_completed_callbacks.push(Box::new(callback));
     }
 
+    #[allow(dead_code)]
     fn set_pending_cloud_mode_start_callback(
         &mut self,
         callback: TerminalViewCallback,
@@ -4416,6 +4417,7 @@ impl TerminalView {
         ));
     }
 
+    #[allow(dead_code)]
     fn clear_pending_cloud_mode_start_callback(&mut self) {
         if let Some(handle) = self.pending_cloud_mode_start_abort_handle.take() {
             handle.abort();
@@ -5280,24 +5282,9 @@ impl TerminalView {
 
                 self.maybe_send_agent_mode_desktop_notification(conversation_id, ctx);
 
-                // Show AI credits modal for cloud-mode out-of-credits failures.
-                if FeatureFlag::CloudMode.is_enabled()
-                    && self.is_ambient_agent_session(ctx)
-                    && !self.model.lock().is_shared_ambient_agent_session()
-                {
-                    if let Some(conversation) =
-                        BlocklistAIHistoryModel::as_ref(ctx).conversation(conversation_id)
-                    {
-                        if matches!(
-                            conversation_output_status_from_conversation(conversation),
-                            Some(AmbientConversationStatus::Error {
-                                error: RenderableAIError::QuotaLimit
-                            })
-                        ) {
-                            self.show_out_of_credits_modal(ctx);
-                        }
-                    }
-                }
+                // strip(neuter): CloudMode is gated off in this fork; the
+                // out-of-credits modal for cloud agent quota errors is
+                // unreachable.
 
                 // For conversation transcript viewers (on WASM) and shared ambient sessions on
                 // non-CloudModeSetupV2 paths, insert a conversation-ended tombstone when the
@@ -6605,10 +6592,12 @@ impl TerminalView {
         self.ambient_agent_task_id_for_details_panel_from_model(&model, app)
     }
 
-    fn can_show_cloud_mode_details_ui_for_task_id(task_id: Option<AmbientAgentTaskId>) -> bool {
-        FeatureFlag::CloudMode.is_enabled() && task_id.is_some()
+    fn can_show_cloud_mode_details_ui_for_task_id(_task_id: Option<AmbientAgentTaskId>) -> bool {
+        // strip(neuter): CloudMode is gated off in this fork.
+        false
     }
 
+    #[allow(dead_code)]
     fn can_show_cloud_mode_details_ui(&self, app: &AppContext) -> bool {
         Self::can_show_cloud_mode_details_ui_for_task_id(
             self.ambient_agent_task_id_for_details_panel(app),
@@ -19496,25 +19485,10 @@ impl TerminalView {
 
     pub(crate) fn enter_ambient_agent_setup(
         &mut self,
-        initial_prompt: Option<String>,
-        ctx: &mut ViewContext<Self>,
+        _initial_prompt: Option<String>,
+        _ctx: &mut ViewContext<Self>,
     ) {
-        if !FeatureFlag::CloudMode.is_enabled()
-            || !self.model.lock().shared_session_status().is_view_pending()
-        {
-            // Ambient agent setup can only be done inside a shared session viewer; otherwise the backing terminal manager is incorrect.
-            return;
-        }
-
-        // Don't pass an initial prompt, which auto-sends the request.
-        self.enter_agent_view_for_new_conversation(None, AgentViewEntryOrigin::CloudAgent, ctx);
-
-        if let Some(prompt) = initial_prompt {
-            self.input.update(ctx, |input, ctx| {
-                input.replace_buffer_content(&prompt, ctx);
-            });
-        }
-        self.focus_input_box(ctx);
+        // strip(neuter): CloudMode is gated off in this fork.
     }
 
     fn last_visible_item_is_agent_view_block_for_conversation(

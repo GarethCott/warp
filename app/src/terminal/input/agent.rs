@@ -64,12 +64,9 @@ const CLOUD_MODE_V2_HORIZONTAL_GUTTER: f32 = 16.;
 const CLOUD_MODE_V2_CHIPS_ROW_TOP_PADDING: f32 = 4.;
 
 impl Input {
-    pub fn is_cloud_mode_input_v2_composing(&self, app: &AppContext) -> bool {
-        FeatureFlag::CloudModeInputV2.is_enabled()
-            && FeatureFlag::CloudMode.is_enabled()
-            && self
-                .ambient_agent_view_model()
-                .is_some_and(|model| model.as_ref(app).is_configuring_ambient_agent())
+    pub fn is_cloud_mode_input_v2_composing(&self, _app: &AppContext) -> bool {
+        // strip(neuter): CloudMode is gated off in this fork.
+        false
     }
 
     /// Renders the input when there is an active `AgentView`.
@@ -603,6 +600,7 @@ impl Input {
             .finish()
     }
 
+    #[allow(dead_code)]
     pub(super) fn render_ambient_agent_status_footer(&self, app: &AppContext) -> Box<dyn Element> {
         let Some(ambient_agent_model) = self.ambient_agent_view_model() else {
             return Empty::new().finish();
