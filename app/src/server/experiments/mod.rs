@@ -88,9 +88,7 @@ impl ServerExperiment {
             Self::EnvVarsEarlyAccessExperiment => {
                 // EnvVars is now always enabled; no-op.
             }
-            Self::AgentModeAnalyticsExperiment => {
-                FeatureFlag::SuggestedRules.set_enabled(true);
-            }
+            Self::AgentModeAnalyticsExperiment => {}
             Self::WindowsLaunchExperiment => {
                 // TODO(alokedesai): Clean this up now that we no longer gate access to the Windows
                 // build on an allowlist.

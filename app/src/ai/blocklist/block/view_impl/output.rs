@@ -168,8 +168,11 @@ pub(crate) struct Props<'a> {
     pub(crate) find_context: Option<FindContext<'a>>,
     pub(super) is_references_section_open: bool,
     pub(super) autonomy_setting_speedbump: &'a AutonomySettingSpeedbump,
+    #[allow(dead_code)]
     pub(super) suggested_rules: &'a Vec<ViewHandle<SuggestionChipView>>,
+    #[allow(dead_code)]
     pub(super) suggested_agent_mode_workflow: &'a Option<ViewHandle<SuggestionChipView>>,
+    #[allow(dead_code)]
     pub(super) manage_rules_button: &'a ViewHandle<ActionButton>,
     pub(super) keyboard_navigable_buttons: Option<&'a ViewHandle<KeyboardNavigableButtons>>,
     pub(super) response_rating: &'a OnceCell<AIBlockResponseRating>,
@@ -179,7 +182,9 @@ pub(crate) struct Props<'a> {
     pub(super) web_fetch_views: &'a HashMap<MessageId, ViewHandle<WebFetchView>>,
     pub(super) review_changes_button: &'a ViewHandle<ActionButton>,
     pub(super) open_all_comments_button: &'a ViewHandle<ActionButton>,
+    #[allow(dead_code)]
     pub(super) dismiss_suggestion_button: &'a ViewHandle<ActionButton>,
+    #[allow(dead_code)]
     pub(super) disable_rule_suggestions_button: &'a ViewHandle<ActionButton>,
     pub(super) current_todo_list: Option<&'a AIAgentTodoList>,
     pub(super) has_accepted_edits: bool,
@@ -993,13 +998,8 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                     }
                 }
 
-                // Only render suggested rules and prompts if the response is complete.
-                if should_render_suggestions && FeatureFlag::SuggestedRules.is_enabled() {
-                    if let Some(suggestions) = render_suggested_rules_and_prompts_footer(props, app)
-                    {
-                        output_items.add_child(suggestions);
-                    }
-                }
+                // strip(neuter): SuggestedRules is gated off in this fork.
+                let _ = should_render_suggestions;
 
                 if should_render_references_section {
                     if let Some(references) =
@@ -2836,6 +2836,7 @@ fn render_references_footer(
 }
 
 /// Renders the suggested rules footer at the bottom of the block.
+#[allow(dead_code)]
 fn render_suggested_rules_and_prompts_footer(
     props: Props,
     app: &AppContext,
