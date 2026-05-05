@@ -1116,10 +1116,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
 }
 
 fn should_render_stopped_output(props: Props, app: &AppContext) -> bool {
-    if FeatureFlag::AgentView.is_enabled() {
-        return false;
-    }
-
+    // strip(neuter): AgentView is gated off in this fork.
     let request_type = props.model.request_type(app);
     if request_type.is_passive_code_diff() {
         return false;
@@ -3059,7 +3056,8 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
         );
     }
 
-    if !props.shared_session_status.is_finished_viewer() && !FeatureFlag::AgentView.is_enabled() {
+    // strip(neuter): AgentView is gated off in this fork.
+    if !props.shared_session_status.is_finished_viewer() {
         let ui_builder = appearance.ui_builder().clone();
         let continue_button = icon_button(
             appearance,

@@ -2593,13 +2593,7 @@ impl FeaturesPageView {
             editor_widgets.push(Box::new(AtContextMenuInTerminalModeWidget::default()));
         }
 
-        if FeatureFlag::AgentView.is_enabled()
-            && input_settings
-                .enable_slash_commands_in_terminal
-                .is_supported_on_current_platform()
-        {
-            editor_widgets.push(Box::new(SlashCommandsInTerminalModeWidget::default()));
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         editor_widgets.push(Box::new(TabKeyBehaviorWidget::default()));
 
@@ -5892,6 +5886,7 @@ impl SettingsWidget for AtContextMenuInTerminalModeWidget {
 }
 
 #[derive(Default)]
+#[allow(dead_code)]
 struct SlashCommandsInTerminalModeWidget {
     switch_state: SwitchStateHandle,
 }

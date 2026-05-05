@@ -1121,13 +1121,11 @@ impl View for BlocklistAIStatusBar {
 
         let appearance = Appearance::as_ref(app);
         let theme = appearance.theme();
+        // strip(neuter): AgentView is gated off in this fork.
         let background = if agent_view_controller.is_inline() {
             agent_view_bg_fill(app)
-        } else if InputSettings::as_ref(app).is_universal_developer_input_enabled(app)
-            || FeatureFlag::AgentView.is_enabled()
-        {
-            // Use a fully transparent background for universal developer input (or unconditionally, if the new
-            // modality is enabled)
+        } else if InputSettings::as_ref(app).is_universal_developer_input_enabled(app) {
+            // Use a fully transparent background for universal developer input
             Fill::Solid(ColorU::transparent_black())
         } else {
             theme.ai_blocks_overlay()
@@ -1147,8 +1145,8 @@ impl View for BlocklistAIStatusBar {
                 self.context_model.as_ref(app).selected_conversation_id(app) == Some(id)
             });
 
-        if !FeatureFlag::AgentView.is_enabled()
-            && self.input_model.as_ref(app).is_ai_input_enabled()
+        // strip(neuter): AgentView is gated off in this fork.
+        if self.input_model.as_ref(app).is_ai_input_enabled()
             && !is_passive_code_diff
             && is_active_exchange_in_selected_conversation
             && !self.terminal_model.lock().is_alt_screen_active()
@@ -1164,7 +1162,8 @@ impl View for BlocklistAIStatusBar {
 
         let is_input_pinned_to_top = InputModeSettings::as_ref(app).is_pinned_to_top();
         let is_udi_enabled = InputSettings::as_ref(app).is_universal_developer_input_enabled(app);
-        if !FeatureFlag::AgentView.is_enabled() && is_udi_enabled {
+        // strip(neuter): AgentView is gated off in this fork.
+        if is_udi_enabled {
             if is_input_pinned_to_top {
                 // Use 2px padding on the top, so combined with the 6px padding on the universal
                 // input it's an equal 8px on both sides.

@@ -534,12 +534,7 @@ pub fn render_orchestration_breadcrumbs(
     parent_crumb_mouse_state: MouseStateHandle,
     app: &AppContext,
 ) -> Option<Box<dyn Element>> {
-    // Mirror the gating used by `maybe_add_parent_navigation_card` in
-    // `pane_impl.rs` so the breadcrumb path can't accidentally render in a
-    // non-AgentView build / state.
-    if !FeatureFlag::AgentView.is_enabled() {
-        return None;
-    }
+    // strip(neuter): AgentView is gated off in this fork.
     if !FeatureFlag::OrchestrationPillBar.is_enabled() {
         return None;
     }

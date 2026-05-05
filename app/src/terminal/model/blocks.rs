@@ -4,7 +4,7 @@ use crate::ai::agent::{conversation::AIConversationId, AIAgentActionId};
 use crate::ai::blocklist::SerializedBlockListItem;
 use crate::terminal::block_filter::BlockFilterQuery;
 
-use crate::ai::blocklist::agent_view::{AgentViewDisplayMode, AgentViewState};
+use crate::ai::blocklist::agent_view::AgentViewState;
 use crate::terminal::event::AfterBlockCompletedEvent;
 use crate::terminal::event_listener::ChannelEventListener;
 use crate::terminal::model::ansi;
@@ -35,7 +35,6 @@ use std::ops::{AddAssign, Range, RangeInclusive};
 use std::sync::Arc;
 use std::time::Duration;
 use sum_tree::{Dimension, Item, SeekBias, SumTree};
-use warp_core::features::FeatureFlag;
 use warpui::color::ColorU;
 use warpui::r#async::executor::Background;
 use warpui::record_trace_event;
@@ -111,23 +110,9 @@ impl RichContentItem {
         Self::new(content_type, view_id, agent_view_conversation_id, false)
     }
 
-    pub fn should_hide_for_agent_view_state(&self, agent_view_state: &AgentViewState) -> bool {
-        if !FeatureFlag::AgentView.is_enabled() {
-            return false;
-        }
-
-        match agent_view_state {
-            AgentViewState::Active {
-                conversation_id,
-                display_mode: AgentViewDisplayMode::FullScreen,
-                ..
-            } => Some(*conversation_id) != self.agent_view_conversation_id,
-            AgentViewState::Active {
-                display_mode: AgentViewDisplayMode::Inline,
-                ..
-            }
-            | AgentViewState::Inactive => self.agent_view_conversation_id.is_some(),
-        }
+    pub fn should_hide_for_agent_view_state(&self, _agent_view_state: &AgentViewState) -> bool {
+        // strip(neuter): AgentView is gated off in this fork.
+        false
     }
 }
 

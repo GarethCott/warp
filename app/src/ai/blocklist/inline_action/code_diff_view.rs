@@ -75,7 +75,6 @@ use crate::{
         },
         mcp::{mcp_provider_from_file_path, MCPProvider},
         paths::host_native_absolute_path,
-        predict::prompt_suggestions::ACCEPT_PROMPT_SUGGESTION_KEYBINDING,
         skills::{
             icon_override_for_skill_name, render_skill_button, skill_path_from_file_path,
             SkillManager, SkillReference,
@@ -3167,11 +3166,8 @@ impl BackingView for CodeDiffView {
 }
 
 fn accept_keystroke_source(is_passive: bool) -> KeystrokeSource {
-    if FeatureFlag::AgentView.is_enabled() && is_passive {
-        KeystrokeSource::Binding(ACCEPT_PROMPT_SUGGESTION_KEYBINDING)
-    } else {
-        KeystrokeSource::Fixed(keystroke_for_mode(ACCEPT_KEY, is_passive))
-    }
+    // strip(neuter): AgentView is gated off in this fork.
+    KeystrokeSource::Fixed(keystroke_for_mode(ACCEPT_KEY, is_passive))
 }
 
 /// Returns a keystroke based on key, OS, and passive state.

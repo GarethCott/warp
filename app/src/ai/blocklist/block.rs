@@ -919,6 +919,7 @@ pub struct AIBlock {
     /// an active agent view or not, which affects whether or not this block should be hidden).
     ///
     /// Only used when `FeatureFlag::AgentView` is enabled.
+    #[allow(dead_code)]
     agent_view_controller: ModelHandle<AgentViewController>,
 
     /// View for AWS Bedrock credentials error, created lazily when the error occurs.
@@ -1190,9 +1191,7 @@ impl AIBlock {
             }
         });
 
-        if FeatureFlag::AgentView.is_enabled() {
-            ctx.subscribe_to_model(&agent_view_controller, |_, _, _, ctx| ctx.notify());
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         ctx.subscribe_to_model(&context_model, |_, _, event, ctx| {
             if let BlocklistAIContextEvent::UpdatedPendingContext { .. } = event {
@@ -2498,30 +2497,9 @@ impl AIBlock {
         //
         // This is typically the case for the initial exchange in a conversation started for a
         // 'passive' AI feature like suggested prompts.
-        if is_for_hidden_exchange {
-            return true;
-        }
-        if !FeatureFlag::AgentView.is_enabled() {
-            return false;
-        }
-
-        if let Some(active_conversation_id) = self
-            .agent_view_controller
-            .as_ref(app)
-            .agent_view_state()
-            .active_conversation_id()
-        {
-            // If the agent view is active, only AI blocks for the active agent view conversation
-            // should be visible.
-            active_conversation_id != self.client_ids.conversation_id
-        } else {
-            // If there is no active agent view, only passive, non-hidden (we checked for if the
-            // exchange is hidden already above) exchanges are rendered.
-            //
-            // These correspond to AI blocks with a successfully received suggested code diff or
-            // unit test suggestion.
-            !self.model.request_type(app).is_passive()
-        }
+        is_for_hidden_exchange
+        // strip(neuter): AgentView is gated off in this fork; the
+        // active-conversation-filter path is unreachable.
     }
 
     pub fn is_passive_conversation(&self, app: &AppContext) -> bool {
@@ -2811,19 +2789,15 @@ impl AIBlock {
                     ctx.emit(AIBlockEvent::DismissedPassiveBlock);
                 }
                 CodeDiffViewEvent::ViewDetails => {
-                    // We only need to set the selected conversation when agent view is disabled;
-                    // when agent view is enabled, you have to enter the agent view for the code diff
-                    // conversation to follow-up in the first place, and hitting 'view details'
-                    // shouldn't auto-enter the agent view.
-                    if !FeatureFlag::AgentView.is_enabled() {
-                        me.context_model.update(ctx, |context_model, ctx| {
-                            context_model.set_pending_query_state_for_existing_conversation(
-                                me.client_ids.conversation_id,
-                                AgentViewEntryOrigin::ViewPassiveCodeDiffDetails,
-                                ctx,
-                            );
-                        });
-                    }
+                    // strip(neuter): AgentView is gated off in this fork; always
+                    // run the pending-query setup path.
+                    me.context_model.update(ctx, |context_model, ctx| {
+                        context_model.set_pending_query_state_for_existing_conversation(
+                            me.client_ids.conversation_id,
+                            AgentViewEntryOrigin::ViewPassiveCodeDiffDetails,
+                            ctx,
+                        );
+                    });
                     ctx.emit(AIBlockEvent::FocusTerminal);
                     ctx.notify();
                 }
@@ -3568,20 +3542,7 @@ impl AIBlock {
             return false;
         };
 
-        if FeatureFlag::AgentView.is_enabled()
-            && self
-                .agent_view_controller
-                .update(ctx, |controller, ctx| {
-                    controller.try_enter_agent_view(
-                        Some(self.client_ids.conversation_id),
-                        AgentViewEntryOrigin::AcceptedUnitTestSuggestion,
-                        ctx,
-                    )
-                })
-                .is_err()
-        {
-            return false;
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         let action_id = view.as_ref(ctx).action_id().clone();
 
@@ -5635,21 +5596,20 @@ impl TypedActionView for AIBlock {
                 }
 
                 let is_read_only = self.terminal_model.lock().is_read_only();
-                if FeatureFlag::AgentView.is_enabled() && !is_read_only {
-                    ctx.emit(AIBlockEvent::InsertForkSlashCommand);
-                } else {
-                    ctx.dispatch_global_action(
-                        "workspace:fork_ai_conversation",
-                        ForkAIConversationParams {
-                            conversation_id: self.client_ids.conversation_id,
-                            fork_from_exchange: None,
-                            summarize_after_fork: false,
-                            summarization_prompt: None,
-                            initial_prompt: None,
-                            destination: ForkedConversationDestination::SplitPane,
-                        },
-                    );
-                }
+                // strip(neuter): AgentView is gated off in this fork; fall
+                // through to the global fork-conversation action.
+                let _ = is_read_only;
+                ctx.dispatch_global_action(
+                    "workspace:fork_ai_conversation",
+                    ForkAIConversationParams {
+                        conversation_id: self.client_ids.conversation_id,
+                        fork_from_exchange: None,
+                        summarize_after_fork: false,
+                        summarization_prompt: None,
+                        initial_prompt: None,
+                        destination: ForkedConversationDestination::SplitPane,
+                    },
+                );
                 ctx.notify();
             }
             AIBlockAction::SelectText => {

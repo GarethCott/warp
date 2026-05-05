@@ -13,7 +13,6 @@ use crate::{
     terminal::input::MenuPositioningProvider,
 };
 use std::path::PathBuf;
-use warp_core::features::FeatureFlag;
 use warpui::{
     elements::{
         ChildView, Clipped, Container, CrossAxisAlignment, Element, Flex, MainAxisAlignment,
@@ -401,9 +400,9 @@ impl View for PromptDisplay {
     }
 
     fn render(&self, app: &AppContext) -> Box<dyn Element> {
+        // strip(neuter): AgentView is gated off in this fork.
         let should_render_udi_chips = InputSettings::as_ref(app)
-            .is_universal_developer_input_enabled(app)
-            || FeatureFlag::AgentView.is_enabled();
+            .is_universal_developer_input_enabled(app);
         let mut row = if should_render_udi_chips {
             RowBuilder::Wrap(
                 Wrap::row()

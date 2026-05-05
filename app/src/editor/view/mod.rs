@@ -8003,9 +8003,9 @@ impl EditorView {
     fn render_controls(&self, ctx: &AppContext) -> Option<Box<dyn Element>> {
         let input_settings = InputSettings::as_ref(ctx);
         let is_universal_input_enabled = input_settings.is_universal_developer_input_enabled(ctx);
-        let should_show_image = !FeatureFlag::AgentView.is_enabled()
-            && self.image_context_options.should_show_button()
-            && !is_universal_input_enabled;
+        // strip(neuter): AgentView is gated off in this fork.
+        let should_show_image =
+            self.image_context_options.should_show_button() && !is_universal_input_enabled;
 
         if !should_show_image {
             return None;
