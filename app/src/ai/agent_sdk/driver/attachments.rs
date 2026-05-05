@@ -9,7 +9,6 @@ use futures::TryStreamExt as _;
 use mime_guess::from_path;
 use tokio::fs;
 use tokio_util::io::StreamReader;
-use warp_core::features::FeatureFlag;
 
 use crate::ai::agent_sdk::retry::with_bounded_retry;
 use crate::ai::ambient_agents::task::{AttachmentInput, TaskAttachment};
@@ -56,14 +55,11 @@ pub(crate) async fn fetch_and_download_handoff_snapshot_attachments(
     task_id: AmbientAgentTaskId,
     attachments_dir: PathBuf,
 ) -> anyhow::Result<Option<String>> {
-    if !FeatureFlag::OzHandoff.is_enabled() {
-        log::error!(
-            "fetch_and_download_handoff_snapshot_attachments called with OzHandoff disabled; \
-             call sites should gate on the flag before invoking"
-        );
-        return Ok(None);
-    }
+    // strip(neuter): OzHandoff is gated off in this fork.
+    let _ = (&ai_client, http_client, &task_id, &attachments_dir);
+    return Ok(None);
 
+    #[allow(unreachable_code)]
     let attachments = ai_client
         .get_handoff_snapshot_attachments(&task_id)
         .await

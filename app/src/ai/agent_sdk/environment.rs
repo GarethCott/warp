@@ -1,3 +1,6 @@
+// strip(neuter): CloudEnvironments is gated off in this fork; the entire
+// `warp environment` command surface is dead.
+#![allow(dead_code)]
 use std::collections::HashSet;
 
 use comfy_table::Cell;

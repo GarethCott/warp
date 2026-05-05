@@ -430,11 +430,6 @@ impl AIContextMenu {
         if is_in_ambient_agent {
             let mut categories = vec![];
             if show_warp_drive {
-                if FeatureFlag::DriveObjectsAsContext.is_enabled() {
-                    categories.push(AIContextMenuCategory::Workflows);
-                    categories.push(AIContextMenuCategory::Notebooks);
-                    categories.push(AIContextMenuCategory::Plans);
-                }
                 categories.push(AIContextMenuCategory::Rules);
             }
             return categories;
@@ -453,11 +448,6 @@ impl AIContextMenu {
             }
 
             categories.push(AIContextMenuCategory::Blocks);
-            if show_warp_drive && FeatureFlag::DriveObjectsAsContext.is_enabled() {
-                categories.push(AIContextMenuCategory::Workflows);
-                categories.push(AIContextMenuCategory::Notebooks);
-                categories.push(AIContextMenuCategory::Plans);
-            }
             if FeatureFlag::DiffSetAsContext.is_enabled()
                 && is_active_dir_in_git_repo
                 && !is_shared_session_viewer

@@ -22,9 +22,7 @@ pub use skill_utils::{
 #[cfg(not(target_family = "wasm"))]
 mod resolve_skill_spec;
 #[cfg(not(target_family = "wasm"))]
-pub use resolve_skill_spec::{
-    clone_repo_for_skill, resolve_skill_spec, ResolveSkillError, ResolvedSkill,
-};
+pub use resolve_skill_spec::{ResolveSkillError, ResolvedSkill};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "local_fs")] {

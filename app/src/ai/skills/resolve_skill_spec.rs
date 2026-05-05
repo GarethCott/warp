@@ -1,5 +1,9 @@
 //! Skill resolution for agent runs.
 //!
+//! strip(neuter): OzPlatformSkills is gated off in this fork; resolve_skill
+//! never reaches this module.
+#![allow(dead_code)]
+//!
 //! This module exists primarily for `warp agent run --skill ...` (and related flows) where we need to
 //! resolve a CLI-provided `--skill` specifier (`SkillSpec`) into a concrete `SKILL.md` file and its
 //! parsed instruction body.

@@ -2447,8 +2447,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::IntegrationCommand,
         #[cfg(feature = "artifact_command")]
         FeatureFlag::ArtifactCommand,
-        #[cfg(feature = "cloud_environments")]
-        FeatureFlag::CloudEnvironments,
         #[cfg(all(feature = "simulate_github_unauthed", debug_assertions))]
         FeatureFlag::SimulateGithubUnauthed,
         #[cfg(feature = "session_sharing_acls")]
@@ -2595,8 +2593,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::WelcomeTab,
         #[cfg(feature = "projects")]
         FeatureFlag::Projects,
-        #[cfg(feature = "drive_objects_as_context")]
-        FeatureFlag::DriveObjectsAsContext,
         #[cfg(feature = "pr_comments_slash_command")]
         FeatureFlag::PRCommentsSlashCommand,
         #[cfg(feature = "pr_comments_v2")]
@@ -2735,8 +2731,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::LSPAsATool,
         #[cfg(feature = "inline_profile_selector")]
         FeatureFlag::InlineProfileSelector,
-        #[cfg(feature = "oz_platform_skills")]
-        FeatureFlag::OzPlatformSkills,
         #[cfg(feature = "oz_identity_federation")]
         FeatureFlag::OzIdentityFederation,
         #[cfg(feature = "oz_changelog_updates")]
@@ -2759,8 +2753,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::IncrementalAutoReload,
         #[cfg(feature = "orchestration")]
         FeatureFlag::Orchestration,
-        #[cfg(feature = "orchestration_v2")]
-        FeatureFlag::OrchestrationV2,
         #[cfg(feature = "orchestration_pill_bar")]
         FeatureFlag::OrchestrationPillBar,
         #[cfg(feature = "pending_user_query_indicator")]
@@ -2783,8 +2775,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::VerticalTabsSummaryMode,
         #[cfg(feature = "tab_configs")]
         FeatureFlag::TabConfigs,
-        #[cfg(feature = "oz_handoff")]
-        FeatureFlag::OzHandoff,
         #[cfg(feature = "hoa_notifications")]
         FeatureFlag::HOANotifications,
         #[cfg(feature = "open_code_notifications")]
