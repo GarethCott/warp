@@ -682,9 +682,6 @@ fn all_commands() -> Vec<StaticCommand> {
         commands.push(PR_COMMENTS);
     }
 
-    if FeatureFlag::CloudMode.is_enabled() && FeatureFlag::CloudModeFromLocalSession.is_enabled() {
-        commands.push(CLOUD_AGENT.clone());
-    }
 
     if FeatureFlag::InlineProfileSelector.is_enabled() {
         commands.push(PROFILE.clone());

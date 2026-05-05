@@ -36,7 +36,6 @@ use crate::ai::agent_management::notifications::view::{
 use crate::ai::agent_management::notifications::NotificationFilter;
 use crate::ai::agent_management::view::{AgentManagementView, AgentManagementViewEvent};
 use crate::ai::agent_management::AgentManagementEvent;
-use crate::ai::ambient_agents::telemetry::{CloudAgentTelemetryEvent, CloudModeEntryPoint};
 use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::ai::blocklist::agent_view::agent_input_footer::editor::AgentToolbarEditorMode;
 use crate::ai::blocklist::agent_view::AgentViewEntryOrigin;
@@ -10279,25 +10278,8 @@ impl Workspace {
         }
     }
 
-    fn add_ambient_agent_tab(&mut self, ctx: &mut ViewContext<Self>) {
-        if !FeatureFlag::AgentView.is_enabled() || !FeatureFlag::CloudMode.is_enabled() {
-            return;
-        }
-
-        send_telemetry_from_ctx!(
-            CloudAgentTelemetryEvent::EnteredCloudMode {
-                entry_point: CloudModeEntryPoint::NewTab,
-            },
-            ctx
-        );
-
-        self.add_tab_with_pane_layout(
-            PanesLayout::AmbientAgent,
-            Arc::new(HashMap::new()),
-            None,
-            ctx,
-        );
-        ctx.notify();
+    fn add_ambient_agent_tab(&mut self, _ctx: &mut ViewContext<Self>) {
+        // strip(neuter): CloudMode is gated off in this fork.
     }
 
     // Adds a tab with a specific shell, only meant to be dispatched directly by actions.
@@ -15622,9 +15604,11 @@ impl Workspace {
         variant: CloudAgentCapacityModalVariant,
         ctx: &mut ViewContext<Self>,
     ) {
-        if !FeatureFlag::CloudMode.is_enabled() {
-            return;
-        }
+        // strip(neuter): CloudMode is gated off in this fork.
+        let _ = (variant, ctx);
+        return;
+
+        #[allow(unreachable_code)]
         self.cloud_agent_capacity_modal.update(ctx, |modal, ctx| {
             modal.set_variant(variant);
             ctx.notify();
@@ -21655,13 +21639,6 @@ impl View for Workspace {
             stack.add_child(ChildView::new(&self.codex_modal).finish());
         }
 
-        if FeatureFlag::CloudMode.is_enabled()
-            && self
-                .current_workspace_state
-                .is_cloud_agent_capacity_modal_open
-        {
-            stack.add_child(ChildView::new(&self.cloud_agent_capacity_modal).finish());
-        }
 
         if self
             .current_workspace_state

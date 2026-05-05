@@ -825,17 +825,9 @@ impl AgentInputFooter {
         }
     }
 
-    fn should_render_cloud_mode_v2(&self, app: &AppContext) -> bool {
-        FeatureFlag::CloudModeInputV2.is_enabled()
-            && FeatureFlag::CloudMode.is_enabled()
-            && self
-                .ambient_agent_view_model
-                .as_ref()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model
-                        .as_ref(app)
-                        .is_configuring_ambient_agent()
-                })
+    fn should_render_cloud_mode_v2(&self, _app: &AppContext) -> bool {
+        // strip(neuter): CloudMode is gated off in this fork.
+        false
     }
 
     fn render_cloud_mode_v2_footer(&self, app: &AppContext) -> Box<dyn Element> {
@@ -2013,19 +2005,8 @@ impl View for AgentInputFooter {
             .with_run_spacing(4.)
             .with_spacing(4.);
 
-        let is_ambient_agent = FeatureFlag::CloudMode.is_enabled()
-            && self
-                .ambient_agent_view_model
-                .as_ref()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model.as_ref(app).is_ambient_agent()
-                });
-        if is_ambient_agent {
-            if let Some(environment_selector) = self.environment_selector.as_ref() {
-                left_buttons =
-                    left_buttons.with_child(ChildView::new(environment_selector).finish());
-            }
-        }
+        // strip(neuter): CloudMode is gated off in this fork; ambient agent
+        // never reachable, environment selector never shown.
 
         let terminal_model = self.terminal_model.lock();
         let shared_status = terminal_model.shared_session_status();

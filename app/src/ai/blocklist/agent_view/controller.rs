@@ -816,6 +816,7 @@ impl AgentViewController {
     }
 
     /// Exits the active agent view without any confirmation.
+    #[allow(dead_code)]
     pub(crate) fn exit_agent_view_without_confirmation(&mut self, ctx: &mut ModelContext<Self>) {
         self.exit_agent_view_internal(
             ExitAgentViewOptions {

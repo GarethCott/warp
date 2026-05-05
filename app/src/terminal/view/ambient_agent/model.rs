@@ -247,6 +247,7 @@ impl AmbientAgentViewModel {
     }
 
     /// Whether the harness CLI has started running. Only meaningful for non-oz runs.
+    #[allow(dead_code)]
     pub(super) fn harness_command_started(&self) -> bool {
         self.harness_command_started
     }

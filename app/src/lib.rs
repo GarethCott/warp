@@ -2711,8 +2711,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::InlineHistoryMenu,
         #[cfg(feature = "inline_repo_menu")]
         FeatureFlag::InlineRepoMenu,
-        #[cfg(feature = "cloud_mode")]
-        FeatureFlag::CloudMode,
         #[cfg(feature = "cloud_mode_from_local_session")]
         FeatureFlag::CloudModeFromLocalSession,
         #[cfg(feature = "cloud_mode_image_context")]
