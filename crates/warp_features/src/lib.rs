@@ -227,9 +227,6 @@ pub enum FeatureFlag {
     /// This does not gate actual collection of data under the new policy.
     GlobalAIAnalyticsBanner,
 
-    /// Enables actual collection of AI analytics data per the revised AI analytics policy.
-    GlobalAIAnalyticsCollection,
-
     /// Enables auto-generated AI memories.
     AIMemories,
 
@@ -295,9 +292,6 @@ pub enum FeatureFlag {
     /// Enables inline review comments on specific lines of code.
     ContextLineReviewComments,
 
-    /// Enables the natural language classification model.
-    NLDClassifierModelEnabled,
-
     /// Enables the fast-forward autoexecute button
     FastForwardAutoexecuteButton,
 
@@ -315,9 +309,6 @@ pub enum FeatureFlag {
 
     /// Expands code diff edits to replace the current pane instead of opening in a new tab.
     ExpandEditToPane,
-    /// Enables fallback model load output messaging in the warping indicator.
-    FallbackModelLoadOutputMessaging,
-
     /// Enables close button on left side of tabs
     TabCloseButtonOnLeft,
 
@@ -513,9 +504,6 @@ pub enum FeatureFlag {
     /// Agent Management View.
     AgentManagementView,
 
-    /// Agent Management Details View - enables new details panel on card click.
-    AgentManagementDetailsView,
-
     /// Enables scheduled ambient agents.
     ScheduledAmbientAgents,
 
@@ -552,19 +540,8 @@ pub enum FeatureFlag {
     /// Enables team API key creation in the API key management UI.
     TeamApiKeys,
 
-    /// Enables the "New agent" prompt chip in terminal mode when AgentView is enabled.
-    ///
-    /// When disabled (the default), the terminal message bar is shown instead.
-    AgentViewPromptChip,
-
-    /// Enables editing the agent input footer layout from the prompt context menu.
-    AgentToolbarEditor,
-
     /// Enables configuring header toolbar item order, side placement, and visibility.
     ConfigurableToolbar,
-
-    /// Enables real-time communication updates for ambient agent tasks.
-    AmbientAgentsRTC,
 
     // Enables a side panel conversation list view for AgentView mode.
     AgentViewConversationListView,
@@ -611,15 +588,8 @@ pub enum FeatureFlag {
     /// Enables image attachment support for cloud mode conversations.
     CloudModeImageContext,
 
-    /// Enables loading and returning bundled skills in the SkillManager.
-    BundledSkills,
-
     /// Enables the Oz launch modal for introducing cloud agent features.
     OzLaunchModal,
-
-    /// Enables the OpenWarp launch modal announcing Warp going open-source.
-    /// When enabled, the HOA onboarding flow is suppressed.
-    OpenWarpLaunchModal,
 
     /// Updated tab styling (background colors, border, close button positioning, margins).
     NewTabStyling,
@@ -650,11 +620,6 @@ pub enum FeatureFlag {
 
     /// Enables orchestration mode (multi-agent parallel execution).
     Orchestration,
-
-    /// Renders a horizontal pill bar in the agent view pane header showing the
-    /// orchestrator agent and all of its child agents, with click-to-switch
-    /// behavior between siblings.
-    OrchestrationPillBar,
 
     /// Shows a pending user query indicator during summarization when a follow-up
     /// prompt is queued via `/fork-and-compact` or `/compact-and`.
@@ -716,9 +681,6 @@ pub enum FeatureFlag {
     /// Enables tab configs — user-definable TOML templates for launching custom tab layouts.
     TabConfigs,
 
-    /// When enabled, free-tier users are blocked from AI features (no-AI experiment arm).
-    FreeUserNoAi,
-
     /// Enables the ask_user_question tool allowing the agent to ask clarifying questions.
     AskUserQuestion,
 
@@ -730,10 +692,6 @@ pub enum FeatureFlag {
 
     /// Enables conversation retrieval via the CLI (oz run conversation get, oz run get --conversation).
     ConversationApi,
-
-    /// Guided onboarding flow for existing users introducing HOA features
-    /// (vertical tabs, agent inbox, tab configs).
-    HOAOnboardingFlow,
 
     /// Enables commit, push, and create-PR actions in the code review panel.
     GitOperationsInCodeReview,
@@ -764,8 +722,6 @@ pub enum FeatureFlag {
     /// `base_model_context_window_limit` is not sent on outbound requests, so
     /// the server falls back to its default.
     ConfigurableContextWindow,
-    /// Enables continuing cloud mode conversations in the cloud after an execution ends.
-    HandoffCloudCloud,
 }
 
 static FLAG_STATES: [AtomicBool; cardinality::<FeatureFlag>()] =
@@ -803,7 +759,6 @@ pub const DOGFOOD_FLAGS: &[FeatureFlag] = &[
     FeatureFlag::RetryTruncatedCodeResponses,
     FeatureFlag::ContextLineReviewComments,
     FeatureFlag::RunGeneratorsWithCmdExe,
-    FeatureFlag::NLDClassifierModelEnabled,
     FeatureFlag::Projects,
     FeatureFlag::ProviderCommand,
     FeatureFlag::ArtifactCommand,

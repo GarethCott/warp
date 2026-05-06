@@ -102,7 +102,7 @@ pub async fn generate_multi_agent_output(
             supports_v4a_file_diffs: FeatureFlag::V4AFileDiffs.is_enabled(),
             supports_summarization_via_message_replacement:
                 FeatureFlag::SummarizationViaMessageReplacement.is_enabled(),
-            supports_bundled_skills: FeatureFlag::BundledSkills.is_enabled(),
+            supports_bundled_skills: false, // strip(neuter): BundledSkills is gated off in this fork.
             supports_research_agent: params.research_agent_enabled,
             supports_orchestration_v2: false,
         }),

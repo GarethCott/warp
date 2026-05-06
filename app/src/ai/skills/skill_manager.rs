@@ -16,13 +16,13 @@ use ai::skills::{
     get_provider_for_path, parse_bundled_skill, provider_rank, ParsedSkill, SkillProvider,
     SkillReference,
 };
-use warp_core::{
-    channel::ChannelState, features::FeatureFlag, report_error, safe_warn, ui::icons::Icon,
-};
+use warp_core::{channel::ChannelState, report_error, safe_warn, ui::icons::Icon};
 use warpui::{AppContext, Entity, ModelContext, ModelHandle, SingletonEntity};
 
 /// Activation condition for a bundled skill.
+/// strip(neuter): BundledSkills is gated off in this fork.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum BundledSkillActivation {
     /// Always active.
     Always,
@@ -45,7 +45,9 @@ impl BundledSkillActivation {
 }
 
 /// A bundled skill with its activation condition and icon.
+/// strip(neuter): BundledSkills is gated off in this fork.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct BundledSkill {
     pub skill: ParsedSkill,
     pub activation: BundledSkillActivation,
@@ -95,14 +97,7 @@ impl SkillManager {
         // Create skill watcher
         let skill_watcher = ctx.add_model(|ctx| SkillWatcher::new(ctx, skill_watcher_tx));
 
-        if FeatureFlag::BundledSkills.is_enabled() {
-            ctx.spawn(Self::load_bundled_skills(), |me, result, _| {
-                me.bundled_skills = result;
-            });
-            ctx.spawn(Self::load_figma_skills(), |me, figma_skills, _| {
-                me.bundled_skills.extend(figma_skills);
-            });
-        }
+        // strip(neuter): BundledSkills is gated off in this fork.
 
         Self {
             directory_skills: HashMap::new(),
@@ -183,21 +178,7 @@ impl SkillManager {
             }
         }
 
-        // Append bundled skills whose activation condition is met.
-        if FeatureFlag::BundledSkills.is_enabled() {
-            skills.extend(
-                self.bundled_skills
-                    .iter()
-                    .filter(|(_, bundled)| bundled.activation.is_enabled(ctx))
-                    .map(|(id, bundled)| {
-                        SkillDescriptor::new_bundled(
-                            id.clone(),
-                            bundled.skill.clone(),
-                            bundled.icon,
-                        )
-                    }),
-            );
-        }
+        // strip(neuter): BundledSkills is gated off in this fork.
 
         skills
     }
@@ -418,6 +399,7 @@ impl SkillManager {
     }
 
     /// Load skill definitions bundled with Warp.
+    #[allow(dead_code)]
     async fn load_bundled_skills() -> HashMap<String, BundledSkill> {
         let Some(resources_dir) = warp_core::paths::bundled_resources_dir() else {
             return HashMap::new();
@@ -440,6 +422,7 @@ impl SkillManager {
     }
 
     /// Load Figma-specific bundled skills from the `figma/` subdirectory.
+    #[allow(dead_code)]
     async fn load_figma_skills() -> HashMap<String, BundledSkill> {
         let Some(resources_dir) = warp_core::paths::bundled_resources_dir() else {
             return HashMap::new();
@@ -473,6 +456,7 @@ impl SkillManager {
 }
 
 /// Read bundled skill definitions from the specified directory.
+#[allow(dead_code)]
 async fn read_bundled_skills(skills_dir: &Path) -> HashMap<String, ParsedSkill> {
     use futures::TryStreamExt;
 
@@ -528,6 +512,7 @@ async fn read_bundled_skills(skills_dir: &Path) -> HashMap<String, ParsedSkill> 
 /// - `{{warp_url_scheme}}` - The URL scheme (e.g., `warp`, `warpdev`, `warppreview`)
 /// - `{{settings_schema_path}}` - Path to the bundled JSON settings schema
 /// - `{{settings_file_path}}` - Path to the user's settings TOML file
+#[allow(dead_code)]
 fn build_bundled_skill_context() -> HashMap<String, String> {
     let mut context: HashMap<String, String> = [
         (
@@ -565,6 +550,7 @@ fn build_bundled_skill_context() -> HashMap<String, String> {
 /// Returns the icon for a bundled skill, given its directory-based ID.
 /// Skills with a known brand (e.g. `pr-comments` → GitHub) get a
 /// branded icon; everything else falls back to the Warp logo.
+#[allow(dead_code)]
 fn icon_for_bundled_skill(skill_id: &str) -> Icon {
     match skill_id {
         "pr-comments" => Icon::Github,
@@ -576,6 +562,7 @@ fn icon_for_bundled_skill(skill_id: &str) -> Icon {
 ///
 /// Most skills are always active. Skills that depend on a bundled resource
 /// file use `RequiresFile` so they only appear when the resource is present.
+#[allow(dead_code)]
 fn activation_for_bundled_skill(skill_id: &str, resources_dir: &Path) -> BundledSkillActivation {
     match skill_id {
         "modify-settings" => {

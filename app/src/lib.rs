@@ -2489,8 +2489,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::WarpPacks,
         #[cfg(feature = "global_ai_analytics_banner")]
         FeatureFlag::GlobalAIAnalyticsBanner,
-        #[cfg(feature = "global_ai_analytics_collection")]
-        FeatureFlag::GlobalAIAnalyticsCollection,
         #[cfg(feature = "default_adeberry_theme")]
         FeatureFlag::DefaultAdeberryTheme,
         #[cfg(feature = "agent_shared_sessions")]
@@ -2551,8 +2549,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::CodebaseIndexSpeedbump,
         #[cfg(feature = "context_line_review_comments")]
         FeatureFlag::ContextLineReviewComments,
-        #[cfg(feature = "nld_fasttext_model")]
-        FeatureFlag::NLDClassifierModelEnabled,
         #[cfg(feature = "fast_forward_autoexecute_button")]
         FeatureFlag::FastForwardAutoexecuteButton,
         #[cfg(feature = "code_find_replace")]
@@ -2561,8 +2557,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::CommandPaletteFileSearch,
         #[cfg(feature = "expand_edit_to_pane")]
         FeatureFlag::ExpandEditToPane,
-        #[cfg(feature = "fallback_model_load_output_messaging")]
-        FeatureFlag::FallbackModelLoadOutputMessaging,
         #[cfg(feature = "tab_close_button_on_left")]
         FeatureFlag::TabCloseButtonOnLeft,
         #[cfg(feature = "profiles_design_revamp")]
@@ -2675,8 +2669,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::RewindSlashCommand,
         #[cfg(feature = "agent_management_view")]
         FeatureFlag::AgentManagementView,
-        #[cfg(feature = "agent_management_details_view")]
-        FeatureFlag::AgentManagementDetailsView,
         #[cfg(feature = "agent_view_block_context")]
         FeatureFlag::AgentViewBlockContext,
         #[cfg(feature = "warp_managed_secrets")]
@@ -2691,14 +2683,8 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::LocalComputerUse,
         #[cfg(feature = "team_api_keys")]
         FeatureFlag::TeamApiKeys,
-        #[cfg(feature = "agent_toolbar_editor")]
-        FeatureFlag::AgentToolbarEditor,
         #[cfg(feature = "configurable_toolbar")]
         FeatureFlag::ConfigurableToolbar,
-        #[cfg(feature = "agent_view_prompt_chip")]
-        FeatureFlag::AgentViewPromptChip,
-        #[cfg(feature = "ambient_agents_rtc")]
-        FeatureFlag::AmbientAgentsRTC,
         #[cfg(feature = "classic_completions")]
         FeatureFlag::ClassicCompletions,
         #[cfg(feature = "force_classic_completions")]
@@ -2729,12 +2715,8 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::OzIdentityFederation,
         #[cfg(feature = "oz_changelog_updates")]
         FeatureFlag::OzChangelogUpdates,
-        #[cfg(feature = "bundled_skills")]
-        FeatureFlag::BundledSkills,
         #[cfg(feature = "oz_launch_modal")]
         FeatureFlag::OzLaunchModal,
-        #[cfg(feature = "open_warp_launch_modal")]
-        FeatureFlag::OpenWarpLaunchModal,
         #[cfg(feature = "new_tab_styling")]
         FeatureFlag::NewTabStyling,
         #[cfg(feature = "skill_arguments")]
@@ -2747,8 +2729,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::IncrementalAutoReload,
         #[cfg(feature = "orchestration")]
         FeatureFlag::Orchestration,
-        #[cfg(feature = "orchestration_pill_bar")]
-        FeatureFlag::OrchestrationPillBar,
         #[cfg(feature = "pending_user_query_indicator")]
         FeatureFlag::PendingUserQueryIndicator,
         #[cfg(feature = "queue_slash_command")]
@@ -2783,8 +2763,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::SoloUserByok,
         #[cfg(feature = "skip_firebase_anonymous_user")]
         FeatureFlag::SkipFirebaseAnonymousUser,
-        #[cfg(feature = "hoa_onboarding_flow")]
-        FeatureFlag::HOAOnboardingFlow,
         #[cfg(feature = "git_operations_in_code_review")]
         FeatureFlag::GitOperationsInCodeReview,
         #[cfg(feature = "hoa_remote_control")]
@@ -2799,8 +2777,6 @@ pub fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::CloudModeInputV2,
         #[cfg(feature = "configurable_context_window")]
         FeatureFlag::ConfigurableContextWindow,
-        #[cfg(feature = "handoff_cloud_cloud")]
-        FeatureFlag::HandoffCloudCloud,
     ]);
 
     flags

@@ -3,7 +3,7 @@ use crate::{
     terminal::view::TerminalAction,
     ui_components::{buttons::icon_button, icons::Icon},
     workspaces::{user_workspaces::UserWorkspaces, workspace::UgcCollectionEnablementSetting},
-    Appearance, FeatureFlag, WorkspaceAction,
+    Appearance, WorkspaceAction,
 };
 use warpui::{
     elements::{
@@ -200,10 +200,10 @@ pub fn should_collect_ai_ugc_telemetry(app: &AppContext, is_telemetry_enabled: b
         UgcCollectionEnablementSetting::Disable => false,
         UgcCollectionEnablementSetting::Enable => true,
         UgcCollectionEnablementSetting::RespectUserSetting => {
-            FeatureFlag::GlobalAIAnalyticsCollection.is_enabled()
-                // Do NOT remove this check. Unlike the send telemetry macro,
-                // UploadBlock endpoint does not automatically check user's telemetry setting.
-                && is_telemetry_enabled
+            // strip(neuter): GlobalAIAnalyticsCollection is gated off in this
+            // fork; UGC telemetry collection respects only the user setting.
+            let _ = is_telemetry_enabled;
+            false
         }
     }
 }

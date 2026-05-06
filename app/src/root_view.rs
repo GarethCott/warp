@@ -52,7 +52,6 @@ use crate::util::bindings::{self, is_binding_pty_compliant};
 use crate::util::traffic_lights::{traffic_light_data, TrafficLightData, TrafficLightMouseStates};
 use crate::view_components::DismissibleToast;
 use crate::window_settings::WindowSettings;
-use crate::workspace::hoa_onboarding::mark_hoa_onboarding_completed;
 use crate::workspace::WorkspaceAction;
 use crate::workspaces::team_tester::TeamTesterStatus;
 use crate::workspaces::update_manager::TeamUpdateManager;
@@ -2134,9 +2133,7 @@ impl RootView {
                 let onboarding_view = onboarding_view.clone();
 
                 mark_local_onboarding_completed(ctx);
-                if FeatureFlag::HOAOnboardingFlow.is_enabled() {
-                    mark_hoa_onboarding_completed(ctx);
-                }
+                // strip(neuter): HOAOnboardingFlow is gated off in this fork.
 
                 let is_logged_in = AuthStateProvider::as_ref(ctx).get().is_logged_in();
                 // If the user isn't logged in, only require login if the applied
@@ -2226,9 +2223,7 @@ impl RootView {
                 };
 
                 mark_local_onboarding_completed(ctx);
-                if FeatureFlag::HOAOnboardingFlow.is_enabled() {
-                    mark_hoa_onboarding_completed(ctx);
-                }
+                // strip(neuter): HOAOnboardingFlow is gated off in this fork.
 
                 if AuthStateProvider::as_ref(ctx).get().is_logged_in() {
                     AuthManager::handle(ctx)

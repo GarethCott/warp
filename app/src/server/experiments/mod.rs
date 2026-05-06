@@ -13,8 +13,6 @@
 
 use crate::features::FeatureFlag;
 use crate::terminal::warpify::settings::{SshExtensionInstallMode, WarpifySettings};
-use crate::workspaces::user_workspaces::UserWorkspaces;
-use crate::workspaces::workspace::CustomerType;
 use settings::Setting;
 use warpui::AppContext;
 #[cfg(not(test))]
@@ -138,12 +136,9 @@ impl ServerExperiment {
             }
             // The normal experiment arm is no longer used.
             Self::PromptSuggestionsViaMaaExperiment => {}
-            Self::FreeUserNoAiControl => {
-                FeatureFlag::FreeUserNoAi.set_enabled(false);
-            }
-            Self::FreeUserNoAiExperiment => {
-                FeatureFlag::FreeUserNoAi.set_enabled(true);
-            }
+            // strip(neuter): FreeUserNoAi is gated off in this fork.
+            Self::FreeUserNoAiControl => {}
+            Self::FreeUserNoAiExperiment => {}
             Self::OzMultiHarnessControl => {}
             Self::OzMultiHarnessExperiment => {}
             Self::SshRemoteServerControl => {
@@ -197,12 +192,7 @@ impl ServerExperiment {
 /// Returns `true` when the user is in the `FreeUserNoAiExperiment` arm **and** is on the
 /// free tier. This is the single source of truth for gating any client-side behaviour
 /// that should be locked/disabled for users without AI credits.
-pub fn is_free_user_no_ai_experiment_active(ctx: &AppContext) -> bool {
-    let in_experiment = FeatureFlag::FreeUserNoAi.is_enabled();
-    let is_free_tier = UserWorkspaces::handle(ctx)
-        .as_ref(ctx)
-        .current_team()
-        .map(|team| team.billing_metadata.customer_type == CustomerType::Free)
-        .unwrap_or(true); // no team = solo free user
-    in_experiment && is_free_tier
+pub fn is_free_user_no_ai_experiment_active(_ctx: &AppContext) -> bool {
+    // strip(neuter): FreeUserNoAi is gated off in this fork.
+    false
 }

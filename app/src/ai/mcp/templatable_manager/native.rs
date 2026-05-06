@@ -162,6 +162,7 @@ fn error_to_user_message(error: &rmcp::RmcpError) -> String {
 
 /// An MCP server integration that Warp ships with bundled skills for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum McpIntegration {
     Figma,
 }
