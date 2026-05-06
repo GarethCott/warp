@@ -79,6 +79,7 @@ pub enum SlashCommandTrigger {
 }
 
 impl SlashCommandTrigger {
+    #[allow(dead_code)]
     fn cmd_or_ctrl_enter() -> Self {
         Self::Input {
             cmd_or_ctrl_enter: true,
@@ -1061,6 +1062,7 @@ impl Input {
     /// Handles cmd+enter (Mac) / ctrl+enter (Linux/Windows) for slash commands.
     ///
     /// Returns `true` if the keypress was handled.
+    #[allow(dead_code)]
     pub(super) fn maybe_handle_cmd_or_ctrl_shift_enter_for_slash_command(
         &mut self,
         ctx: &mut ViewContext<Self>,
