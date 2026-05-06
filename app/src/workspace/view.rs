@@ -20345,11 +20345,11 @@ impl TypedActionView for Workspace {
                 let new_value = *GeneralSettings::as_ref(ctx)
                     .did_check_to_trigger_openwarp_launch_modal
                     .value();
+                // strip(neuter): OpenWarpLaunchModal is gated off in this fork.
                 log::info!(
-                    "OpenWarp launch modal state: old={}, new={}, feature_flag_enabled={}",
+                    "OpenWarp launch modal state: old={}, new={}",
                     old_value,
                     new_value,
-                    FeatureFlag::OpenWarpLaunchModal.is_enabled()
                 );
             }
             #[cfg(debug_assertions)]

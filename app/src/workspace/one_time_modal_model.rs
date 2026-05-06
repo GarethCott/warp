@@ -219,10 +219,11 @@ impl OneTimeModalModel {
     }
 
     fn check_and_trigger_hoa_onboarding(&mut self, ctx: &mut ModelContext<Self>) -> bool {
-        if !FeatureFlag::HOAOnboardingFlow.is_enabled() {
-            return false;
-        }
+        // strip(neuter): HOAOnboardingFlow is gated off in this fork.
+        let _ = ctx;
+        return false;
 
+        #[allow(unreachable_code)]
         if hoa_onboarding::has_completed_hoa_onboarding(ctx) {
             return false;
         }
@@ -267,11 +268,11 @@ impl OneTimeModalModel {
     }
 
     fn check_and_trigger_openwarp_launch_modal(&mut self, ctx: &mut ModelContext<Self>) -> bool {
-        // Only show if the feature flag is enabled.
-        if !FeatureFlag::OpenWarpLaunchModal.is_enabled() {
-            return false;
-        }
+        // strip(neuter): OpenWarpLaunchModal is gated off in this fork.
+        let _ = ctx;
+        return false;
 
+        #[allow(unreachable_code)]
         let general_settings = GeneralSettings::as_ref(ctx);
         let openwarp_modal_shown = *general_settings
             .did_check_to_trigger_openwarp_launch_modal

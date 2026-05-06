@@ -25,7 +25,6 @@ use crate::ai::agent::conversation::{AIConversation, AIConversationId};
 use crate::ai::blocklist::agent_view::orchestration_conversation_links::parent_conversation_id;
 use crate::ai::blocklist::agent_view::{AgentViewController, AgentViewControllerEvent};
 use crate::ai::blocklist::{BlocklistAIHistoryEvent, BlocklistAIHistoryModel};
-use crate::features::FeatureFlag;
 use crate::pane_group::pane::view::PaneHeaderAction;
 use crate::terminal::view::TerminalAction;
 use crate::ui_components::icons::Icon;
@@ -534,10 +533,11 @@ pub fn render_orchestration_breadcrumbs(
     parent_crumb_mouse_state: MouseStateHandle,
     app: &AppContext,
 ) -> Option<Box<dyn Element>> {
-    // strip(neuter): AgentView is gated off in this fork.
-    if !FeatureFlag::OrchestrationPillBar.is_enabled() {
-        return None;
-    }
+    // strip(neuter): AgentView + OrchestrationPillBar are gated off in this fork.
+    let _ = (agent_view_controller, &parent_crumb_mouse_state, app);
+    return None;
+
+    #[allow(unreachable_code)]
     if !agent_view_controller.is_fullscreen() {
         return None;
     }

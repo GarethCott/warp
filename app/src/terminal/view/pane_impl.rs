@@ -392,8 +392,8 @@ impl TerminalView {
         // When `OrchestrationPillBar` is on, the pill bar takes the place of the
         // parent navigation card (the parent pill is the "back to parent" link)
         // and is shown for the orchestrator and all its children.
-        // strip(neuter): AgentView is gated off in this fork.
-        if false && FeatureFlag::OrchestrationPillBar.is_enabled() {
+        // strip(neuter): AgentView + OrchestrationPillBar are gated off in this fork.
+        if false {
             // The wrapping `Flex::column` would otherwise pass an infinite
             // vertical max constraint down to its non-flex children. That
             // breaks the title's vertical centering: with infinite max.y,
