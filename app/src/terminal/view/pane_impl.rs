@@ -36,7 +36,6 @@ use crate::ui_components::icons;
 use crate::workspace::tab_settings::TabSettings;
 use settings::Setting as _;
 use warp_core::context_flag::ContextFlag;
-use warp_core::ui::Icon as WarpIcon;
 use warpui::elements::{
     ChildAnchor, ConstrainedBox, CrossAxisAlignment, Flex, MainAxisAlignment, MainAxisSize,
     OffsetPositioning, ParentAnchor, ParentElement, ParentOffsetBounds, Shrinkable, Stack,
@@ -135,9 +134,7 @@ impl TerminalView {
         };
         self.pane_configuration.update(ctx, |pane_config, ctx| {
             pane_config.set_title(new_pane_title, ctx);
-            if FeatureFlag::AgentView.is_enabled() {
-                pane_config.refresh_pane_header_overflow_menu_items(ctx);
-            }
+            // strip(neuter): AgentView is gated off in this fork.
             pane_config.notify_header_content_changed(ctx);
         });
         self.update_agent_view_pane_header(ctx);
@@ -145,34 +142,15 @@ impl TerminalView {
 
     /// Returns the shareable object for the active agent view conversation, if any.
     /// strip(neuter): CloudConversations is gated off in this fork; never shareable.
+    #[allow(dead_code)]
     fn agent_view_shareable_object(&self, _ctx: &ViewContext<Self>) -> Option<ShareableObject> {
         None
     }
 
     /// Updates the pane header's shareable object based on agent view state.
     /// This should be called when entering/exiting agent view or when the conversation changes.
-    pub(super) fn update_agent_view_pane_header(&mut self, ctx: &mut ViewContext<Self>) {
-        if !FeatureFlag::AgentView.is_enabled() {
-            return;
-        }
-
-        // In cloud mode, we want to preserve the shared session sharing dialog even after the shared session has ended.
-        // We need this to be able to view and change permissions on a cloud mode shared session that failed before
-        // any conversation started, to view cloud mode sessions that failed during setup.
-        let is_ambient_agent = self.is_ambient_agent_session(ctx);
-        if !is_ambient_agent {
-            let shareable_object = self.agent_view_shareable_object(ctx);
-            self.pane_configuration.update(ctx, |pane_config, ctx| {
-                pane_config.set_shareable_object(shareable_object, ctx);
-                pane_config.notify_header_content_changed(ctx);
-                pane_config.refresh_pane_header_overflow_menu_items(ctx);
-            });
-        } else {
-            self.pane_configuration.update(ctx, |pane_config, ctx| {
-                pane_config.notify_header_content_changed(ctx);
-                pane_config.refresh_pane_header_overflow_menu_items(ctx);
-            });
-        }
+    pub(super) fn update_agent_view_pane_header(&mut self, _ctx: &mut ViewContext<Self>) {
+        // strip(neuter): AgentView is gated off in this fork.
     }
 
     pub(super) fn is_pane_focused(&self, app: &AppContext) -> bool {
@@ -193,40 +171,9 @@ impl TerminalView {
 
     /// Renders the back button for the pane header, or an empty element if the
     /// back button should not be shown.
-    fn maybe_render_header_back_button(&self, app: &AppContext) -> Box<dyn Element> {
-        if !FeatureFlag::AgentView.is_enabled() || warpui::platform::is_mobile_device() {
-            return Flex::row().finish();
-        }
-
-        let in_nav_stack = self
-            .pane_stack
-            .as_ref()
-            .and_then(|h| h.upgrade(app))
-            .is_some_and(|stack| stack.as_ref(app).depth() > 1);
-
-        let is_transcript_viewer = self.model.lock().is_conversation_transcript_viewer();
-        let is_ambient_agent = self.is_ambient_agent_session(app);
-        let has_parent_terminal = (is_ambient_agent && self.is_nested_cloud_mode(app))
-            || (!is_ambient_agent && !is_transcript_viewer);
-        let is_fullscreen_agent_view = self.agent_view_controller.as_ref(app).is_fullscreen();
-
-        if in_nav_stack || (is_fullscreen_agent_view && has_parent_terminal) {
-            if FeatureFlag::Orchestration.is_enabled() {
-                Flex::row()
-                    .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                    .with_child(ChildView::new(&self.agent_view_back_button).finish())
-                    .finish()
-            } else {
-                Flex::column()
-                    .with_main_axis_alignment(MainAxisAlignment::Center)
-                    .with_cross_axis_alignment(CrossAxisAlignment::Start)
-                    .with_main_axis_size(MainAxisSize::Max)
-                    .with_child(ChildView::new(&self.agent_view_back_button).finish())
-                    .finish()
-            }
-        } else {
-            Flex::row().finish()
-        }
+    fn maybe_render_header_back_button(&self, _app: &AppContext) -> Box<dyn Element> {
+        // strip(neuter): AgentView is gated off in this fork.
+        Flex::row().finish()
     }
 
     fn render_header_title(
@@ -361,8 +308,8 @@ impl TerminalView {
         app: &AppContext,
     ) -> (Box<dyn Element>, f32) {
         let appearance = Appearance::as_ref(app);
-        let is_fullscreen_agent_view = FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_fullscreen();
+        // strip(neuter): AgentView is gated off in this fork.
+        let is_fullscreen_agent_view = false;
         let icon_color = Some(
             appearance
                 .theme()
@@ -414,10 +361,11 @@ impl TerminalView {
     }
 
     fn render_parent_conversation_header_card(&self, app: &AppContext) -> Option<Box<dyn Element>> {
-        if !(FeatureFlag::Orchestration.is_enabled()
-            && FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_fullscreen())
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        let _ = app;
+        return None;
+        #[allow(unreachable_code)]
+        if !FeatureFlag::Orchestration.is_enabled() {
             return None;
         }
 
@@ -439,15 +387,13 @@ impl TerminalView {
         &self,
         header: Box<dyn Element>,
         parent_conversation_header_card: Option<Box<dyn Element>>,
-        app: &AppContext,
+        _app: &AppContext,
     ) -> Box<dyn Element> {
         // When `OrchestrationPillBar` is on, the pill bar takes the place of the
         // parent navigation card (the parent pill is the "back to parent" link)
         // and is shown for the orchestrator and all its children.
-        if FeatureFlag::OrchestrationPillBar.is_enabled()
-            && FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_fullscreen()
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if false && FeatureFlag::OrchestrationPillBar.is_enabled() {
             // The wrapping `Flex::column` would otherwise pass an infinite
             // vertical max constraint down to its non-flex children. That
             // breaks the title's vertical centering: with infinite max.y,
@@ -496,8 +442,8 @@ impl TerminalView {
         header_ctx: &view::HeaderRenderContext,
         app: &AppContext,
     ) -> Box<dyn Element> {
-        let is_fullscreen_agent_view = FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_fullscreen();
+        // strip(neuter): AgentView is gated off in this fork.
+        let is_fullscreen_agent_view = false;
         let parent_conversation_header_card = self.render_parent_conversation_header_card(app);
 
         let left = self.maybe_render_header_back_button(app);
@@ -639,8 +585,8 @@ impl BackingView for TerminalView {
             .lock()
             .shared_session_status()
             .is_sharer_or_viewer();
-        let is_fullscreen_agent_view = FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_fullscreen();
+        // strip(neuter): AgentView is gated off in this fork.
+        let is_fullscreen_agent_view = false;
         is_shared
             || is_fullscreen_agent_view
             || FeatureFlag::ContextWindowUsageV2.is_enabled()
@@ -766,7 +712,7 @@ impl TerminalView {
         };
 
         let appearance = Appearance::as_ref(app);
-        let theme = appearance.theme();
+        let _theme = appearance.theme();
 
         // Check if we're configuring or waiting on an ambient agent
         let is_ambient_agent = self.is_ambient_agent_session(app);
@@ -779,23 +725,9 @@ impl TerminalView {
             status
         };
 
-        if FeatureFlag::AgentView.is_enabled()
-            && conversation.exchange_count() == 0
-            && !is_long_running
-        {
-            ConstrainedBox::new(
-                if is_ambient_agent {
-                    WarpIcon::OzCloud
-                } else {
-                    WarpIcon::Oz
-                }
-                .to_warpui_icon(blended_colors::text_sub(theme, theme.background()).into())
-                .finish(),
-            )
-            .with_height(appearance.ui_font_size())
-            .with_width(appearance.ui_font_size())
-            .finish()
-        } else if FeatureFlag::NewTabStyling.is_enabled() {
+        // strip(neuter): AgentView is gated off in this fork.
+        let _ = (&conversation, is_long_running, is_ambient_agent);
+        if FeatureFlag::NewTabStyling.is_enabled() {
             let icon_size = appearance.ui_font_size() + 2.0 - STATUS_ELEMENT_PADDING * 2.;
             render_status_element(&status, icon_size, appearance)
         } else {
@@ -940,27 +872,21 @@ impl TerminalView {
             .as_ref(ctx)
             .selected_conversation(ctx)
             .filter(|conversation| {
+                // strip(neuter): AgentView is gated off in this fork.
                 !conversation.is_entirely_passive()
-                    && (conversation.title().is_some_and(|title| !title.is_empty())
-                        || FeatureFlag::AgentView.is_enabled())
+                    && conversation.title().is_some_and(|title| !title.is_empty())
             })
     }
 
     fn selected_conversation_display_title_for_chrome(
         &self,
         conversation: &AIConversation,
-        is_ambient_agent: bool,
+        _is_ambient_agent: bool,
     ) -> String {
-        if FeatureFlag::AgentView.is_enabled() {
-            conversation
-                .title()
-                .filter(|title| !title.is_empty())
-                .unwrap_or_else(|| default_agent_conversation_title(is_ambient_agent))
-        } else {
-            conversation
-                .title()
-                .expect("checked above that title exists")
-        }
+        // strip(neuter): AgentView is gated off in this fork.
+        conversation
+            .title()
+            .expect("checked above that title exists")
     }
 
     /// Selected conversation status for chrome, or [`ConversationStatus::InProgress`] while the

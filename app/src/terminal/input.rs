@@ -3876,6 +3876,7 @@ impl Input {
         ctx.notify();
     }
 
+    #[allow(dead_code)]
     fn open_prompts_menu(&mut self, ctx: &mut ViewContext<Self>) {
         self.suggestions_mode_model.update(ctx, |model, ctx| {
             model.set_mode(InputSuggestionsMode::PromptsMenu, ctx);
