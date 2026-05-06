@@ -1,3 +1,6 @@
+// strip(neuter): AgentView is gated off in this fork; the shortcuts view is
+// unreachable at runtime.
+#![allow(dead_code)]
 mod model;
 
 pub use model::*;

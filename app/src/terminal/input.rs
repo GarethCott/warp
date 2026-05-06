@@ -82,7 +82,6 @@ use crate::terminal::input::suggestions_mode_model::{
 };
 use crate::terminal::input::user_query::{UserQueryMenuEvent, UserQueryMenuView};
 use crate::terminal::model::session::active_session::ActiveSession;
-use crate::terminal::prompt_render_helper::should_render_ps1_prompt;
 use crate::terminal::universal_developer_input::AtContextMenuDisabledReason;
 use crate::terminal::view::CodeDiffAction;
 use crate::terminal::CLIAgent;
@@ -723,9 +722,6 @@ impl InputSuggestionsMode {
             InputSuggestionsMode::SkillMenu => Some("Search skills"),
             InputSuggestionsMode::ModelSelector => Some("Search models"),
             InputSuggestionsMode::ProfileSelector => Some("Search profiles"),
-            InputSuggestionsMode::SlashCommands if FeatureFlag::AgentView.is_enabled() => {
-                Some("Search commands")
-            }
             InputSuggestionsMode::PromptsMenu => Some("Search prompts"),
             InputSuggestionsMode::IndexedReposMenu => Some("Search indexed repos"),
             InputSuggestionsMode::PlanMenu { .. } => Some("Search plans"),
@@ -1819,7 +1815,6 @@ pub fn init(app: &mut AppContext) {
             "New agent conversation",
             InputAction::StartNewAgentConversation,
         )
-        .with_enabled(|| !FeatureFlag::AgentView.is_enabled())
         .with_group(bindings::BindingGroup::WarpAi.as_str())
         .with_context_predicate(
             id!("Input") & id!(flags::IS_ANY_AI_ENABLED) & id!("TerminalView_NonEmptyBlockList"),
@@ -1893,18 +1888,7 @@ pub fn init(app: &mut AppContext) {
             & id!(flags::PASSIVE_CODE_DIFF_KEYBINDINGS_ENABLED),
     )]);
 
-    if FeatureFlag::AgentView.is_enabled() {
-        app.register_fixed_bindings([FixedBinding::new(
-            "shift-?",
-            InputAction::ToggleAgentViewShortcuts,
-            id!("Input")
-                & !id!("IMEOpen")
-                & id!(flags::EMPTY_INPUT_BUFFER)
-                & id!(flags::ACTIVE_AGENT_VIEW)
-                & !id!("LongRunningCommand")
-                & !(id!(flags::TERMINAL_MODE_INPUT) & id!(flags::LOCKED_INPUT)),
-        )]);
-    }
+    // strip(neuter): AgentView is gated off in this fork.
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -2371,15 +2355,13 @@ impl Input {
                             let is_universal_developer_input_enabled = InputSettings::as_ref(app)
                                 .is_universal_developer_input_enabled(app);
 
-                            if (!FeatureFlag::AgentView.is_enabled()
-                                || !agent_view_controller_clone.as_ref(app).is_active())
-                                && should_render_prompt_using_editor_decorator_elements(
-                                    is_universal_developer_input_enabled,
-                                    &ai_input_model,
-                                    &terminal_model,
-                                    app,
-                                )
-                            {
+                            // strip(neuter): AgentView is gated off in this fork.
+                            if should_render_prompt_using_editor_decorator_elements(
+                                is_universal_developer_input_enabled,
+                                &ai_input_model,
+                                &terminal_model,
+                                app,
+                            ) {
                                 let SameLinePromptElements {
                                     lprompt_top,
                                     lprompt_bottom,
@@ -2437,11 +2419,8 @@ impl Input {
                             ai_input_model_clone.as_ref(app).is_ai_input_enabled();
                         let appearance = Appearance::as_ref(app);
                         if is_ai_input_enabled {
-                            let color_identifier = if FeatureFlag::AgentView.is_enabled() {
-                                AnsiColorIdentifier::Magenta
-                            } else {
-                                AnsiColorIdentifier::Yellow
-                            };
+                            // strip(neuter): AgentView is gated off in this fork.
+                            let color_identifier = AnsiColorIdentifier::Yellow;
                             let cursor_color = color_identifier
                                 .to_ansi_color(&appearance.theme().terminal_colors().normal);
                             let selection_color = ColorU::new(
@@ -2487,9 +2466,7 @@ impl Input {
                                 .insert(flags::CTRL_ENTER_ACCEPTS_PROMPT_SUGGESTION);
                         }
 
-                        if FeatureFlag::AgentView.is_enabled() {
-                            context.set.insert(flags::AGENT_VIEW_ENABLED);
-                        }
+                        // strip(neuter): AgentView is gated off in this fork.
 
                         if !other_agent_view_controller_clone.as_ref(app).is_active()
                             && !cfg!(target_os = "macos")
@@ -2932,14 +2909,7 @@ impl Input {
                 ctx,
             )
         });
-        if FeatureFlag::AgentView.is_enabled() {
-            ctx.subscribe_to_view(&inline_conversation_menu_view, |me, _, event, ctx| {
-                me.handle_conversation_menu_event(event, ctx);
-            });
-            ctx.subscribe_to_model(&inline_terminal_menu_positioner, |_, _, _, ctx| {
-                ctx.notify();
-            });
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         let inline_repos_menu_view = ctx.add_view(|ctx| {
             InlineReposMenuView::new(
@@ -3021,11 +2991,7 @@ impl Input {
                 ctx,
             )
         });
-        if FeatureFlag::AgentView.is_enabled() {
-            ctx.subscribe_to_view(&user_query_menu_view, |me, _, event, ctx| {
-                me.handle_user_query_menu_event(event, ctx);
-            });
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         let inline_plan_menu_view = ctx.add_view(|ctx| {
             InlinePlanMenuView::new(
@@ -3546,8 +3512,8 @@ impl Input {
             self.close_slash_commands_menu(ctx);
         } else {
             self.system_insert("/", ctx);
-            let is_in_agent_view = FeatureFlag::AgentView.is_enabled()
-                && self.agent_view_controller.as_ref(ctx).is_fullscreen();
+            // strip(neuter): AgentView is gated off in this fork.
+            let is_in_agent_view = false;
             send_telemetry_from_ctx!(
                 TelemetryEvent::OpenSlashMenu {
                     source: SlashMenuSource::SlashButton,
@@ -3559,6 +3525,7 @@ impl Input {
         }
     }
 
+    #[allow(dead_code)]
     fn handle_conversation_menu_event(
         &mut self,
         event: &InlineConversationMenuEvent,
@@ -3568,8 +3535,8 @@ impl Input {
             InlineConversationMenuEvent::NavigateToConversation {
                 conversation_navigation_data,
             } => {
-                let is_in_agent_view = FeatureFlag::AgentView.is_enabled()
-                    && self.agent_view_controller.as_ref(ctx).is_fullscreen();
+                // strip(neuter): AgentView is gated off in this fork.
+                let is_in_agent_view = false;
                 send_telemetry_from_ctx!(
                     TelemetryEvent::InlineConversationMenuItemSelected { is_in_agent_view },
                     ctx
@@ -4003,8 +3970,8 @@ impl Input {
         self.suggestions_mode_model.update(ctx, |model, ctx| {
             model.set_mode(InputSuggestionsMode::ConversationMenu, ctx);
         });
-        let is_in_agent_view = FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(ctx).is_fullscreen();
+        // strip(neuter): AgentView is gated off in this fork.
+        let is_in_agent_view = false;
         send_telemetry_from_ctx!(
             TelemetryEvent::InlineConversationMenuOpened { is_in_agent_view },
             ctx
@@ -4019,6 +3986,7 @@ impl Input {
         ctx.notify();
     }
 
+    #[allow(dead_code)]
     fn handle_user_query_menu_event(
         &mut self,
         event: &UserQueryMenuEvent,
@@ -4065,8 +4033,8 @@ impl Input {
                     destination,
                 });
 
-                let is_in_agent_view = FeatureFlag::AgentView.is_enabled()
-                    && self.agent_view_controller.as_ref(ctx).is_active();
+                // strip(neuter): AgentView is gated off in this fork.
+                let is_in_agent_view = false;
                 send_telemetry_from_ctx!(
                     TelemetryEvent::SlashCommandAccepted {
                         command_details: SlashCommandAcceptedDetails::StaticCommand {
@@ -4355,8 +4323,8 @@ impl Input {
                     exchange_id: *exchange_id,
                 });
 
-                let is_in_agent_view = FeatureFlag::AgentView.is_enabled()
-                    && self.agent_view_controller.as_ref(ctx).is_active();
+                // strip(neuter): AgentView is gated off in this fork.
+                let is_in_agent_view = false;
                 send_telemetry_from_ctx!(
                     TelemetryEvent::SlashCommandAccepted {
                         command_details: SlashCommandAcceptedDetails::StaticCommand {
@@ -4457,20 +4425,7 @@ impl Input {
             });
         }
 
-        // Enter agent view if not already active
-        if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            self.agent_view_controller.update(ctx, |controller, ctx| {
-                let _ = controller.try_enter_agent_view(
-                    None,
-                    AgentViewEntryOrigin::SlashCommand {
-                        trigger: SlashCommandTrigger::input(),
-                    },
-                    ctx,
-                );
-            });
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         // Send the skill invocation request
         let request = SlashCommandRequest::InvokeSkill { skill, user_query };
@@ -5207,16 +5162,9 @@ impl Input {
             return;
         }
 
+        // strip(neuter): AgentView is gated off in this fork.
         let ai_settings = AISettings::as_ref(ctx);
-        if FeatureFlag::AgentView.is_enabled() {
-            if self.agent_view_controller.as_ref(ctx).is_fullscreen() {
-                if !ai_settings.is_ai_autodetection_enabled(ctx) {
-                    return;
-                }
-            } else if !ai_settings.is_nld_in_terminal_enabled(ctx) {
-                return;
-            }
-        } else if !ai_settings.is_ai_autodetection_enabled(ctx) {
+        if !ai_settings.is_ai_autodetection_enabled(ctx) {
             return;
         }
 
@@ -5329,9 +5277,8 @@ impl Input {
             }
             UniversalDeveloperInputButtonBarEvent::OpenSlashCommandMenu => {
                 self.focus_input_box(ctx);
-                if !FeatureFlag::AgentView.is_enabled() {
-                    self.ensure_agent_mode_for_ai_features(false, ctx);
-                }
+                // strip(neuter): AgentView is gated off in this fork.
+                self.ensure_agent_mode_for_ai_features(false, ctx);
                 self.toggle_legacy_slash_commands_menu(ctx);
             }
         }
@@ -5355,11 +5302,8 @@ impl Input {
         let ai_input_model = self.ai_input_model.as_ref(ctx);
         let config = ai_input_model.input_config();
 
-        // Don't force agent mode if user has explicitly locked to Shell mode
-        if (!should_override_shell_lock || FeatureFlag::AgentView.is_enabled())
-            && config.is_locked
-            && !config.input_type.is_ai()
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if !should_override_shell_lock && config.is_locked && !config.input_type.is_ai() {
             return;
         }
 
@@ -7612,24 +7556,10 @@ impl Input {
             self.editor.update(ctx, |editor, editor_ctx| {
                 editor.handle_action(&EditorAction::VimEscape, editor_ctx);
             });
-        } else if FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(ctx).is_active()
-            && has_attached_context
-        {
-            self.clear_attached_context(ctx);
         } else {
-            if FeatureFlag::AgentView.is_enabled()
-                && !self.agent_view_controller.as_ref(ctx).is_fullscreen()
-            {
-                if self.ai_input_model.as_ref(ctx).is_ai_input_enabled() {
-                    // This implies the contents of the terminal input are autodetected as an agent
-                    // prompt; overrides the autodetection by explicitly setting input mode back to
-                    // terminal.
-                    self.set_input_mode_terminal(false, ctx);
-                }
-            } else {
-                self.set_input_mode_natural_language_detection(ctx);
-            }
+            // strip(neuter): AgentView is gated off in this fork.
+            let _ = has_attached_context;
+            self.set_input_mode_natural_language_detection(ctx);
             ctx.emit(Event::Escape);
         }
     }
@@ -8566,42 +8496,8 @@ impl Input {
                 let is_input_mode_locked = self.ai_input_model.as_ref(ctx).is_input_type_locked();
                 let buffer_text = self.buffer_text(ctx);
 
-                let ai_settings = AISettings::as_ref(ctx);
-                if FeatureFlag::AgentView.is_enabled() && buffer_text.is_empty() {
-                    let last_buffer_text = self.editor.as_ref(ctx).last_buffer_text(ctx);
-                    let was_shell_mode_prefix_stripped =
-                        last_buffer_text == TERMINAL_INPUT_PREFIX && buffer_text.is_empty();
-
-                    let is_fullscreen_agent_view_active =
-                        self.agent_view_controller.as_ref(ctx).is_fullscreen();
-                    let current_input_config = self.ai_input_model.as_ref(ctx).input_config();
-
-                    // We should re-enable autodetection if the user overrode an autodetection
-                    // result:
-                    // * In agent view, this means the user overrode a mis-classified shell command
-                    //   to be an agent prompt.
-                    // * In terminal view, this eans the user overrode a mis-classified agent prompt
-                    //   to a terminal command.
-                    let is_cli_agent_input_open =
-                        CLIAgentSessionsModel::as_ref(ctx).is_input_open(self.terminal_view_id);
-                    let should_reenable_autodetection = (ai_settings
-                        .is_ai_autodetection_enabled(ctx)
-                        && is_fullscreen_agent_view_active
-                        && current_input_config.is_ai()
-                        && current_input_config.is_locked
-                        && !was_shell_mode_prefix_stripped)
-                        || (ai_settings.is_nld_in_terminal_enabled(ctx)
-                            && !self.agent_view_controller.as_ref(ctx).is_active()
-                            && !is_cli_agent_input_open
-                            && current_input_config.is_shell()
-                            && current_input_config.is_locked);
-                    if should_reenable_autodetection {
-                        self.ai_input_model.update(ctx, |input_model, ctx| {
-                            input_model.enable_autodetection(input_model.input_type(), ctx);
-                        });
-                        ctx.notify();
-                    }
-                }
+                // strip(neuter): AgentView is gated off in this fork.
+                let _ = buffer_text;
 
                 // If the last buffer didn't start with the terminal input prefix and the current buffer does, then enable terminal input and lock it.
                 let is_locked_shell_mode = !is_ai_input_enabled && is_input_mode_locked;
@@ -8612,17 +8508,16 @@ impl Input {
                     .block_list()
                     .active_block()
                     .is_agent_in_control_or_tagged_in();
-                let is_cli_agent_bash_mode_input_open = CLIAgentSessionsModel::as_ref(ctx)
+                let _is_cli_agent_bash_mode_input_open = CLIAgentSessionsModel::as_ref(ctx)
                     .session(self.terminal_view_id)
                     .is_some_and(|s| {
                         s.agent.supports_bash_mode()
                             && matches!(s.input_state, CLIAgentInputState::Open { .. })
                     });
+                // strip(neuter): AgentView is gated off in this fork.
+                let _ = is_agent_view_active;
                 if FeatureFlag::AgentMode.is_enabled()
                     && !is_locked_shell_mode
-                    && (!FeatureFlag::AgentView.is_enabled()
-                        || is_agent_view_active
-                        || is_cli_agent_bash_mode_input_open)
                     && !is_agent_in_control_or_tagged_in
                 {
                     let buffer_text = self.buffer_text(ctx);
@@ -9462,8 +9357,9 @@ impl Input {
             return true;
         }
 
+        // strip(neuter): AgentView is gated off in this fork.
         let is_udi_enabled = InputSettings::as_ref(ctx).is_universal_developer_input_enabled(ctx);
-        if !is_udi_enabled && !FeatureFlag::AgentView.is_enabled() {
+        if !is_udi_enabled {
             return false;
         }
 
@@ -9522,31 +9418,8 @@ impl Input {
     /// open (which is already a composer context and doesn't use the agent view),
     /// Agent View is disabled, we're already in the agent view, or a long running
     /// command is in progress.
-    fn maybe_enter_agent_view_for_image_add(&mut self, ctx: &mut ViewContext<Self>) {
-        let is_cli_agent_input_open =
-            CLIAgentSessionsModel::as_ref(ctx).is_input_open(self.terminal_view_id);
-        if is_cli_agent_input_open {
-            return;
-        }
-
-        let is_in_long_running_command = self
-            .model
-            .lock()
-            .block_list()
-            .active_block()
-            .is_active_and_long_running();
-        if !FeatureFlag::AgentView.is_enabled()
-            || self.agent_view_controller.as_ref(ctx).is_active()
-            || is_in_long_running_command
-        {
-            return;
-        }
-
-        if let Err(e) = self.agent_view_controller.update(ctx, |controller, ctx| {
-            controller.try_enter_agent_view(None, AgentViewEntryOrigin::ImageAdded, ctx)
-        }) {
-            log::error!("Failed to enter agent view when adding images: {e:?}");
-        }
+    fn maybe_enter_agent_view_for_image_add(&mut self, _ctx: &mut ViewContext<Self>) {
+        // strip(neuter): AgentView is gated off in this fork.
     }
 
     /// Display an error toast for image paste operation failures.
@@ -11072,14 +10945,7 @@ impl Input {
         ai_query: String,
         ctx: &mut ViewContext<Self>,
     ) {
-        if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            self.agent_view_controller.update(ctx, |controller, ctx| {
-                let _ =
-                    controller.try_enter_agent_view(None, AgentViewEntryOrigin::ProjectEntry, ctx);
-            });
-        }
+        // strip(neuter): AgentView is gated off in this fork.
         self.ai_controller.update(ctx, move |controller, ctx| {
             controller.send_slash_command_request(
                 SlashCommandRequest::CreateNewProject { query: ai_query },
@@ -11089,14 +10955,7 @@ impl Input {
     }
 
     pub(crate) fn initiate_clone_repository(&mut self, url: String, ctx: &mut ViewContext<Self>) {
-        if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            self.agent_view_controller.update(ctx, |controller, ctx| {
-                let _ =
-                    controller.try_enter_agent_view(None, AgentViewEntryOrigin::ProjectEntry, ctx);
-            });
-        }
+        // strip(neuter): AgentView is gated off in this fork.
         self.ai_controller.update(ctx, move |controller, ctx| {
             controller.send_slash_command_request(SlashCommandRequest::CloneRepository { url }, ctx)
         });
@@ -11416,17 +11275,9 @@ impl Input {
         // NaturalLanguageCommandSearch has its own `cmd+enter` behaviour, not expected to execute here
         let mode = self.suggestions_mode_model.as_ref(ctx).mode().clone();
         match &mode {
+            // strip(neuter): AgentView is gated off in this fork.
             InputSuggestionsMode::CompletionSuggestions { .. }
-            | InputSuggestionsMode::HistoryUp { .. }
-                // If FeatureFlag::AgentView is enabled, cmd-enter should unconditionally enter the
-                // agent view with the current buffer contents as agent input.
-                //
-                // I'm (ZB) not even sure what this legacy behavior is for, because if you have any
-                // selected completion or history suggestion, that suggestion has already been
-                // inserted into the buffer so enter (without cmd- prefix) would directly execute
-                // it anyway.
-                if !FeatureFlag::AgentView.is_enabled() =>
-            {
+            | InputSuggestionsMode::HistoryUp { .. } => {
                 self.input_suggestions.update(ctx, |suggestions, ctx| {
                     suggestions.confirm_and_execute(ctx);
                 });
@@ -11454,11 +11305,7 @@ impl Input {
                     .update(ctx, |view, ctx| view.accept_selected_item(true, ctx));
             }
             _ => {
-                if FeatureFlag::AgentView.is_enabled()
-                    && self.maybe_handle_cmd_or_ctrl_shift_enter_for_slash_command(ctx)
-                {
-                    return;
-                }
+                // strip(neuter): AgentView is gated off in this fork.
                 // In cloud mode (ambient agent), Cmd+Enter should exit cloud mode entirely and start a
                 // new *local* agent conversation in the root terminal. This should work whether the
                 // buffer is empty (blank convo) or non-empty (prefill draft, but don't auto-send).
@@ -11500,17 +11347,8 @@ impl Input {
                 // For viewers in a shared session, send the prompt to the sharer via
                 // submit_viewer_ai_query instead of emitting UnhandledCmdEnter. This keeps
                 // all viewer AI query logic in input.rs.
-                let shared_session_status = self.model.lock().shared_session_status().clone();
-                if FeatureFlag::AgentView.is_enabled()
-                    && shared_session_status.is_viewer()
-                    && shared_session_status.is_executor()
-                {
-                    let prompt = self.editor.as_ref(ctx).buffer_text(ctx);
-                    if !prompt.trim().is_empty() {
-                        self.submit_viewer_ai_query(ctx);
-                        return;
-                    }
-                }
+                let _shared_session_status = self.model.lock().shared_session_status().clone();
+                // strip(neuter): AgentView is gated off in this fork.
 
                 ctx.emit(Event::UnhandledCmdEnter)
             }
@@ -11812,33 +11650,7 @@ impl Input {
             }
         }
 
-        // If the agent view is inactive but the current input is detected as AI, submitting
-        // this query triggers entering the agent view.
-        if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(ctx).is_active()
-        {
-            let prompt = self.editor.as_ref(ctx).buffer_text(ctx);
-            let prompt = prompt.trim().to_owned();
-            // Don't enter the agent view if input is autodetected as AI but the input is empty.
-            //
-            // This may happen because the input mode must be set to either shell or agent, and
-            // when the buffer cleared the input remains in whichever mode it was in previously
-            // until new input is entered.
-            if prompt.is_empty() {
-                return;
-            }
-            ctx.emit(Event::EnterAgentView {
-                initial_prompt: Some(prompt),
-                conversation_id: None,
-                origin: AgentViewEntryOrigin::Input {
-                    was_prompt_autodetected: !self
-                        .ai_input_model
-                        .as_ref(ctx)
-                        .is_input_type_locked(),
-                },
-            });
-            return;
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         let has_requests_remaining = AIRequestUsageModel::as_ref(ctx).has_requests_remaining();
 
@@ -12285,12 +12097,8 @@ impl Input {
 
         let is_input_buffer_empty = self.editor.as_ref(ctx).buffer_text(ctx).is_empty();
 
-        // When AgentView is enabled, reverting to AI mode in an active agent view with an empty
-        // buffer should unlock (re-enable autodetection) - semantically like clearing the "!".
-        let should_unlock = FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(ctx).is_fullscreen()
-            && is_input_buffer_empty
-            && AISettings::as_ref(ctx).is_ai_autodetection_enabled(ctx);
+        // strip(neuter): AgentView is gated off in this fork.
+        let should_unlock = false;
 
         if should_unlock {
             self.ai_input_model.update(ctx, |ai_input_model, ctx| {
@@ -12405,9 +12213,8 @@ impl Input {
         // When `FeatureFlag::AgentView` is enabled, blocks are attachable as AI context in terminal
         // mode. Selections are preserved so they can be attached to the query when entering the
         // agent view.
-        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled()
-            && !FeatureFlag::AgentView.is_enabled()
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if !self.ai_input_model.as_ref(ctx).is_ai_input_enabled() {
             self.model.lock().block_list_mut().clear_selection();
         }
 
@@ -12942,9 +12749,8 @@ impl Input {
         let constrained_banner = ConstrainedBox::new(banner)
             .with_height(2. * appearance.line_height_ratio() * appearance.monospace_font_size())
             .finish();
-        let should_use_udi_spacing = self.should_show_universal_developer_input(app)
-            || (FeatureFlag::AgentView.is_enabled()
-                && self.agent_view_controller.as_ref(app).is_active());
+        // strip(neuter): AgentView is gated off in this fork.
+        let should_use_udi_spacing = self.should_show_universal_developer_input(app);
         let mut container: Container = Container::new(constrained_banner);
         let (suggestion_to_prompt_padding, suggestion_to_input_border_padding) =
             if should_use_udi_spacing {
@@ -13089,10 +12895,8 @@ impl Input {
             terminal_settings.terminal_input_spacing(appearance.line_height_ratio(), app);
         let mut bottom_padding = terminal_spacing.editor_bottom_padding;
 
-        // When `FeatureFlag::AgentView` is enabled, always render with UDI-style spacing values,
-        // regardless of terminal/agent mode or prompt setting.
-        let is_udi_style_spacing =
-            self.should_show_universal_developer_input(app) || FeatureFlag::AgentView.is_enabled();
+        // strip(neuter): AgentView is gated off in this fork.
+        let is_udi_style_spacing = self.should_show_universal_developer_input(app);
 
         let is_compact_mode =
             matches!(terminal_settings.spacing_mode.value(), SpacingMode::Compact)
@@ -13406,23 +13210,11 @@ impl TypedActionView for Input {
                     return;
                 }
 
-                if FeatureFlag::AgentView.is_enabled() {
-                    if let Err(e) = self.agent_view_controller.update(ctx, |controller, ctx| {
-                        controller.try_enter_agent_view(
-                            None,
-                            AgentViewEntryOrigin::Input {
-                                was_prompt_autodetected: false,
-                            },
-                            ctx,
-                        )
-                    }) {
-                        log::warn!("Failed to start new agent conversation from zero-state: {e:?}");
-                    }
-                } else if self.should_show_universal_developer_input(ctx) {
+                // strip(neuter): AgentView is gated off in this fork.
+                if self.should_show_universal_developer_input(ctx) {
                     // Clear follow-up state (start a fresh conversation)
                     self.ai_context_model.update(ctx, |ai_context_model, ctx| {
                         ai_context_model.set_pending_query_state_for_new_conversation(
-                            // This is a placeholder origin, this codepath is dead when AgentView is enabled.
                             AgentViewEntryOrigin::Input {
                                 was_prompt_autodetected: false,
                             },
@@ -13522,15 +13314,7 @@ impl View for Input {
 
         // Keep Input's keymap context in sync with TerminalView's context for AgentView-related
         // bindings (e.g. cmd-i).
-        if FeatureFlag::AgentView.is_enabled() {
-            ctx.set.insert(flags::AGENT_VIEW_ENABLED);
-            let agent_view_state = self.agent_view_controller.as_ref(app).agent_view_state();
-            if agent_view_state.is_fullscreen() {
-                ctx.set.insert(flags::ACTIVE_AGENT_VIEW);
-            } else if agent_view_state.is_inline() {
-                ctx.set.insert(flags::ACTIVE_INLINE_AGENT_VIEW);
-            }
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         if self.buffer_text(app).is_empty() {
             ctx.set.insert(flags::EMPTY_INPUT_BUFFER);
@@ -13671,18 +13455,8 @@ impl View for Input {
         }
         let is_universal_input = self.should_show_universal_developer_input(app);
 
-        // strip(neuter): CloudMode is gated off in this fork; ambient agent
-        // status footer is unreachable.
-        if FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(app).is_active()
-        {
-            self.render_agent_input(app)
-        } else if FeatureFlag::AgentView.is_enabled()
-            && !self.agent_view_controller.as_ref(app).is_active()
-            && !should_render_ps1_prompt(&self.model.lock(), app)
-        {
-            self.render_terminal_input(app)
-        } else if !FeatureFlag::AgentView.is_enabled() && is_universal_input {
+        // strip(neuter): AgentView + CloudMode are gated off in this fork.
+        if is_universal_input {
             self.render_universal_developer_input(app)
         } else {
             self.render_classic_input(app)
@@ -13789,7 +13563,8 @@ fn maybe_render_ai_input_indicators(
         return None;
     }
 
-    if !ai_input_model.is_ai_input_enabled() || FeatureFlag::AgentView.is_enabled() {
+    // strip(neuter): AgentView is gated off in this fork.
+    if !ai_input_model.is_ai_input_enabled() {
         return None;
     }
 
