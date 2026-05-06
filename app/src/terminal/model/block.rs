@@ -3,7 +3,6 @@ mod serialized_block;
 
 pub use interaction_mode::*;
 pub use serialized_block::*;
-use warp_core::features::FeatureFlag;
 
 use super::grid::grid_handler::{GridHandler, PerformResetGridChecks};
 use super::grid::{Cursor, RespectDisplayedOutput};
@@ -19,7 +18,7 @@ use super::{bootstrap::BootstrapStage, find::RegexDFAs};
 use warp_terminal::model::{KeyboardModes, KeyboardModesApplyBehavior};
 
 use crate::ai::agent::conversation::AIConversationId;
-use crate::ai::blocklist::agent_view::{AgentViewDisplayMode, AgentViewState};
+use crate::ai::blocklist::agent_view::AgentViewState;
 use crate::{
     ai::agent::redaction::redact_secrets,
     context_chips::prompt_snapshot::PromptSnapshot,
@@ -1381,55 +1380,11 @@ impl Block {
     }
 
     /// If true, this block is hidden and has a height of 0.
-    pub fn should_hide_block(&self, agent_view_state: &AgentViewState) -> bool {
+    pub fn should_hide_block(&self, _agent_view_state: &AgentViewState) -> bool {
         if self.hidden {
             return true;
         }
-        if FeatureFlag::AgentView.is_enabled() {
-            match agent_view_state {
-                AgentViewState::Active {
-                    display_mode: AgentViewDisplayMode::FullScreen,
-                    conversation_id: active_id,
-                    ..
-                } => {
-                    // Agent view is active - show only blocks that belong to this conversation
-                    let visible_in_conversation = match &self.agent_view_visibility {
-                        AgentViewVisibility::Terminal {
-                            pending_conversation_ids,
-                            conversation_ids,
-                        } => {
-                            pending_conversation_ids.contains(active_id)
-                                || conversation_ids.contains(active_id)
-                        }
-                        AgentViewVisibility::Agent {
-                            origin_conversation_id,
-                            pending_other_conversation_ids,
-                            other_conversation_ids,
-                        } => {
-                            active_id == origin_conversation_id
-                                || pending_other_conversation_ids.contains(active_id)
-                                || other_conversation_ids.contains(active_id)
-                        }
-                    };
-                    if !visible_in_conversation {
-                        return true;
-                    }
-                }
-                AgentViewState::Active {
-                    display_mode: AgentViewDisplayMode::Inline,
-                    ..
-                }
-                | AgentViewState::Inactive => {
-                    // Terminal view - hide blocks that were created in agent mode
-                    if matches!(
-                        self.agent_view_visibility,
-                        AgentViewVisibility::Agent { .. }
-                    ) {
-                        return true;
-                    }
-                }
-            }
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         let is_bootstrap_block = self.bootstrap_stage == BootstrapStage::WarpInput;
         let is_empty_bootstrap_script_execution_block = self.bootstrap_stage

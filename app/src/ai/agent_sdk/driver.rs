@@ -40,10 +40,7 @@ use crate::{
             conversation_output_status_from_conversation, AmbientAgentTaskId,
             AmbientConversationStatus,
         },
-        blocklist::{
-            agent_view::AgentViewEntryOrigin, BlocklistAIHistoryEvent, BlocklistAIHistoryModel,
-            BlocklistAIPermissions,
-        },
+        blocklist::{BlocklistAIHistoryEvent, BlocklistAIHistoryModel, BlocklistAIPermissions},
         cloud_environments::{AmbientAgentEnvironment, CloudAmbientAgentEnvironment},
         execution_profiles::profiles::AIExecutionProfilesModel,
         mcp::{
@@ -79,7 +76,7 @@ use uuid::Uuid;
 use warp_cli::agent::{Harness, OutputFormat};
 use warp_cli::mcp::MCPSpec;
 use warp_cli::share::ShareRequest;
-use warp_core::{features::FeatureFlag, report_error, report_if_error, safe_debug, safe_info};
+use warp_core::{report_error, report_if_error, safe_debug, safe_info};
 use warp_graphql::ai::AgentTaskState;
 use warp_managed_secrets::ManagedSecretValue;
 use warpui::{
@@ -1930,19 +1927,12 @@ impl AgentDriver {
         self.terminal_driver.update(ctx, |td, ctx| {
             td.with_terminal_view(ctx, |terminal, ctx| match task_prompt {
                 AgentRunPrompt::Local(prompt_str) => {
-                    if FeatureFlag::AgentView.is_enabled() {
-                        terminal.enter_agent_view(
-                            Some(prompt_str),
-                            restored_conversation_id,
-                            AgentViewEntryOrigin::Cli,
-                            ctx,
-                        );
-                    } else {
-                        terminal.set_ai_input_mode_with_query(Some(&prompt_str), ctx);
-                        terminal
-                            .input()
-                            .update(ctx, |input, ctx| input.input_enter(ctx));
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
+                    let _ = restored_conversation_id;
+                    terminal.set_ai_input_mode_with_query(Some(&prompt_str), ctx);
+                    terminal
+                        .input()
+                        .update(ctx, |input, ctx| input.input_enter(ctx));
                 }
                 AgentRunPrompt::ServerSide {
                     skill,
@@ -1954,14 +1944,7 @@ impl AgentDriver {
                     };
                     let ambient_run_id = task_id.to_string();
 
-                    if FeatureFlag::AgentView.is_enabled() {
-                        terminal.enter_agent_view(
-                            None,
-                            restored_conversation_id,
-                            AgentViewEntryOrigin::Cli,
-                            ctx,
-                        );
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
 
                     terminal.ai_controller().update(ctx, |controller, ctx| {
                         controller.send_ai_input_with_context(

@@ -32,7 +32,6 @@ use session_sharing_protocol::{
 };
 
 use std::time::Duration;
-use warp_core::features::FeatureFlag;
 use warpui::{
     Entity, ModelContext, ModelHandle, RequestState, RetryOption, SingletonEntity, WeakViewHandle,
 };
@@ -405,7 +404,8 @@ impl Network {
                         latest_block_id: None,
                         telemetry_context: Some(TelemetryContext(telemetry_context().as_value())),
                         feature_support: FeatureSupport {
-                            supports_agent_view: FeatureFlag::AgentView.is_enabled(),
+                            // strip(neuter): AgentView is gated off in this fork.
+                            supports_agent_view: false,
                             supports_full_role: true,
                             supports_full_role_for_real: true,
                         },
@@ -461,7 +461,8 @@ impl Network {
                         latest_block_id: Some(latest_block_id.into()),
                         telemetry_context: Some(TelemetryContext(telemetry_context().as_value())),
                         feature_support: FeatureSupport {
-                            supports_agent_view: FeatureFlag::AgentView.is_enabled(),
+                            // strip(neuter): AgentView is gated off in this fork.
+                            supports_agent_view: false,
                             supports_full_role: true,
                             supports_full_role_for_real: true,
                         },
