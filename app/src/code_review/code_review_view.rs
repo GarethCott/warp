@@ -8,10 +8,7 @@ use std::{
 };
 
 use crate::{
-    ai::{
-        agent::{AgentReviewCommentBatch, DiffSetHunk},
-        blocklist::agent_view::AgentViewEntryOrigin,
-    },
+    ai::agent::{AgentReviewCommentBatch, DiffSetHunk},
     code::editor::comment_editor::DEFAULT_COMMENT_MAX_WIDTH,
     code_review::diff_state::InvalidationSource,
     coding_panel_enablement_state::CodingPanelEnablementState,
@@ -6278,19 +6275,7 @@ impl CodeReviewView {
                         ctx,
                     );
 
-                    // Enter agent view if enabled and not already active
-                    if FeatureFlag::AgentView.is_enabled()
-                        && !terminal_view
-                            .agent_view_controller()
-                            .as_ref(ctx)
-                            .is_active()
-                    {
-                        terminal_view.enter_agent_view_for_new_conversation(
-                            None,
-                            AgentViewEntryOrigin::CodeReviewContext,
-                            ctx,
-                        );
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
                 });
             }
         }
@@ -6496,19 +6481,7 @@ impl CodeReviewView {
                             context_model.register_diff_hunk_attachment(diff_hunk_key, attachment);
                         });
 
-                    // Enter agent view if enabled and not already active
-                    if FeatureFlag::AgentView.is_enabled()
-                        && !terminal_view
-                            .agent_view_controller()
-                            .as_ref(ctx)
-                            .is_active()
-                    {
-                        terminal_view.enter_agent_view_for_new_conversation(
-                            None,
-                            AgentViewEntryOrigin::CodeReviewContext,
-                            ctx,
-                        );
-                    }
+                    // strip(neuter): AgentView is gated off in this fork.
                 });
             }
         }

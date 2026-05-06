@@ -31,7 +31,6 @@ use session_sharing_protocol::sharer::{
 };
 use session_sharing_protocol::sharer::{FailedToInitializeSessionReason, SessionEndedReason};
 use std::collections::HashMap;
-use warp_core::features::FeatureFlag;
 
 use std::pin::pin;
 use std::sync::Arc;
@@ -644,7 +643,8 @@ impl Network {
                         lifetime,
                         source_type,
                         feature_support: FeatureSupport {
-                            supports_agent_view: FeatureFlag::AgentView.is_enabled(),
+                            // strip(neuter): AgentView is gated off in this fork.
+                            supports_agent_view: false,
                             supports_full_role: true,
                             supports_full_role_for_real: true,
                         },
@@ -731,7 +731,8 @@ impl Network {
                             latest_block_id: latest_block_id.into(),
                             selection: network.cached_latest_state.selection.clone(),
                             feature_support: FeatureSupport {
-                                supports_agent_view: FeatureFlag::AgentView.is_enabled(),
+                                // strip(neuter): AgentView is gated off in this fork.
+                            supports_agent_view: false,
                                 supports_full_role: true,
                                 supports_full_role_for_real: true,
                             },

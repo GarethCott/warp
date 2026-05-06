@@ -1,4 +1,3 @@
-use crate::features::FeatureFlag;
 use crate::report_if_error;
 use crate::settings::{InputSettings, WarpPromptSeparator};
 use crate::terminal::event::{BlockType, UserBlockCompleted};
@@ -15,7 +14,6 @@ use crate::{
         },
         session_settings::{
             GithubPrPromptChipDefaultValidation, SessionSettings, SessionSettingsChangedEvent,
-            ToolbarChipSelection,
         },
         view::{ContextMenuAction, PromptPart, PromptPosition, TerminalAction},
     },
@@ -270,9 +268,9 @@ impl CurrentPrompt {
             // CurrentPrompt exists and this fn is called even if we're not using warp prompt.
             // We don't need to do anything if we're honoring PS1 unless universal developer input
             // or AgentView is enabled (agent view needs chips regardless of PS1 setting).
+            // strip(neuter): AgentView is gated off in this fork.
             if *SessionSettings::as_ref(ctx).honor_ps1
                 && !InputSettings::as_ref(ctx).is_universal_developer_input_enabled(ctx)
-                && !FeatureFlag::AgentView.is_enabled()
             {
                 return;
             }
@@ -1092,28 +1090,9 @@ impl CurrentPrompt {
     /// customization/ordering/visibility, so we keep their backing values up to date even if they
     /// are not present in the prompt configuration.
     fn chips_to_run(&self, ctx: &AppContext) -> Vec<ContextChipKind> {
-        let mut chips = self.configured_chips(ctx);
+        let chips = self.configured_chips(ctx);
 
-        if FeatureFlag::AgentView.is_enabled() {
-            let footer_chips = SessionSettings::as_ref(ctx)
-                .agent_footer_chip_selection
-                .all_chips();
-            for chip_kind in footer_chips {
-                if !chips.contains(&chip_kind) {
-                    chips.push(chip_kind);
-                }
-            }
-
-            // Also include chips configured for the CLI agent footer.
-            let cli_footer_chips = SessionSettings::as_ref(ctx)
-                .cli_agent_footer_chip_selection
-                .all_chips();
-            for chip_kind in cli_footer_chips {
-                if !chips.contains(&chip_kind) {
-                    chips.push(chip_kind);
-                }
-            }
-        }
+        // strip(neuter): AgentView is gated off in this fork.
 
         chips
     }
@@ -1594,9 +1573,9 @@ impl CurrentPrompt {
         // 1. PS1 is not honored (normal case), OR
         // 2. Universal developer input is enabled (overrides PS1 behavior), OR
         // 3. AgentView feature is enabled (agent view needs chips regardless of PS1)
+        // strip(neuter): AgentView is gated off in this fork.
         !*SessionSettings::as_ref(ctx).honor_ps1
             || InputSettings::as_ref(ctx).is_universal_developer_input_enabled(ctx)
-            || FeatureFlag::AgentView.is_enabled()
     }
 }
 
