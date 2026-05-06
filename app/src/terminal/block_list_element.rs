@@ -2286,9 +2286,8 @@ impl BlockListElement {
         app: &AppContext,
     ) {
         let block_height = block.height(agent_view_state).as_f64() as f32 * cell_size.y();
-        if block.is_restored()
-            && (!FeatureFlag::AgentView.is_enabled() || !agent_view_state.is_fullscreen())
-        {
+        // strip(neuter): AgentView is gated off in this fork.
+        if block.is_restored() {
             ctx.scene
                 .draw_rect_with_hit_recording(RectF::new(
                     grid_origin,
@@ -2307,14 +2306,13 @@ impl BlockListElement {
                 .with_background(agent_view_bg_fill(app));
         }
 
+        // strip(neuter): AgentView is gated off in this fork.
         let mut did_render_ai_stripe = false;
-        if !FeatureFlag::AgentView.is_enabled() {
-            if let Some(ai_context_stripe_color) =
-                ai_render_context.context_color_for_block(block, warp_theme)
-            {
-                draw_flag_pole(grid_origin, block_height, ai_context_stripe_color, ctx);
-                did_render_ai_stripe = true;
-            }
+        if let Some(ai_context_stripe_color) =
+            ai_render_context.context_color_for_block(block, warp_theme)
+        {
+            draw_flag_pole(grid_origin, block_height, ai_context_stripe_color, ctx);
+            did_render_ai_stripe = true;
         }
 
         if block.has_failed() {
@@ -4209,20 +4207,19 @@ impl Element for BlockListElement {
                         rich_content.paint(grid_origin, ctx, app);
                     }
 
-                    if !FeatureFlag::AgentView.is_enabled() {
-                        let ai_render_context = self.ai_render_context.borrow();
-                        if let Some(ai_context_color) = self
-                            .rich_content_metadata
-                            .get(view_id)
-                            .and_then(|metadata| {
-                                ai_render_context
-                                    .context_color_for_rich_content(metadata, &self.warp_theme)
-                            })
-                        {
-                            ctx.scene.start_layer(ClipBounds::ActiveLayer);
-                            draw_flag_pole(block_origin, *height_px, ai_context_color, ctx);
-                            ctx.scene.stop_layer();
-                        }
+                    // strip(neuter): AgentView is gated off in this fork.
+                    let ai_render_context = self.ai_render_context.borrow();
+                    if let Some(ai_context_color) = self
+                        .rich_content_metadata
+                        .get(view_id)
+                        .and_then(|metadata| {
+                            ai_render_context
+                                .context_color_for_rich_content(metadata, &self.warp_theme)
+                        })
+                    {
+                        ctx.scene.start_layer(ClipBounds::ActiveLayer);
+                        draw_flag_pole(block_origin, *height_px, ai_context_color, ctx);
+                        ctx.scene.stop_layer();
                     }
 
                     draw_border_above_block = true;
