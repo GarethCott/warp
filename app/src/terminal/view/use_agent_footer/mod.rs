@@ -29,7 +29,6 @@ use anyhow::anyhow;
 use parking_lot::FairMutex;
 use pathfinder_color::ColorU;
 use warp_core::{
-    features::FeatureFlag,
     report_error, send_telemetry_from_ctx,
     settings::Setting,
     ui::{
@@ -859,9 +858,11 @@ impl TerminalView {
         entrypoint: CLIAgentInputEntrypoint,
         ctx: &mut ViewContext<Self>,
     ) {
-        if !FeatureFlag::CLIAgentRichInput.is_enabled()
-            || self.has_active_cli_agent_input_session(ctx)
-        {
+        // strip(neuter): CLIAgentRichInput is gated off in this fork.
+        let _ = (entrypoint, ctx);
+        return;
+        #[allow(unreachable_code)]
+        if self.has_active_cli_agent_input_session(ctx) {
             return;
         }
 

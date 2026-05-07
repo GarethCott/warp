@@ -619,11 +619,7 @@ fn all_commands() -> Vec<StaticCommand> {
         commands.push(CREATE_DOCKER_SANDBOX);
     }
 
-    if FeatureFlag::CreatingSharedSessions.is_enabled()
-        && FeatureFlag::HOARemoteControl.is_enabled()
-    {
-        commands.push(REMOTE_CONTROL);
-    }
+    // strip(neuter): HOARemoteControl is gated off in this fork.
 
     if FeatureFlag::Changelog.is_enabled() {
         commands.push(CHANGELOG);

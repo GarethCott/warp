@@ -1,6 +1,5 @@
 use pathfinder_color::ColorU;
 use warp_core::channel::ChannelState;
-use warp_core::features::FeatureFlag;
 use warp_core::ui::{
     appearance::Appearance,
     builder::UiBuilder,
@@ -566,8 +565,8 @@ pub fn render_privacy_settings_toggles<A: Action + Clone + 'static>(
     // Builds without a telemetry/crash reporting config (e.g. OpenWarp) cannot
     // ship the corresponding events, so the toggles would be no-ops. Hide each
     // one independently based on whether its backing config is present.
-    if ChannelState::is_telemetry_available() && !FeatureFlag::GlobalAIAnalyticsBanner.is_enabled()
-    {
+    // strip(neuter): GlobalAIAnalyticsBanner is gated off in this fork.
+    if ChannelState::is_telemetry_available() {
         col.add_children(vec![
             Container::new(telemetry_toggle)
                 .with_margin_bottom(AUTH_MODAL_GAP)

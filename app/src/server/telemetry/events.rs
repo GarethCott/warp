@@ -4937,7 +4937,7 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             Self::ObjectLinkCopied => EnablementState::Always,
             Self::FileTreeToggled => EnablementState::Flag(FeatureFlag::FileTree),
             Self::FileTreeItemAttachedAsContext => EnablementState::Flag(FeatureFlag::FileTree),
-            Self::CodeSelectionAddedAsContext => EnablementState::Flag(FeatureFlag::HoaCodeReview),
+            Self::CodeSelectionAddedAsContext => EnablementState::Always,
             Self::FileTreeItemCreated => EnablementState::Flag(FeatureFlag::FileTree),
             Self::ConversationListViewOpened
             | Self::ConversationListItemOpened
@@ -5314,9 +5314,7 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             | Self::AutoupdateForcekillFailed => EnablementState::Always,
             Self::ToggleCodebaseContext => EnablementState::Always,
             Self::ToggleAutoIndexing => EnablementState::Always,
-            Self::AgentModeRatedResponse => {
-                EnablementState::Flag(FeatureFlag::GlobalAIAnalyticsBanner)
-            }
+            Self::AgentModeRatedResponse => EnablementState::Always,
             Self::ExecutedWarpDrivePrompt => EnablementState::Always,
             Self::ImageReceived => EnablementState::Always,
             Self::FileExceededContextLimit => EnablementState::Always,
@@ -5394,9 +5392,7 @@ impl TelemetryEventDesc for TelemetryEventDiscriminants {
             }
             Self::CLIAgentRichInputOpened { .. }
             | Self::CLIAgentRichInputClosed { .. }
-            | Self::CLIAgentRichInputSubmitted { .. } => {
-                EnablementState::Flag(FeatureFlag::CLIAgentRichInput)
-            }
+            | Self::CLIAgentRichInputSubmitted { .. } => EnablementState::Always,
             Self::ToggleCLIAgentToolbarSetting { .. } => EnablementState::Always,
             Self::ToggleUseAgentToolbarSetting { .. } => EnablementState::Always,
             Self::CodexModalOpened | Self::CodexModalUseCodexClicked => EnablementState::Always,

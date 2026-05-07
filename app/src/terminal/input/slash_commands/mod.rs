@@ -801,9 +801,10 @@ impl Input {
                 ctx.dispatch_typed_action(&TerminalAction::OpenBillingAndUsagePane);
             }
             remote_control if command.name == commands::REMOTE_CONTROL.name => {
-                if !FeatureFlag::CreatingSharedSessions.is_enabled()
-                    || !FeatureFlag::HOARemoteControl.is_enabled()
-                {
+                // strip(neuter): HOARemoteControl is gated off in this fork.
+                return false;
+                #[allow(unreachable_code)]
+                if !FeatureFlag::CreatingSharedSessions.is_enabled() {
                     return false;
                 }
                 if self

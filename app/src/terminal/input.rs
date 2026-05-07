@@ -9339,12 +9339,8 @@ impl Input {
         // Shared session viewers cannot attach images unless in cloud mode
         // with the CloudModeImageContext feature enabled.
         let is_viewer = self.model.lock().shared_session_status().is_viewer();
-        let is_cloud_mode_with_images = FeatureFlag::CloudModeImageContext.is_enabled()
-            && self
-                .ambient_agent_view_model()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model.as_ref(ctx).is_ambient_agent()
-                });
+        // strip(neuter): CloudModeImageContext is gated off in this fork.
+        let is_cloud_mode_with_images = false;
         if is_viewer && !is_cloud_mode_with_images {
             return false;
         }
@@ -11833,8 +11829,9 @@ impl Input {
             .cloned()
             .collect();
 
-        let has_uploads = (!pending_images.is_empty() || !pending_files.is_empty())
-            && FeatureFlag::CloudModeImageContext.is_enabled();
+        // strip(neuter): CloudModeImageContext is gated off in this fork.
+        let _ = (&pending_images, &pending_files);
+        let has_uploads = false;
 
         if let Some(task_id) = ambient_agent_task_id.filter(|_| has_uploads) {
             // Upload files first, then send prompt with file references in callback
