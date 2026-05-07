@@ -5,7 +5,6 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 use session_sharing_protocol::common::{AgentAttachment, ParticipantId, ServerConversationToken};
-use warp_core::features::FeatureFlag;
 use warp_multi_agent_api::response_event::{stream_finished, ClientActions};
 use warp_multi_agent_api::{client_action::Action, message::Message};
 
@@ -589,8 +588,8 @@ impl BlocklistAIController {
             }
         });
 
-        // If there are no file downloads (or the feature is disabled), send the query immediately.
-        if file_downloads.is_empty() || !FeatureFlag::CloudModeImageContext.is_enabled() {
+        // strip(neuter): CloudModeImageContext is gated off in this fork.
+        if file_downloads.is_empty() {
             self.send_shared_session_query(
                 prompt,
                 conversation_id,

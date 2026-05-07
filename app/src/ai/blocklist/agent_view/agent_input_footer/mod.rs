@@ -1322,9 +1322,8 @@ impl AgentInputFooter {
             AgentToolbarItemKind::FileExplorer => {
                 Some(ChildView::new(&self.file_explorer_button).finish())
             }
-            AgentToolbarItemKind::RichInput => FeatureFlag::CLIAgentRichInput
-                .is_enabled()
-                .then(|| ChildView::new(&self.rich_input_button).finish()),
+            // strip(neuter): CLIAgentRichInput is gated off in this fork.
+            AgentToolbarItemKind::RichInput => None,
             AgentToolbarItemKind::FileAttach => Some(ChildView::new(&self.file_button).finish()),
             AgentToolbarItemKind::VoiceInput => {
                 #[cfg(feature = "voice_input")]
@@ -1337,7 +1336,7 @@ impl AgentInputFooter {
             }
             AgentToolbarItemKind::ShareSession => {
                 let enabled = FeatureFlag::CreatingSharedSessions.is_enabled()
-                    && FeatureFlag::HOARemoteControl.is_enabled()
+                    && false // strip(neuter): HOARemoteControl is gated off in this fork.
                     && ContextFlag::CreateSharedSession.is_enabled();
                 if !enabled {
                     return None;
@@ -1871,13 +1870,8 @@ impl AgentInputFooter {
         shared_status: &SharedSessionStatus,
         app: &AppContext,
     ) -> Option<Box<dyn Element>> {
-        let is_cloud_mode = FeatureFlag::CloudModeImageContext.is_enabled()
-            && self
-                .ambient_agent_view_model
-                .as_ref()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model.as_ref(app).is_ambient_agent()
-                });
+        // strip(neuter): CloudModeImageContext is gated off in this fork.
+        let is_cloud_mode = false;
         if !item.available_in().is_available_for_agent_view()
             || !item.available_to_session_viewer(shared_status, is_cloud_mode)
         {
@@ -1925,7 +1919,7 @@ impl AgentInputFooter {
             }
             AgentToolbarItemKind::ShareSession => {
                 let enabled = FeatureFlag::CreatingSharedSessions.is_enabled()
-                    && FeatureFlag::HOARemoteControl.is_enabled()
+                    && false // strip(neuter): HOARemoteControl is gated off in this fork.
                     && ContextFlag::CreateSharedSession.is_enabled();
                 if !enabled {
                     return None;

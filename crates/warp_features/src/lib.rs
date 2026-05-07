@@ -222,11 +222,6 @@ pub enum FeatureFlag {
     /// Enables support for Warp Packs.
     WarpPacks,
 
-    /// Enables the revised AI analytics policy banner.
-    ///
-    /// This does not gate actual collection of data under the new policy.
-    GlobalAIAnalyticsBanner,
-
     /// Enables auto-generated AI memories.
     AIMemories,
 
@@ -585,9 +580,6 @@ pub enum FeatureFlag {
     /// Enables image upload for ambient agents.
     AmbientAgentsImageUpload,
 
-    /// Enables image attachment support for cloud mode conversations.
-    CloudModeImageContext,
-
     /// Enables the Oz launch modal for introducing cloud agent features.
     OzLaunchModal,
 
@@ -606,10 +598,6 @@ pub enum FeatureFlag {
 
     /// Enables attaching conversations as context in Agent Mode via the @ menu.
     ConversationsAsContext,
-
-    /// Enables the rich input editor for CLI agents (e.g., Claude Code).
-    /// Ctrl-G intercepts the keystroke and opens Warp's input editor instead of $EDITOR.
-    CLIAgentRichInput,
 
     /// Enables incremental (diff-based) buffer updates for auto-reload instead of full replace.
     IncrementalAutoReload,
@@ -654,10 +642,6 @@ pub enum FeatureFlag {
     /// Enables vertical tab layout as an alternative to the horizontal tab bar.
     VerticalTabs,
 
-    /// Enables attaching code review comments, diff hunk, and attach as context
-    /// from code review + code editor for House Of Agents work
-    HoaCodeReview,
-
     /// Enables the upgraded CLI agent session tracking and notifications infrastructure.
     HOANotifications,
 
@@ -695,9 +679,6 @@ pub enum FeatureFlag {
 
     /// Enables commit, push, and create-PR actions in the code review panel.
     GitOperationsInCodeReview,
-
-    /// Gates the remote control chip and `/remote-control` slash command in the CLI agent footer.
-    HOARemoteControl,
 
     /// Trims trailing blank rows from CLI agent block output so unused vertical
     /// space is not rendered while the agent is running.
